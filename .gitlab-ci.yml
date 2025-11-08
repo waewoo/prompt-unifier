@@ -1,0 +1,62 @@
+# GitLab CI/CD Pipeline for Prompt Manager CLI
+# This pipeline runs quality checks (lint, typecheck, test) on every push
+# Ensures code quality standards are maintained across the team
+
+# Use Python 3.12 Docker image for all jobs
+image: python:3.12
+
+# Define pipeline stages (executed in order)
+stages:
+  - lint
+  - typecheck
+  - test
+
+# Cache Poetry dependencies to speed up pipeline execution
+cache:
+  paths:
+    - .cache/pypoetry
+    - .venv
+
+# Install Poetry and project dependencies before each job
+before_script:
+  - pip install poetry
+  - poetry config virtualenvs.in-project true
+  - poetry install --no-interaction --no-ansi
+
+# Job 1: Run Ruff linter
+lint:
+  stage: lint
+  script:
+    - poetry run ruff check src/ tests/
+  only:
+    - branches
+    - merge_requests
+
+# Job 2: Run mypy type checker
+typecheck:
+  stage: typecheck
+  script:
+    - poetry run mypy src/
+  only:
+    - branches
+    - merge_requests
+
+# Job 3: Run pytest test suite with coverage
+test:
+  stage: test
+  script:
+    - poetry run pytest --cov=src/prompt_manager --cov-report=term-missing --cov-report=xml --cov-report=html
+  coverage: '/(?i)total.*? (100(?:\.0+)?\%|[1-9]?\d(?:\.\d+)?\%)$/'
+  artifacts:
+    when: always
+    reports:
+      coverage_report:
+        coverage_format: cobertura
+        path: coverage.xml
+    paths:
+      - htmlcov/
+      - coverage.xml
+    expire_in: 30 days
+  only:
+    - branches
+    - merge_requests

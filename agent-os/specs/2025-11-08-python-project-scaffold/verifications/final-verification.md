@@ -63,7 +63,7 @@ The Python Project Scaffold specification has been fully implemented and verifie
 
 - [x] Task Group 5: Quality Automation - Pre-commit and CI/CD
   - [x] 5.1 Create .pre-commit-config.yaml
-  - [x] 5.2 Create .github/workflows/ci.yml
+  - [x] 5.2 Create .gitlab-ci.yml
   - [x] 5.3 Install pre-commit hooks locally
   - [x] 5.4 Test pre-commit hooks on a dummy file
   - [x] 5.5 Verify CI/CD workflow syntax is valid
@@ -243,9 +243,7 @@ Verified all required directories exist:
 ├── tests/
 │   └── test_version.py
 ├── docs/
-├── .github/
-│   └── workflows/
-│       └── ci.yml
+├── .gitlab-ci.yml
 ├── pyproject.toml
 ├── Makefile
 ├── .gitignore
@@ -317,16 +315,16 @@ All subpackages import successfully:
 
 **Result:** ✅ Pre-commit hooks properly configured
 
-### .github/workflows/ci.yml
+### .gitlab-ci.yml
 
 **Verified Configuration:**
-- ✅ Trigger: push and pull_request to main branch
-- ✅ Runner: ubuntu-latest (Linux)
-- ✅ Python version: 3.12
-- ✅ Poetry installation step
-- ✅ Dependency caching configured
-- ✅ Sequential execution: lint → typecheck → test
-- ✅ Coverage upload to Codecov configured
+- ✅ Image: python:3.12 Docker image
+- ✅ Stages: lint, typecheck, test
+- ✅ Poetry installation in before_script
+- ✅ Dependency caching configured (.cache/pypoetry, .venv)
+- ✅ Sequential stages: lint → typecheck → test
+- ✅ Coverage artifacts uploaded (coverage.xml, htmlcov/)
+- ✅ Triggers on branches and merge_requests
 
 **Result:** ✅ CI/CD pipeline properly configured
 
@@ -487,10 +485,10 @@ mypy.................................................(no files to check)Skipped
 
 - ✅ .pre-commit-config.yaml contains 3 hooks: ruff (check), ruff (format), mypy
 - ✅ pytest is NOT included in pre-commit hooks
-- ✅ .github/workflows/ci.yml exists with correct YAML syntax
-- ✅ CI workflow targets Linux + Python 3.12 only
-- ✅ CI runs lint, typecheck, and test in sequence
-- ✅ Coverage upload step configured
+- ✅ .gitlab-ci.yml exists with correct YAML syntax
+- ✅ CI pipeline targets Linux + Python 3.12 only
+- ✅ CI runs lint, typecheck, and test stages
+- ✅ Coverage artifacts uploaded
 - ✅ `poetry run pre-commit install` completes successfully
 - ✅ `poetry run pre-commit run --all-files` executes without errors
 
@@ -547,7 +545,7 @@ $ poetry run pre-commit run --all-files
 ### Configuration Validation
 
 - ✅ pyproject.toml: Valid TOML syntax
-- ✅ .github/workflows/ci.yml: Valid GitHub Actions YAML
+- ✅ .gitlab-ci.yml: Valid GitLab CI YAML
 - ✅ .pre-commit-config.yaml: Valid pre-commit configuration
 - ✅ Makefile: All targets execute successfully
 
@@ -561,7 +559,7 @@ $ poetry run pre-commit run --all-files
 2. ✅ **Poetry Configuration:** All metadata, dependencies, and tool configurations present in pyproject.toml
 3. ✅ **Makefile Development Targets:** All 7 required targets implemented and functional
 4. ✅ **Pre-commit Hooks Configuration:** Ruff and mypy configured, pytest explicitly excluded
-5. ✅ **GitHub Actions CI/CD Pipeline:** Complete workflow with Python 3.12, Linux runner, sequential quality checks
+5. ✅ **GitLab CI/CD Pipeline:** Complete pipeline with Python 3.12, Linux runner, sequential quality stages
 6. ✅ **Python .gitignore:** Comprehensive ignore patterns for Python projects
 7. ✅ **README.md Template:** All sections present with proper content
 8. ✅ **Empty __init__.py Files:** All 6 required files created with proper version in main package
@@ -610,7 +608,7 @@ The Python Project Scaffold implementation is production-ready and exceeds expec
 1. **Begin Feature Development:** The scaffold is ready for implementing CLI commands, validators, and handlers (roadmap items 2-12)
 2. **Maintain Quality Standards:** Continue using `make check` before all commits to maintain zero-defect quality
 3. **Expand Testing:** Add comprehensive unit tests as features are implemented to maintain 85%+ coverage
-4. **CI/CD Monitoring:** Monitor GitHub Actions workflow execution on first few commits to ensure remote CI passes
+4. **CI/CD Monitoring:** Monitor GitLab CI pipeline execution on first few commits to ensure remote CI passes
 
 ### Verification Conclusion
 

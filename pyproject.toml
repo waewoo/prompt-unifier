@@ -1,0 +1,110 @@
+# Prompt Manager CLI - Project Configuration
+#
+# This pyproject.toml configures:
+# - [tool.poetry]: Package metadata and dependencies (Poetry)
+# - [tool.ruff]: Linting and formatting rules (Ruff)
+# - [tool.mypy]: Static type checking configuration (mypy)
+# - [tool.pytest.ini_options]: Test configuration (pytest)
+#
+# Note: Python >=3.12 is recommended, but >=3.11 is supported for compatibility
+
+[tool.poetry]
+name = "prompt-manager"
+version = "0.1.0"
+description = "CLI tool for managing AI prompt templates with YAML frontmatter"
+authors = ["Your Name <your.email@example.com>"]
+license = "MIT"
+readme = "README.md"
+packages = [{include = "prompt_manager", from = "src"}]
+
+[tool.poetry.dependencies]
+python = ">=3.11"
+typer = "^0.12.0"
+rich = "^13.7.0"
+pydantic = "^2.5.0"
+pyyaml = "^6.0.1"
+gitpython = "^3.1.40"
+
+[tool.poetry.group.dev.dependencies]
+pytest = "^8.0.0"
+pytest-cov = "^4.1.0"
+pytest-mock = "^3.12.0"
+ruff = "^0.3.0"
+mypy = "^1.8.0"
+pre-commit = "^3.6.0"
+types-pyyaml = "^6.0.12"
+
+[build-system]
+requires = ["poetry-core"]
+build-backend = "poetry.core.masonry.api"
+
+# Ruff configuration - Linting and formatting
+[tool.ruff]
+line-length = 100
+target-version = "py312"
+src = ["src", "tests"]
+
+[tool.ruff.lint]
+select = [
+    "E",   # pycodestyle errors
+    "W",   # pycodestyle warnings
+    "F",   # pyflakes
+    "I",   # isort (import sorting)
+    "N",   # pep8-naming
+    "UP",  # pyupgrade
+    "B",   # flake8-bugbear
+    "C4",  # flake8-comprehensions
+    "SIM", # flake8-simplify
+]
+ignore = []
+
+[tool.ruff.lint.isort]
+known-first-party = ["prompt_manager"]
+
+# mypy configuration - Static type checking
+[tool.mypy]
+python_version = "3.11"
+strict = true
+warn_return_any = true
+warn_unused_configs = true
+disallow_untyped_defs = true
+disallow_any_unimported = false
+no_implicit_optional = true
+warn_redundant_casts = true
+warn_unused_ignores = true
+warn_no_return = true
+check_untyped_defs = true
+strict_equality = true
+
+[[tool.mypy.overrides]]
+module = ["tests.*"]
+disallow_untyped_defs = false
+
+# pytest configuration - Testing
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+python_files = ["test_*.py"]
+python_classes = ["Test*"]
+python_functions = ["test_*"]
+addopts = [
+    "--strict-markers",
+    "--strict-config",
+    "--showlocals",
+]
+
+[tool.coverage.run]
+source = ["src"]
+branch = true
+
+[tool.coverage.report]
+fail_under = 85
+show_missing = true
+skip_covered = false
+exclude_lines = [
+    "pragma: no cover",
+    "def __repr__",
+    "raise AssertionError",
+    "raise NotImplementedError",
+    "if __name__ == .__main__.:",
+    "if TYPE_CHECKING:",
+]

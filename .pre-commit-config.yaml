@@ -1,0 +1,34 @@
+# Pre-commit Hooks Configuration
+#
+# This configuration runs quality checks before each commit:
+# - Ruff linting and formatting
+# - mypy type checking
+#
+# Note: pytest is NOT included in pre-commit hooks for performance reasons.
+# Tests are run in CI/CD pipeline instead.
+#
+# Install hooks: poetry run pre-commit install
+# Run manually: poetry run pre-commit run --all-files
+
+fail_fast: true
+
+repos:
+  # Ruff - Fast Python linter and formatter
+  - repo: https://github.com/astral-sh/ruff-pre-commit
+    rev: v0.3.0
+    hooks:
+      # Ruff linter
+      - id: ruff
+        args: [--fix]
+      # Ruff formatter
+      - id: ruff-format
+
+  # mypy - Static type checker
+  - repo: https://github.com/pre-commit/mirrors-mypy
+    rev: v1.8.0
+    hooks:
+      - id: mypy
+        additional_dependencies:
+          - types-pyyaml
+        args: [--strict]
+        files: ^src/
