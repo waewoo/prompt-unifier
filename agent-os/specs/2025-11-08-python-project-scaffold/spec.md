@@ -44,12 +44,12 @@ Establish a complete, production-ready Python project structure for the Prompt M
 - Explicitly exclude pytest from hooks for performance (tests run in CI/CD only)
 - Set hook execution to fail fast on first error
 
-**GitHub Actions CI/CD Pipeline**
-- Create workflow file `.github/workflows/ci.yml`
-- Configure for Linux runner with Python 3.12 initially
+**GitLab CI/CD Pipeline**
+- Create configuration file `.gitlab-ci.yml`
+- Configure for Linux runner (using python:3.12 Docker image)
 - Install dependencies via Poetry in CI environment
 - Run `make lint`, `make typecheck`, and `make test` sequentially
-- Upload coverage reports to ensure transparency
+- Upload coverage reports as artifacts
 - Ensure local dev environment matches CI environment exactly (same Python version, same tool versions)
 
 **Python .gitignore**

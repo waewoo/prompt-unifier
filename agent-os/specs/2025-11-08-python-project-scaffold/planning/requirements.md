@@ -123,7 +123,7 @@ No visual assets provided. This is expected for a project scaffold specification
 - `make release` - Tag, changelog, build, publish workflow
 
 **CI/CD Pipeline:**
-- GitHub Actions workflow (or equivalent)
+- Gitlab Actions workflow (or equivalent)
 - Initial: Linux only, Python 3.12
 - Future expansion: macOS, Windows, Python 3.13
 - Steps: install dependencies, run lint, run typecheck, run tests
@@ -154,7 +154,7 @@ No visual assets provided. This is expected for a project scaffold specification
 User indicated these patterns exist but did not provide specific paths. Spec-writer should investigate the codebase for:
 - Existing CLI implementations to model command structure after
 - Current Makefile for target naming conventions
-- Existing GitHub Actions workflows or CI configurations
+- Existing Gitlab Actions workflows or CI configurations
 
 ### Scope Boundaries
 
@@ -165,7 +165,7 @@ User indicated these patterns exist but did not provide specific paths. Spec-wri
 - .gitignore for Python projects
 - .pre-commit-config.yaml with Ruff and mypy (NO pytest)
 - Basic README.md template
-- GitHub Actions CI/CD for Linux + Python 3.12
+- Gitlab Actions CI/CD for Linux + Python 3.12
 - All __init__.py files for proper Python package structure
 
 **Out of Scope (Explicitly Excluded):**

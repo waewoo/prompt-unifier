@@ -1,6 +1,6 @@
 # Product Roadmap
 
-1. [ ] Core CLI Framework & Project Structure — Set up Python project with Poetry, configure Typer/Click CLI framework with basic commands (init, validate, deploy, list, sync), implement Rich for terminal output, and establish project structure with proper packaging. `S`
+1. [x] Core CLI Framework & Project Structure — Set up Python project with Poetry, configure Typer/Click CLI framework with basic commands (init, validate, deploy, list, sync), implement Rich for terminal output, and establish project structure with proper packaging. `S`
 
 2. [ ] Prompt Format Specification & Validation Engine — Define and document the standardized prompt format (YAML frontmatter + >>> separator), implement Pydantic models for prompt structure, create validation logic to parse and verify prompt files, and provide detailed error messages for format violations. `M`
 

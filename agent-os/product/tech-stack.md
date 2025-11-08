@@ -112,9 +112,9 @@ This is a pure command-line interface tool with no graphical user interface, no 
 - **Rationale**: Standard Python distribution, pipx for isolated CLI tool installation
 - **Command**: `pipx install prompt-manager` (recommended) or `pip install prompt-manager`
 
-**GitHub Releases**
+**Gitlab Releases**
 - **Purpose**: Versioned releases with changelog
-- **Rationale**: Track versions, provide release notes, enable GitHub Actions automation
+- **Rationale**: Track versions, provide release notes, enable Gitlab Actions automation
 
 ### Version Control
 
@@ -138,7 +138,7 @@ This is a pure command-line interface tool with no graphical user interface, no 
 
 ### CI/CD
 
-**GitHub Actions** (or GitLab CI, CircleCI)
+**GitLab Actions**
 - **Purpose**: Automated testing, linting, type checking, and release automation
 - **Pipeline**: Run pytest, Ruff, mypy on every commit and PR
 - **Principle**: Local development environment MUST match CI environment exactly (same Python version, same tool versions, same checks)
@@ -249,5 +249,5 @@ This is a pure command-line interface tool with no graphical user interface, no 
 | Database | SQLite (optional) | Local metadata storage |
 | ORM | SQLAlchemy (optional) | Database operations |
 | Deployment | pip/pipx | Local installation |
-| CI/CD | GitHub Actions | Automated testing & releases |
+| CI/CD | Gitlab Actions | Automated testing & releases |
 | Architecture | Strategy Pattern | Extensible tool handlers |
