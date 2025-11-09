@@ -13,8 +13,8 @@
 **Specialist:** Backend/Data Engineer
 **Estimated Complexity:** Medium
 
-- [ ] 1.0 Complete Pydantic models for frontmatter validation
-  - [ ] 1.1 Write 5-8 focused tests for PromptFrontmatter model
+- [x] 1.0 Complete Pydantic models for frontmatter validation
+  - [x] 1.1 Write 5-8 focused tests for PromptFrontmatter model
     - Test required fields validation (name, description)
     - Test optional fields acceptance (version, tags, author)
     - Test prohibited fields rejection (tools field)
@@ -23,7 +23,7 @@
     - Test flat structure enforcement (no nested dicts)
     - Test field type validation (string vs list)
     - Test model serialization to dict
-  - [ ] 1.2 Create PromptFrontmatter Pydantic model in `src/prompt_manager/models/prompt.py`
+  - [x] 1.2 Create PromptFrontmatter Pydantic model in `src/prompt_manager/models/prompt.py`
     - Required fields: name (str), description (str)
     - Optional fields: version (str | None), tags (list[str] | None), author (str | None)
     - Use `field_validator` for non-empty string validation on name/description
@@ -31,7 +31,7 @@
     - Use `model_validator(mode='after')` to reject prohibited fields (tools)
     - Add detailed error messages with field names
     - Use Pydantic v2 API (Field, field_validator, model_validator)
-  - [ ] 1.3 Create error/warning classification enums in `src/prompt_manager/models/validation.py`
+  - [x] 1.3 Create error/warning classification enums in `src/prompt_manager/models/validation.py`
     - ValidationSeverity enum: ERROR, WARNING
     - ErrorCode enum with 12 error types:
       - INVALID_ENCODING, MISSING_REQUIRED_FIELD, INVALID_YAML
@@ -40,15 +40,15 @@
       - INVALID_SEMVER, PROHIBITED_FIELD, INVALID_FILE_EXTENSION
     - WarningCode enum with 3 warning types:
       - MISSING_OPTIONAL_FIELD, EMPTY_TAGS_LIST, MISSING_AUTHOR
-  - [ ] 1.4 Create ValidationIssue Pydantic model in `src/prompt_manager/models/validation.py`
+  - [x] 1.4 Create ValidationIssue Pydantic model in `src/prompt_manager/models/validation.py`
     - Fields: line (int | None), severity (ValidationSeverity), code (str)
     - Fields: message (str), excerpt (str | None), suggestion (str)
     - Enable JSON serialization via model_dump()
-  - [ ] 1.5 Create ValidationResult Pydantic model in `src/prompt_manager/models/validation.py`
+  - [x] 1.5 Create ValidationResult Pydantic model in `src/prompt_manager/models/validation.py`
     - Fields: file (Path), status (Literal["passed", "failed"])
     - Fields: errors (list[ValidationIssue]), warnings (list[ValidationIssue])
     - Computed property: is_valid (no errors)
-  - [ ] 1.6 Ensure data model tests pass
+  - [x] 1.6 Ensure data model tests pass
     - Run ONLY tests from 1.1 (`pytest tests/models/test_prompt.py`)
     - Verify all validators trigger correctly
     - Verify error messages are descriptive
