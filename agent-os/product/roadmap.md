@@ -8,9 +8,9 @@
 
 4. [ ] Strategy Pattern Architecture for Tool Handlers — Design and implement Python Protocol for ToolHandler interface, create abstract base handler with common deployment logic, establish handler registration system for extensibility, and document how to add new tool handlers. `S`
 
-5. [ ] Tool Handler Implementation: Continue & Cursor — Build ToolHandler implementations for Continue (deploy to .continue/ directory) and Cursor (deploy to .cursorrules or appropriate location), including file operations, path resolution, backup mechanisms, and deployment verification. `M`
+5. [ ] Tool Handler Implementation: Continue & Kilo Code — Build ToolHandler implementations for Continue (deploy to .continue/ directory) and Kilo Code (deploy to appropriate location), including file operations, path resolution, backup mechanisms, and deployment verification. `M`
 
-6. [ ] Tool Handler Implementation: Windsurf, Aider, Kilo Code — Complete remaining tool handlers for Windsurf, Aider, and Kilo Code following the established pattern, with full deployment logic, configuration file handling, and validation that prompts are correctly placed in each tool's expected location. `M`
+6. [ ] Tool Handler Implementation: Windsurf, Cursor, Aider — Complete remaining tool handlers for Windsurf, Aider, Cursor following the established pattern, with full deployment logic, configuration file handling, and validation that prompts are correctly placed in each tool's expected location. `M`
 
 7. [ ] Deploy Command with Multi-Tool Support — Implement deploy command that orchestrates deployment across all configured tools, supports selective deployment (--tool flag), provides progress indicators and deployment summaries, handles rollback on failures, and validates successful deployment. `L`
 
