@@ -65,8 +65,8 @@ This feature implements three new CLI commands (init, sync, status) to enable re
 **Complexity:** High
 **Estimated Test Count:** 6-8 focused tests
 
-- [ ] 2.0 Complete Git operations layer
-  - [ ] 2.1 Write 6-8 focused tests for Git operations
+- [x] 2.0 Complete Git operations layer
+  - [x] 2.1 Write 6-8 focused tests for Git operations
     - Test successful repository clone to temporary directory
     - Test extraction of prompts/ directory from cloned repo
     - Test retrieval of latest commit hash from repository
@@ -75,7 +75,7 @@ This feature implements three new CLI commands (init, sync, status) to enable re
     - Test cleanup of temporary directory after operations
     - Test authentication error handling with helpful message
     - Skip network retry logic testing (integration test covers this)
-  - [ ] 2.2 Create GitService class in src/prompt_manager/git/service.py
+  - [x] 2.2 Create GitService class in src/prompt_manager/git/service.py
     - Use GitPython library (already in dependencies: gitpython ^3.1.40)
     - Method: clone_to_temp(repo_url: str) -> tuple[Path, git.Repo]
     - Method: get_latest_commit(repo: git.Repo) -> str (return short SHA)
@@ -86,15 +86,15 @@ This feature implements three new CLI commands (init, sync, status) to enable re
     - Use shutil.copytree with dirs_exist_ok=True for directory copying
     - Handle git.exc.GitCommandError for clone failures
     - Return tuple (has_updates: bool, commits_behind: int) from check_remote_updates
-  - [ ] 2.3 Implement network retry logic with exponential backoff
+  - [x] 2.3 Implement network retry logic with exponential backoff
     - Create retry decorator or helper function
     - 3 retry attempts for network operations (clone, fetch)
     - Exponential backoff: 1s, 2s, 4s delays between retries
     - Log retry attempts for user visibility
     - Fail with clear error message after 3 attempts
-  - [ ] 2.4 Add __init__.py for git module
+  - [x] 2.4 Add __init__.py for git module
     - Export GitService
-  - [ ] 2.5 Ensure Git operations layer tests pass
+  - [x] 2.5 Ensure Git operations layer tests pass
     - Run ONLY the 6-8 tests written in 2.1
     - Use pytest-mock for mocking GitPython operations
     - Verify clone, extract, and commit retrieval work correctly
