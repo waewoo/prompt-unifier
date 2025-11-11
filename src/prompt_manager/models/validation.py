@@ -202,3 +202,91 @@ class ValidationResult(BaseModel):
             ]
         }
     }
+
+
+class ValidationSummary(BaseModel):
+    """Represents the aggregated validation summary for multiple files.
+
+    This model aggregates validation results across all files in a
+    directory and provides summary statistics.
+
+    Attributes:
+        total_files: Total number of files validated
+        passed: Number of files that passed validation (no errors)
+        failed: Number of files that failed validation (had errors)
+        error_count: Total number of errors across all files
+        warning_count: Total number of warnings across all files
+        success: True if no errors across all files, False otherwise
+        results: List of individual file validation results
+
+    Examples:
+        >>> from pathlib import Path
+        >>> summary = ValidationSummary(
+        ...     total_files=3,
+        ...     passed=2,
+        ...     failed=1,
+        ...     error_count=1,
+        ...     warning_count=2,
+        ...     success=False,
+        ...     results=[]
+        ... )
+        >>> summary.success
+        False
+    """
+
+    total_files: int = Field(description="Total number of files validated")
+    passed: int = Field(description="Number of files that passed validation")
+    failed: int = Field(description="Number of files that failed validation")
+    error_count: int = Field(description="Total number of errors across all files")
+    warning_count: int = Field(description="Total number of warnings across all files")
+    success: bool = Field(description="True if no errors across all files, False otherwise")
+    results: list[ValidationResult] = Field(
+        default_factory=list, description="Individual file validation results"
+    )
+
+    model_config = {
+        "json_schema_extra": {
+            "examples": [
+                {
+                    "total_files": 3,
+                    "passed": 2,
+                    "failed": 1,
+                    "error_count": 1,
+                    "warning_count": 2,
+                    "success": False,
+                    "results": [
+                        {
+                            "file": "python-expert.md",
+                            "status": "passed",
+                            "errors": [],
+                            "warnings": [
+                                {
+                                    "line": None,
+                                    "severity": "warning",
+                                    "code": "MISSING_OPTIONAL_FIELD",
+                                    "message": "Missing optional field 'author'",
+                                    "excerpt": None,
+                                    "suggestion": "Consider adding 'author' field",
+                                }
+                            ],
+                        },
+                        {
+                            "file": "broken-prompt.md",
+                            "status": "failed",
+                            "errors": [
+                                {
+                                    "line": 1,
+                                    "severity": "error",
+                                    "code": "MISSING_REQUIRED_FIELD",
+                                    "message": "Missing required field 'description'",
+                                    "excerpt": "name: broken-prompt\n>>>",
+                                    "suggestion": "Add 'description' field to frontmatter",
+                                }
+                            ],
+                            "warnings": [],
+                        },
+                    ],
+                }
+            ]
+        }
+    }

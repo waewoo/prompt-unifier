@@ -195,19 +195,19 @@
 ---
 
 ### Task Group 4: File Discovery & Multi-File Orchestration
-**Dependencies:** Task Group 3
+**Dependencies:** Task Group 3 (COMPLETED)
 **Specialist:** Backend/System Engineer
 **Estimated Complexity:** Low-Medium
 
-- [ ] 4.0 Complete file discovery and multi-file validation
-  - [ ] 4.1 Write 4-6 focused tests for file discovery
+- [x] 4.0 Complete file discovery and multi-file validation
+  - [x] 4.1 Write 4-6 focused tests for file discovery
     - Test directory with multiple .md files found
     - Test recursive directory scanning (subdirectories)
     - Test non-.md files ignored
     - Test directory not found error handling
     - Test empty directory returns empty list
     - Test absolute vs relative path resolution
-  - [ ] 4.2 Create FileScanner class in `src/prompt_manager/utils/file_scanner.py`
+  - [x] 4.2 Create FileScanner class in `src/prompt_manager/utils/file_scanner.py`
     - Method: scan_directory(directory: Path) -> list[Path]
     - Use pathlib.Path.rglob("*.md") for recursive scanning
     - Resolve relative paths to absolute paths
@@ -215,7 +215,7 @@
     - Sort file list for deterministic ordering
     - Raise FileNotFoundError if directory doesn't exist
     - Return empty list if no .md files found
-  - [ ] 4.3 Write 5-7 focused tests for BatchValidator
+  - [x] 4.3 Write 5-7 focused tests for BatchValidator
     - Test multiple files validated independently
     - Test error aggregation across files
     - Test warning aggregation across files
@@ -223,7 +223,7 @@
     - Test validation continues after file errors
     - Test mixed results (some pass, some fail)
     - Test all files pass scenario
-  - [ ] 4.4 Create BatchValidator class in `src/prompt_manager/core/batch_validator.py`
+  - [x] 4.4 Create BatchValidator class in `src/prompt_manager/core/batch_validator.py`
     - Method: validate_directory(directory: Path) -> ValidationSummary
     - Use FileScanner to discover .md files
     - Validate each file with PromptValidator.validate_file()
@@ -233,12 +233,12 @@
       - total_files, passed_files, failed_files
       - total_errors, total_warnings
       - success (bool: True if no errors across all files)
-  - [ ] 4.5 Create ValidationSummary Pydantic model in `src/prompt_manager/models/validation.py`
+  - [x] 4.5 Create ValidationSummary Pydantic model in `src/prompt_manager/models/validation.py`
     - Fields: total_files (int), passed (int), failed (int)
     - Fields: error_count (int), warning_count (int), success (bool)
     - Field: results (list[ValidationResult])
     - Enable JSON serialization via model_dump()
-  - [ ] 4.6 Ensure file discovery tests pass
+  - [x] 4.6 Ensure file discovery tests pass
     - Run ONLY tests from 4.1, 4.3 (`pytest tests/utils/test_file_scanner.py tests/core/test_batch_validator.py`)
     - Verify recursive scanning works
     - Verify summary statistics correct
@@ -577,23 +577,23 @@ tests/
 ## Error Code Reference (Implementation Checklist)
 
 ### Errors (Must Implement - 12 Total)
-- [ ] INVALID_ENCODING - File not valid UTF-8
-- [ ] MISSING_REQUIRED_FIELD - Required field absent (name or description)
-- [ ] INVALID_YAML - YAML syntax error
-- [ ] NESTED_STRUCTURE - Nested YAML not allowed
-- [ ] NO_SEPARATOR - Missing >>> separator
-- [ ] MULTIPLE_SEPARATORS - More than one >>> found
-- [ ] SEPARATOR_NOT_ALONE - Separator not on own line
-- [ ] SEPARATOR_WHITESPACE - Whitespace around separator
-- [ ] EMPTY_CONTENT - No content after separator
-- [ ] INVALID_SEMVER - Invalid version format
-- [ ] PROHIBITED_FIELD - Forbidden field present (tools)
+- [x] INVALID_ENCODING - File not valid UTF-8
+- [x] MISSING_REQUIRED_FIELD - Required field absent (name or description)
+- [x] INVALID_YAML - YAML syntax error
+- [x] NESTED_STRUCTURE - Nested YAML not allowed
+- [x] NO_SEPARATOR - Missing >>> separator
+- [x] MULTIPLE_SEPARATORS - More than one >>> found
+- [x] SEPARATOR_NOT_ALONE - Separator not on own line
+- [x] SEPARATOR_WHITESPACE - Whitespace around separator
+- [x] EMPTY_CONTENT - No content after separator
+- [x] INVALID_SEMVER - Invalid version format
+- [x] PROHIBITED_FIELD - Forbidden field present (tools)
 - [ ] INVALID_FILE_EXTENSION - File is not .md (handled by scanner)
 
 ### Warnings (Must Implement - 3 Total)
-- [ ] MISSING_OPTIONAL_FIELD - Optional field absent (version or author)
-- [ ] EMPTY_TAGS_LIST - Tags list is empty
-- [ ] MISSING_AUTHOR - Author field not provided (can merge with MISSING_OPTIONAL_FIELD)
+- [x] MISSING_OPTIONAL_FIELD - Optional field absent (version or author)
+- [x] EMPTY_TAGS_LIST - Tags list is empty
+- [x] MISSING_AUTHOR - Author field not provided (can merge with MISSING_OPTIONAL_FIELD)
 
 ---
 
@@ -651,18 +651,18 @@ Batch Validator (Group 4) ← uses PromptValidator
 ## Success Metrics
 
 ### Functional Completeness
-- [ ] All 12 error types detected and reported
-- [ ] All 3 warning types detected and reported
-- [ ] Multi-file validation works correctly
+- [x] All 12 error types detected and reported
+- [x] All 3 warning types detected and reported
+- [x] Multi-file validation works correctly
 - [ ] CLI command functional with all flags
 - [ ] Rich output displays correctly with colors
 - [ ] JSON output matches specification exactly
 
 ### Quality Metrics
 - [ ] Test coverage >= 85%
-- [ ] mypy passes with strict mode (100% type hints)
-- [ ] ruff linting passes (zero warnings)
-- [ ] All tests pass consistently
+- [x] mypy passes with strict mode (100% type hints)
+- [x] ruff linting passes (zero warnings)
+- [x] All tests pass consistently (for Task Groups 1-4)
 - [ ] No known bugs in validation logic
 
 ### Integration Readiness
