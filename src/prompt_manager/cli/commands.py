@@ -16,6 +16,7 @@ from prompt_manager.git.service import GitService
 from prompt_manager.models.git_config import GitConfig
 from prompt_manager.output.json_formatter import JSONFormatter
 from prompt_manager.output.rich_formatter import RichFormatter
+from prompt_manager.utils.formatting import format_timestamp
 
 # Initialize Rich Console for formatted output
 console = Console()
@@ -184,6 +185,12 @@ Thumbs.db
             err=True,
         )
         raise typer.Exit(code=1) from None
+    except PermissionError:
+        typer.echo(
+            "Error: Permission denied. Check directory permissions.",
+            err=True,
+        )
+        raise typer.Exit(code=1) from None
     except Exception as e:
         typer.echo(f"Error during initialization: {e}", err=True)
         raise typer.Exit(code=1) from e
@@ -284,6 +291,12 @@ def sync(repo: str | None = typer.Option(None, "--repo")) -> None:
         # Git errors (invalid URL, auth failures, missing prompts/ directory)
         typer.echo(f"Error: {e}", err=True)
         raise typer.Exit(code=1) from e
+    except PermissionError:
+        typer.echo(
+            "Error: Permission denied. Check directory permissions.",
+            err=True,
+        )
+        raise typer.Exit(code=1) from None
     except Exception as e:
         # Unexpected errors
         typer.echo(f"Error during sync: {e}", err=True)
@@ -343,9 +356,10 @@ def status() -> None:
             console.print()
             return
 
-        # Display last sync information
+        # Display last sync information with human-readable timestamp
         if config.last_sync_timestamp:
-            console.print(f"Last sync: {config.last_sync_timestamp}")
+            human_readable = format_timestamp(config.last_sync_timestamp)
+            console.print(f"Last sync: {human_readable}")
         else:
             console.print("Last sync: [yellow]Never[/yellow]")
 
