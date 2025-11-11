@@ -4,7 +4,9 @@
 
 2. [x] Prompt Format Specification & Validation Engine — Define and document the standardized prompt format (YAML frontmatter + >>> separator), implement Pydantic models for prompt structure, create validation logic to parse and verify prompt files, and provide detailed error messages for format violations. `M`
 
-3. [ ] Git Integration & Repository Management — Implement init command to create centralized prompt repository with .gitignore and structure, add sync command to pull prompts from Git remote, handle Git operations (clone, pull, status), and implement error handling for Git conflicts or network issues. `M`
+3. [x] Git Integration & Repository Management — Implement init command to create centralized prompt repository with .gitignore and structure, add sync command to pull prompts from Git remote, handle Git operations (clone, pull, status), and implement error handling for Git conflicts or network issues. `M`
+
+3.5. [ ] Centralized Storage Architecture — Refactor Git integration to use centralized storage directory (~/.prompt-manager/storage by default) instead of storing prompts/rules in project directory. Add storage_path field to config.yaml, support --storage-path flag in init and sync commands for custom storage locations, and ensure .prompt-manager/config.yaml remains local to each project while prompts/rules are stored centrally and shared across projects. `S`
 
 4. [ ] Rules/Context Files Support — Extend system to support rules/context files alongside prompts using same format (YAML frontmatter + >>> separator), create separate `rules/` directory structure parallel to `prompts/`, reuse existing validation engine for rules files, and update sync/list/validate commands to handle both prompts and rules with appropriate filtering and display. `S`
 
