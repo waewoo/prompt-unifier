@@ -137,8 +137,8 @@
 **Specialist:** Backend/Validation Engineer
 **Estimated Complexity:** Medium
 
-- [ ] 3.0 Complete schema validation pipeline integration
-  - [ ] 3.1 Write 6-8 focused tests for PromptValidator orchestration
+- [x] 3.0 Complete schema validation pipeline integration
+  - [x] 3.1 Write 6-8 focused tests for PromptValidator orchestration
     - Test valid minimal prompt (name, description only) passes
     - Test valid full prompt (all optional fields) passes with warnings
     - Test missing required field generates error
@@ -147,7 +147,7 @@
     - Test missing optional fields generate warnings
     - Test empty tags list generates warning
     - Test multiple errors collected (not stopping at first)
-  - [ ] 3.2 Create PromptValidator class in `src/prompt_manager/core/validator.py`
+  - [x] 3.2 Create PromptValidator class in `src/prompt_manager/core/validator.py`
     - Method: validate_file(file_path: Path) -> ValidationResult
     - Orchestrate full validation pipeline:
       1. EncodingValidator.validate_encoding()
@@ -158,7 +158,7 @@
     - Collect all errors/warnings from each step
     - Continue pipeline even after errors (collect all issues)
     - Return ValidationResult with file path, status, errors, warnings
-  - [ ] 3.3 Implement Pydantic error translation in PromptValidator
+  - [x] 3.3 Implement Pydantic error translation in PromptValidator
     - Catch pydantic.ValidationError from model validation
     - Map Pydantic errors to ValidationIssue objects:
       - missing field -> MISSING_REQUIRED_FIELD
@@ -166,20 +166,20 @@
       - prohibited field -> PROHIBITED_FIELD
     - Extract field names from Pydantic error location
     - Generate actionable suggestions based on error type
-  - [ ] 3.4 Implement warning detection logic in PromptValidator
+  - [x] 3.4 Implement warning detection logic in PromptValidator
     - Check if optional fields missing (version, author)
     - Generate MISSING_OPTIONAL_FIELD warnings with field name
     - Check if tags field is empty list
     - Generate EMPTY_TAGS_LIST warning if tags == []
     - Warnings do not affect validation status (status can be "passed")
-  - [ ] 3.5 Write 4-6 tests for ValidationResult aggregation
+  - [x] 3.5 Write 4-6 tests for ValidationResult aggregation
     - Test file with only errors has status="failed"
     - Test file with only warnings has status="passed"
     - Test file with errors + warnings has status="failed"
     - Test file with no issues has status="passed"
     - Test error/warning count aggregation
     - Test is_valid property
-  - [ ] 3.6 Ensure schema validation tests pass
+  - [x] 3.6 Ensure schema validation tests pass
     - Run ONLY tests from 3.1, 3.5 (`pytest tests/core/test_validator.py`)
     - Verify end-to-end validation pipeline works
     - Verify error/warning classification correct
