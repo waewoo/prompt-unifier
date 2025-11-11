@@ -141,10 +141,10 @@ commits_behind = len(list(repo.iter_commits(f'{local_commit}..origin/main')))
 **Complexity:** High
 **Estimated Test Count:** 8 focused tests
 
-- [ ] 3.0 Complete CLI commands implementation
-  - [ ] 3.1 Write 8 focused tests for CLI commands
+- [x] 3.0 Complete CLI commands implementation
+  - [x] 3.1 Write 8 focused tests for CLI commands
     - Test init command creates .prompt-manager/ directory and config.yaml
-    - Test init command creates prompts/ directory structure (rules/, custom/, shared/)
+    - Test init command creates prompts/ and rules/ directories at project root
     - Test init command creates .gitignore if it doesn't exist (without ignoring .prompt-manager/)
     - Test init command fails if .prompt-manager/ already exists
     - Test sync command fails if init not run first (missing config.yaml)
@@ -152,17 +152,17 @@ commits_behind = len(list(repo.iter_commits(f'{local_commit}..origin/main')))
     - Test sync command without --repo flag reads URL from config
     - Test status command displays repo URL, last sync time, and update availability
     - Skip exhaustive testing of all edge cases
-  - [ ] 3.2 Implement init command in src/prompt_manager/cli/commands.py
+  - [x] 3.2 Implement init command in src/prompt_manager/cli/commands.py
     - Function signature: def init() -> None
     - Create .prompt-manager/ directory in current working directory (Path.cwd())
     - Use Path.mkdir(parents=True, exist_ok=False) to prevent re-initialization
     - Create config.yaml with empty placeholders: repo_url: null, last_sync_timestamp: null, last_sync_commit: null
-    - Create prompts/ directory with subdirectories: rules/, custom/, shared/
+    - Create prompts/ and rules/ directories at project root
     - Create .gitignore template if not exists (do NOT ignore .prompt-manager/)
     - Use Rich Console for success output with green checkmark
     - Exit with code 0 on success, code 1 on failure (raise typer.Exit(code=1))
     - Follow pattern from cli/commands.py validate command
-  - [ ] 3.3 Implement sync command in src/prompt_manager/cli/commands.py
+  - [x] 3.3 Implement sync command in src/prompt_manager/cli/commands.py
     - Function signature: def sync(repo: str | None = typer.Option(None, "--repo")) -> None
     - Validate .prompt-manager/config.yaml exists (error if not: "Run 'prompt-manager init' first")
     - If --repo provided: use repo URL from flag
@@ -174,7 +174,7 @@ commits_behind = len(list(repo.iter_commits(f'{local_commit}..origin/main')))
     - Display Rich formatted output: repo URL, files synced, timestamp
     - Handle all Git errors with clear messages and exit code 1
     - Clean up temporary directory on success or error
-  - [ ] 3.4 Implement status command in src/prompt_manager/cli/commands.py
+  - [x] 3.4 Implement status command in src/prompt_manager/cli/commands.py
     - Function signature: def status() -> None
     - Validate .prompt-manager/config.yaml exists (error if not: "Run 'prompt-manager init' first")
     - Load config.yaml and display: repo URL, last sync timestamp (human-readable), last commit hash (short)
@@ -183,12 +183,12 @@ commits_behind = len(list(repo.iter_commits(f'{local_commit}..origin/main')))
     - Show commits behind count if updates available
     - Use Rich Console with symbols (checkmark for up-to-date, warning for updates)
     - Exit with code 0 always (status is informational)
-  - [ ] 3.5 Register commands in src/prompt_manager/cli/main.py
+  - [x] 3.5 Register commands in src/prompt_manager/cli/main.py
     - Add @app.command(name="init", help="...") decorator for init
     - Add @app.command(name="sync", help="...") decorator for sync
     - Add @app.command(name="status", help="...") decorator for status
     - Follow pattern from existing validate command registration
-  - [ ] 3.6 Ensure CLI commands tests pass
+  - [x] 3.6 Ensure CLI commands tests pass
     - Run ONLY the 8 tests written in 3.1
     - Use tmp_path fixture for temporary directories
     - Use pytest-mock to mock GitService operations

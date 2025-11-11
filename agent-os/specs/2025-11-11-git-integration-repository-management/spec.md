@@ -12,7 +12,7 @@ Enable application projects to sync prompts from a central Git repository by imp
 **Init Command Implementation**
 - Create .prompt-manager/ directory in current working directory (application project root)
 - Generate config.yaml file inside .prompt-manager/ with placeholders for repo_url, last_sync_timestamp, and last_sync_commit fields
-- Create basic prompts/ directory structure with subdirectories: rules/, custom/, shared/
+- Create prompts/ and rules/ directories at project root
 - Generate .gitignore template file in project root if it doesn't exist (must NOT ignore .prompt-manager/ directory itself)
 - .prompt-manager/ directory must be tracked in version control for team collaboration
 - Error if .prompt-manager/ already exists with clear message to prevent re-initialization

@@ -7,7 +7,18 @@ from pathlib import Path
 
 import typer
 
-from prompt_manager.cli.commands import validate as validate_command
+from prompt_manager.cli.commands import (
+    init as init_command,
+)
+from prompt_manager.cli.commands import (
+    status as status_command,
+)
+from prompt_manager.cli.commands import (
+    sync as sync_command,
+)
+from prompt_manager.cli.commands import (
+    validate as validate_command,
+)
 
 # Create the Typer app
 app = typer.Typer(
@@ -31,6 +42,42 @@ def validate(
         verbose: Show detailed progress (use --verbose or -v flag)
     """
     validate_command(Path(directory), json_output=json, verbose=verbose)
+
+
+@app.command(name="init", help="Initialize prompt-manager in current directory")
+def init() -> None:
+    """Initialize prompt-manager configuration.
+
+    Creates .prompt-manager/ directory with config.yaml and prompts/
+    directory structure in the current directory.
+    """
+    init_command()
+
+
+@app.command(name="sync", help="Sync prompts from Git repository")
+def sync(
+    repo: str | None = typer.Option(
+        None,
+        "--repo",
+        help="Git repository URL (optional if already configured)",
+    ),
+) -> None:
+    """Sync prompts from Git repository.
+
+    Args:
+        repo: Git repository URL (optional if already configured in config.yaml)
+    """
+    sync_command(repo=repo)
+
+
+@app.command(name="status", help="Display sync status and check for updates")
+def status() -> None:
+    """Display current sync status.
+
+    Shows repository URL, last sync time, commit hash, and whether
+    updates are available from the remote repository.
+    """
+    status_command()
 
 
 def main() -> None:
