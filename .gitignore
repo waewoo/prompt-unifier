@@ -63,3 +63,6 @@ poetry.lock
 # Environment variables
 .env
 .env.local
+
+# Prompt Manager local configuration (may contain secrets)
+.prompt-manager/
