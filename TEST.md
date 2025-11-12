@@ -211,7 +211,7 @@ cat .prompt-manager/config.yaml
 
 **Contenu attendu de config.yaml (après sync):**
 ```yaml
-repo_url: https://waewoo:glpat-z3z8MZWyIson-qpVvFjjaW86MQp1OjF1ZnMwCw.01.120u3igft@gitlab.com/waewoo/prompt-manager-data
+repo_url: git@gitlab.com:waewoo/prompt-manager-data.git
 last_sync_timestamp: 2025-11-12T09:36:00+00:00  # (ou la date actuelle)
 last_sync_commit: d0ec0a5
 storage_path: /root/.prompt-manager/storage
@@ -239,7 +239,7 @@ cd /tmp/test-prompt-manager-1
 
 # Sync avec une nouvelle URL (si vous avez un autre repo de test)
 # Pour ce test, on utilise la même URL pour simplifier
-poetry run prompt-manager sync --repo https://waewoo:glpat-z3z8MZWyIson-qpVvFjjaW86MQp1OjF1ZnMwCw.01.120u3igft@gitlab.com/waewoo/prompt-manager-data
+poetry run prompt-manager sync --repo git@gitlab.com:waewoo/prompt-manager-data.git
 ```
 
 **Résultat attendu:**
