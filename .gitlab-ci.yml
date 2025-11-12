@@ -1,12 +1,17 @@
 # GitLab CI/CD Pipeline for Prompt Manager CLI
-# This pipeline runs quality checks (lint, typecheck, test) on every push
-# Ensures code quality standards are maintained across the team
+# This pipeline runs security checks and quality checks on every push
+# Ensures security and code quality standards are maintained across the team
 
-# Use Python 3.12 Docker image for all jobs
+# Use Python 3.12 Docker image for all jobs (unless specified otherwise)
 image: python:3.12
+
+# Global variables
+variables:
+  SECURE_LOG_LEVEL: "info"
 
 # Define pipeline stages (executed in order)
 stages:
+  - security
   - lint
   - typecheck
   - test
@@ -22,6 +27,78 @@ before_script:
   - pip install poetry
   - poetry config virtualenvs.in-project true
   - poetry install --no-interaction --no-ansi
+
+# ============================================================================
+# SECURITY JOBS
+# ============================================================================
+
+# Security Job 1: Secrets Detection
+secrets-scan:
+  stage: security
+  image: python:3.11-slim
+  before_script:
+    - apt-get update && apt-get install -y git
+    - pip install detect-secrets
+  script:
+    - detect-secrets scan --baseline .secrets.baseline
+  allow_failure: false
+  only:
+    - merge_requests
+    - main
+  cache:
+    paths:
+      - .pip-cache
+
+# Security Job 2: SAST (Static Application Security Testing)
+sast-scan:
+  stage: security
+  image: python:3.11-slim
+  before_script:
+    - pip install poetry
+    - poetry config virtualenvs.create false
+    - poetry install --no-root --only main,dev
+  script:
+    - poetry run bandit -r src/ -f json -o bandit-report.json
+    - poetry run bandit -r src/ -f screen
+  artifacts:
+    reports:
+      sast: bandit-report.json
+    paths:
+      - bandit-report.json
+    expire_in: 1 week
+    when: always
+  allow_failure: false
+  only:
+    - merge_requests
+    - main
+
+# Security Job 3: Dependency Vulnerability Scanning
+dependency-scan:
+  stage: security
+  image: python:3.11-slim
+  before_script:
+    - pip install poetry safety pip-audit
+    - poetry config virtualenvs.create false
+    - poetry install --no-root
+  script:
+    - echo "Running Safety scan..."
+    - poetry run safety scan --output text || true
+    - echo "Running pip-audit scan..."
+    - poetry run pip-audit --format json --output pip-audit-report.json || true
+    - poetry run pip-audit
+  artifacts:
+    paths:
+      - pip-audit-report.json
+    expire_in: 1 week
+    when: always
+  allow_failure: false
+  only:
+    - merge_requests
+    - main
+
+# ============================================================================
+# CODE QUALITY JOBS
+# ============================================================================
 
 # Job 1: Run Ruff linter
 lint:

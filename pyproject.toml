@@ -21,7 +21,7 @@ packages = [{include = "prompt_manager", from = "src"}]
 prompt-manager = "prompt_manager.cli.main:main"
 
 [tool.poetry.dependencies]
-python = ">=3.11"
+python = ">=3.11,<4.0"
 typer = "^0.20.0"
 rich = "^13.7.0"
 pydantic = "^2.5.0"
@@ -36,6 +36,10 @@ ruff = "^0.3.0"
 mypy = "^1.8.0"
 pre-commit = "^3.6.0"
 types-pyyaml = "^6.0.12"
+detect-secrets = "^1.5.0"
+bandit = "^1.8.6"
+safety = "^3.7.0"
+pip-audit = "^2.9.0"
 
 [build-system]
 requires = ["poetry-core"]
@@ -118,3 +122,14 @@ exclude_lines = [
     "if __name__ == .__main__.:",
     "if TYPE_CHECKING:",
 ]
+
+# Bandit configuration - Security linting
+[tool.bandit]
+targets = ["src"]
+exclude_dirs = ["/tests", "/agent-os"]
+skips = []
+severity = "medium"
+confidence = "medium"
+
+[tool.bandit.assert_used]
+skips = ["*/test_*.py", "*/conftest.py"]

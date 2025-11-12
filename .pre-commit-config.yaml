@@ -36,3 +36,28 @@ repos:
           - gitpython>=3.1.40
         args: [--strict]
         files: ^src/
+
+  # Secrets detection - Prevent committing secrets
+  - repo: https://github.com/Yelp/detect-secrets
+    rev: v1.5.0
+    hooks:
+      - id: detect-secrets
+        name: Detect secrets
+        args: ['--baseline', '.secrets.baseline']
+        exclude: |
+          (?x)^(
+              tests/fixtures/.*|
+              \.secrets\.baseline|
+              poetry\.lock
+          )$
+
+  # Bandit - Security linting for Python (local hook using Poetry environment)
+  - repo: local
+    hooks:
+      - id: bandit
+        name: Bandit security linter
+        entry: poetry run bandit
+        language: system
+        types: [python]
+        args: ['-c', 'pyproject.toml', '-r', 'src/']
+        pass_filenames: false

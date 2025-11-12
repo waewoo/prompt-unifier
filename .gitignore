@@ -66,3 +66,9 @@ poetry.lock
 
 # Prompt Manager local configuration (may contain secrets)
 .prompt-manager/
+
+# Security scanning outputs
+bandit-report.json
+safety-report.json
+pip-audit-report.json
+.secrets.baseline.tmp

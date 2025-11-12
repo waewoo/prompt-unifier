@@ -325,6 +325,107 @@ prompt-manager sync --repo https://github.com/team/new-prompts.git
 prompt-manager sync
 ```
 
+## Security
+
+This project uses automated security scanning to detect and prevent security issues before they reach production.
+
+### Security Scanning Tools
+
+The project implements multiple layers of security:
+
+- **Secrets Detection** - Prevents committing API keys, tokens, and passwords
+- **SAST (Static Application Security Testing)** - Identifies code security vulnerabilities
+- **Dependency Scanning** - Detects vulnerable packages and CVEs
+
+### For Developers
+
+Security checks run automatically at two levels:
+
+**1. Pre-commit Hooks (Local)**
+- Runs before each `git commit`
+- Blocks commits containing secrets or security issues
+- Fast feedback loop (~10-30 seconds)
+
+**2. CI/CD Pipeline (GitLab)**
+- Runs on every merge request
+- Comprehensive security scan of entire codebase
+- Generates security reports as artifacts
+
+### Getting Started with Security Tools
+
+Install pre-commit hooks after cloning:
+
+```bash
+# Install dependencies
+poetry install
+
+# Install pre-commit hooks
+poetry run pre-commit install
+
+# Test hooks (optional)
+poetry run pre-commit run --all-files
+```
+
+### What Gets Checked?
+
+**Local (Pre-commit):**
+- API keys, tokens, passwords (detect-secrets)
+- Python security vulnerabilities (bandit)
+- Code formatting and type safety (ruff, mypy)
+
+**CI/CD (GitLab):**
+- All pre-commit checks
+- Dependency vulnerabilities (safety, pip-audit)
+- CVE database scanning
+- Security report generation
+
+### Handling Security Findings
+
+**If a secret is detected:**
+```bash
+# Use environment variables instead
+import os
+api_key = os.getenv("API_KEY")  # Good
+
+# Don't hardcode secrets
+api_key = "sk-1234..."  # Bad - will be blocked
+```
+
+**If a security vulnerability is found:**
+- Review the finding in the commit output or CI logs
+- Follow the remediation guidance provided
+- See [docs/security.md](docs/security.md) for detailed fixes
+
+### Best Practices
+
+**Credential Management:**
+- Use SSH keys for Git authentication (recommended)
+- Store secrets in environment variables
+- Never commit `.env` files with real credentials
+
+**Example: SSH vs Token**
+```bash
+# ✅ Recommended: SSH authentication
+prompt-manager sync --repo git@gitlab.com:username/repo.git
+
+# ❌ Avoid: Token in URL (security risk)
+prompt-manager sync --repo https://user:TOKEN@gitlab.com/user/repo.git
+```
+
+### Documentation
+
+- **[SECURITY.md](SECURITY.md)** - Security policy and vulnerability reporting
+- **[docs/security.md](docs/security.md)** - Developer security guide
+- **[docs/ci-security.md](docs/ci-security.md)** - CI/CD security pipeline documentation
+
+### Reporting Security Issues
+
+**Do not** open public issues for security vulnerabilities.
+
+Instead, email security issues to: [your-security-email@example.com]
+
+See [SECURITY.md](SECURITY.md) for our responsible disclosure policy.
+
 ## Troubleshooting
 
 ### "Configuration not found" Error
