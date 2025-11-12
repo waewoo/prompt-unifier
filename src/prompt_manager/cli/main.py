@@ -20,12 +20,38 @@ from prompt_manager.cli.commands import (
     validate as validate_command,
 )
 
+# Version
+__version__ = "0.1.0"
+
+
+def version_callback(value: bool) -> None:
+    """Display version and exit."""
+    if value:
+        typer.echo(f"prompt-manager version {__version__}")
+        raise typer.Exit()
+
+
 # Create the Typer app
 app = typer.Typer(
     name="prompt-manager",
     help="CLI tool for managing and validating AI assistant prompt files",
     add_completion=False,
 )
+
+
+@app.callback()
+def main_callback(
+    version: bool = typer.Option(
+        False,
+        "--version",
+        "-v",
+        help="Show version and exit",
+        callback=version_callback,
+        is_eager=True,
+    ),
+) -> None:
+    """Prompt Manager CLI - Manage and validate AI prompt templates."""
+    pass
 
 
 @app.command(name="validate", help="Validate prompt file format in a directory")
@@ -45,29 +71,33 @@ def validate(
 
 
 @app.command(name="init", help="Initialize prompt-manager in current directory")
-def init() -> None:
+def init(
+    storage_path: str | None = typer.Option(None, "--storage-path"),
+) -> None:
     """Initialize prompt-manager configuration.
 
-    Creates .prompt-manager/ directory with config.yaml and prompts/
-    directory structure in the current directory.
+    Creates .prompt-manager/ directory with config.yaml and centralized
+    storage directory for prompts and rules.
+
+    Args:
+        storage_path: Custom path for centralized storage directory
+                      (default: ~/.prompt-manager/storage)
     """
-    init_command()
+    init_command(storage_path=storage_path)
 
 
 @app.command(name="sync", help="Sync prompts from Git repository")
 def sync(
-    repo: str | None = typer.Option(
-        None,
-        "--repo",
-        help="Git repository URL (optional if already configured)",
-    ),
+    repo: str | None = typer.Option(None, "--repo"),
+    storage_path: str | None = typer.Option(None, "--storage-path"),
 ) -> None:
-    """Sync prompts from Git repository.
+    """Sync prompts from Git repository to centralized storage.
 
     Args:
         repo: Git repository URL (optional if already configured in config.yaml)
+        storage_path: Override storage path for this sync
     """
-    sync_command(repo=repo)
+    sync_command(repo=repo, storage_path=storage_path)
 
 
 @app.command(name="status", help="Display sync status and check for updates")

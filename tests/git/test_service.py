@@ -4,7 +4,6 @@ This module tests Git operations including repository cloning, prompt extraction
 commit retrieval, and remote update checking using GitPython library.
 """
 
-import contextlib
 from pathlib import Path
 from unittest.mock import Mock, patch
 
@@ -49,8 +48,6 @@ class TestGitService:
         source_repo = tmp_path / "source"
         source_prompts = source_repo / "prompts"
         source_prompts.mkdir(parents=True)
-        (source_prompts / "rules").mkdir()
-        (source_prompts / "rules" / "test.md").write_text("# Test Rule")
         (source_prompts / "custom").mkdir()
         (source_prompts / "custom" / "custom.md").write_text("# Custom Prompt")
 
@@ -64,11 +61,72 @@ class TestGitService:
         # Verify prompts directory was copied to target
         target_prompts = target_path / "prompts"
         assert target_prompts.exists()
-        assert (target_prompts / "rules" / "test.md").exists()
         assert (target_prompts / "custom" / "custom.md").exists()
 
         # Verify content is correct
-        assert (target_prompts / "rules" / "test.md").read_text() == "# Test Rule"
+        assert (target_prompts / "custom" / "custom.md").read_text() == "# Custom Prompt"
+
+    def test_extract_prompts_dir_also_copies_rules_directory(self, tmp_path: Path) -> None:
+        """Test that rules/ directory is also extracted if present in repository."""
+        service = GitService()
+
+        # Create source with both prompts/ and rules/ directories
+        source_repo = tmp_path / "source"
+        source_prompts = source_repo / "prompts"
+        source_prompts.mkdir(parents=True)
+        (source_prompts / "test-prompt.md").write_text("# Test Prompt")
+
+        source_rules = source_repo / "rules"
+        source_rules.mkdir(parents=True)
+        (source_rules / "test-rule.md").write_text("# Test Rule")
+        (source_rules / "another-rule.md").write_text("# Another Rule")
+
+        # Create target directory
+        target_path = tmp_path / "target"
+        target_path.mkdir()
+
+        # Extract both directories
+        service.extract_prompts_dir(source_repo, target_path)
+
+        # Verify prompts directory was copied
+        target_prompts = target_path / "prompts"
+        assert target_prompts.exists()
+        assert (target_prompts / "test-prompt.md").exists()
+        assert (target_prompts / "test-prompt.md").read_text() == "# Test Prompt"
+
+        # Verify rules directory was also copied
+        target_rules = target_path / "rules"
+        assert target_rules.exists()
+        assert (target_rules / "test-rule.md").exists()
+        assert (target_rules / "another-rule.md").exists()
+        assert (target_rules / "test-rule.md").read_text() == "# Test Rule"
+        assert (target_rules / "another-rule.md").read_text() == "# Another Rule"
+
+    def test_extract_prompts_dir_works_without_rules_directory(self, tmp_path: Path) -> None:
+        """Test that extraction works even if rules/ directory is not present."""
+        service = GitService()
+
+        # Create source with only prompts/ directory (no rules/)
+        source_repo = tmp_path / "source"
+        source_prompts = source_repo / "prompts"
+        source_prompts.mkdir(parents=True)
+        (source_prompts / "test-prompt.md").write_text("# Test Prompt")
+
+        # Create target directory
+        target_path = tmp_path / "target"
+        target_path.mkdir()
+
+        # Extract prompts directory
+        service.extract_prompts_dir(source_repo, target_path)
+
+        # Verify prompts directory was copied
+        target_prompts = target_path / "prompts"
+        assert target_prompts.exists()
+        assert (target_prompts / "test-prompt.md").exists()
+
+        # Verify no rules directory was created (since it didn't exist in source)
+        target_rules = target_path / "rules"
+        assert not target_rules.exists()
 
     def test_get_latest_commit_returns_short_sha(self) -> None:
         """Test retrieval of latest commit hash from repository (short SHA format)."""
@@ -140,36 +198,29 @@ class TestGitService:
                 assert "Failed to clone repository" in str(exc_info.value)
 
     def test_cleanup_of_temporary_directory_after_operations(self, tmp_path: Path) -> None:
-        """Test that temporary directory is properly cleaned up after clone operations."""
+        """Test that temporary directory is created using mkdtemp."""
         service = GitService()
         repo_url = "https://github.com/example/prompts.git"
 
-        # Track whether __exit__ is called on TemporaryDirectory context manager
-        cleanup_called = False
-
-        class MockTempDir:
-            def __enter__(self):
-                return str(tmp_path / "temp")
-
-            def __exit__(self, *args):
-                nonlocal cleanup_called
-                cleanup_called = True
-
+        # Mock mkdtemp to track that it's called
         with patch("git.Repo.clone_from") as mock_clone:
             mock_repo = Mock(spec=git.Repo)
-            mock_repo.working_dir = str(tmp_path / "repo")
+            mock_repo.head.commit = Mock()
             mock_clone.return_value = mock_repo
 
-            with patch("tempfile.TemporaryDirectory") as mock_tempdir:
-                mock_tempdir.return_value = MockTempDir()
+            with patch("tempfile.mkdtemp") as mock_mkdtemp:
+                # Return a real temporary directory path
+                temp_path = tmp_path / "temp"
+                temp_path.mkdir()
+                mock_mkdtemp.return_value = str(temp_path)
 
-                # Call method that uses temporary directory
-                with contextlib.suppress(Exception):
-                    service.clone_to_temp(repo_url)
+                # Call method that creates temporary directory
+                repo_path, repo = service.clone_to_temp(repo_url)
 
-        # Note: In actual implementation with context manager, cleanup is automatic
-        # This test verifies the pattern, not the actual cleanup (that's Python's job)
-        assert mock_tempdir.called
+                # Verify mkdtemp was called
+                assert mock_mkdtemp.called
+                # Verify the returned path matches what mkdtemp returned
+                assert repo_path == temp_path
 
     def test_authentication_error_handling_with_helpful_message(self) -> None:
         """Test authentication error handling provides helpful message to user."""
@@ -190,9 +241,12 @@ class TestGitService:
                 with pytest.raises(ValueError) as exc_info:
                     service.clone_to_temp(repo_url)
 
-                # Verify error message mentions authentication
+                # Verify error message mentions authentication and provides solutions
                 error_message = str(exc_info.value).lower()
-                assert "authentication" in error_message or "failed to clone" in error_message
+                assert "authentication" in error_message
+                assert "ssh key" in error_message
+                assert "credential helper" in error_message
+                assert "personal access token" in error_message
 
     def test_extract_prompts_dir_raises_error_if_prompts_missing(self, tmp_path: Path) -> None:
         """Test that extract_prompts_dir validates prompts/ directory exists in repo."""

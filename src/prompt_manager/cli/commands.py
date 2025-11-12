@@ -74,20 +74,29 @@ def validate(
         raise typer.Exit(code=1)
 
 
-def init() -> None:
+def init(storage_path: str | None = typer.Option(None, "--storage-path")) -> None:
     """Initialize prompt-manager configuration in current directory.
 
     Creates the .prompt-manager/ directory with config.yaml for storing
-    repository sync settings. Also creates the prompts/ directory structure
-    with subdirectories for rules, custom, and shared prompts.
+    repository sync settings. Also creates the centralized storage directory
+    (default: ~/.prompt-manager/storage) with prompts/ and rules/ subdirectories.
+
+    This command is idempotent: running it multiple times will create only
+    what's missing without failing if already initialized.
+
+    Args:
+        storage_path: Custom path for centralized storage (default: ~/.prompt-manager/storage)
 
     Exit codes:
-        0: Initialization successful
-        1: Initialization failed (e.g., already initialized)
+        0: Initialization successful (including when already initialized)
+        1: Initialization failed (e.g., permission errors)
 
     Examples:
-        # Initialize in current directory
+        # Initialize with default storage location
         prompt-manager init
+
+        # Initialize with custom storage location
+        prompt-manager init --storage-path /custom/path/storage
     """
     try:
         # Get current working directory
@@ -96,33 +105,72 @@ def init() -> None:
         # Create .prompt-manager/ directory
         prompt_manager_dir = cwd / ".prompt-manager"
 
-        # Check if already initialized
-        if prompt_manager_dir.exists():
-            typer.echo(
-                "Error: .prompt-manager/ directory already exists. "
-                "Project is already initialized.",
-                err=True,
-            )
-            raise typer.Exit(code=1)
+        # Track what was created vs what already existed
+        created_items = []
+        existing_items = []
 
-        # Create .prompt-manager/ directory (exist_ok=False to catch race conditions)
-        prompt_manager_dir.mkdir(parents=True, exist_ok=False)
+        # Determine storage path (custom or default)
+        if storage_path and isinstance(storage_path, str):
+            storage_dir = Path(storage_path).expanduser().resolve()
+        else:
+            # Try to read from existing config if available
+            config_path = prompt_manager_dir / "config.yaml"
+            if config_path.exists():
+                config_manager = ConfigManager()
+                existing_config = config_manager.load_config(config_path)
+                if existing_config and existing_config.storage_path:
+                    storage_dir = Path(existing_config.storage_path).expanduser().resolve()
+                else:
+                    storage_dir = Path.home() / ".prompt-manager" / "storage"
+            else:
+                storage_dir = Path.home() / ".prompt-manager" / "storage"
 
-        # Create config.yaml with empty placeholders
-        config_manager = ConfigManager()
+        # Create .prompt-manager/ directory if it doesn't exist
+        if not prompt_manager_dir.exists():
+            prompt_manager_dir.mkdir(parents=True, exist_ok=True)
+            created_items.append(f"Created: {prompt_manager_dir}")
+        else:
+            existing_items.append(f"Exists: {prompt_manager_dir}")
+
+        # Create config.yaml if it doesn't exist
         config_path = prompt_manager_dir / "config.yaml"
-        empty_config = GitConfig(repo_url=None, last_sync_timestamp=None, last_sync_commit=None)
-        config_manager.save_config(config_path, empty_config)
+        if not config_path.exists():
+            config_manager = ConfigManager()
+            empty_config = GitConfig(
+                repo_url=None,
+                last_sync_timestamp=None,
+                last_sync_commit=None,
+                storage_path=str(storage_dir),
+            )
+            config_manager.save_config(config_path, empty_config)
+            created_items.append(f"Created: {config_path}")
+        else:
+            existing_items.append(f"Exists: {config_path}")
 
-        # Create prompts/ and rules/ directories
-        prompts_dir = cwd / "prompts"
-        prompts_dir.mkdir(parents=True, exist_ok=True)
+        # Create centralized storage directory
+        if not storage_dir.exists():
+            storage_dir.mkdir(parents=True, exist_ok=True)
+            created_items.append(f"Created: {storage_dir}")
+        else:
+            existing_items.append(f"Exists: {storage_dir}")
 
-        rules_dir = cwd / "rules"
-        rules_dir.mkdir(parents=True, exist_ok=True)
+        # Create prompts/ and rules/ directories in storage
+        prompts_dir = storage_dir / "prompts"
+        if not prompts_dir.exists():
+            prompts_dir.mkdir(parents=True, exist_ok=True)
+            created_items.append(f"Created: {prompts_dir}")
+        else:
+            existing_items.append(f"Exists: {prompts_dir}")
 
-        # Create .gitignore template if it doesn't exist
-        gitignore_path = cwd / ".gitignore"
+        rules_dir = storage_dir / "rules"
+        if not rules_dir.exists():
+            rules_dir.mkdir(parents=True, exist_ok=True)
+            created_items.append(f"Created: {rules_dir}")
+        else:
+            existing_items.append(f"Exists: {rules_dir}")
+
+        # Create .gitignore template in storage directory if it doesn't exist
+        gitignore_path = storage_dir / ".gitignore"
         if not gitignore_path.exists():
             gitignore_content = """# Python
 __pycache__/
@@ -163,28 +211,36 @@ env/
 Thumbs.db
 """
             gitignore_path.write_text(gitignore_content)
+            created_items.append(f"Created: {gitignore_path}")
+        else:
+            existing_items.append(f"Exists: {gitignore_path}")
 
         # Display success message with Rich formatting
-        console.print("[green]✓[/green] Initialization complete")
+        if created_items:
+            console.print("[green]✓[/green] Initialization complete")
+        else:
+            console.print("[green]✓[/green] Already initialized (all components exist)")
+
         console.print("━" * 80)
-        console.print(f"Created: {prompt_manager_dir}")
-        console.print(f"Created: {config_path}")
-        console.print(f"Created: {prompts_dir}")
-        console.print(f"Created: {rules_dir}")
-        if not gitignore_path.exists():
-            console.print(f"Created: {gitignore_path}")
+
+        # Display what was created
+        if created_items:
+            for item in created_items:
+                console.print(f"[green]{item}[/green]")
+
+        # Display what already existed (in dim style)
+        if existing_items:
+            for item in existing_items:
+                console.print(f"[dim]{item}[/dim]")
+
+        console.print()
+        console.print(f"Storage: {storage_dir}")
         console.print()
         console.print("[dim]Next steps:[/dim]")
         console.print("  1. Run 'prompt-manager sync --repo <git-url>' to sync prompts")
         console.print("  2. Run 'prompt-manager status' to check sync status")
         console.print()
 
-    except FileExistsError:
-        typer.echo(
-            "Error: .prompt-manager/ directory already exists. " "Project is already initialized.",
-            err=True,
-        )
-        raise typer.Exit(code=1) from None
     except PermissionError:
         typer.echo(
             "Error: Permission denied. Check directory permissions.",
@@ -196,15 +252,19 @@ Thumbs.db
         raise typer.Exit(code=1) from e
 
 
-def sync(repo: str | None = typer.Option(None, "--repo")) -> None:
-    """Sync prompts from Git repository.
+def sync(
+    repo: str | None = typer.Option(None, "--repo"),
+    storage_path: str | None = typer.Option(None, "--storage-path"),
+) -> None:
+    """Sync prompts from Git repository to centralized storage.
 
     Clones the remote repository to a temporary directory, extracts the
-    prompts/ directory, and copies it to the current project. Updates
-    the config.yaml with sync metadata.
+    prompts/ directory, and copies it to the centralized storage location.
+    Updates the config.yaml with sync metadata.
 
     Args:
         repo: Git repository URL (optional if already configured)
+        storage_path: Override storage path for this sync (optional)
 
     Exit codes:
         0: Sync successful
@@ -216,6 +276,9 @@ def sync(repo: str | None = typer.Option(None, "--repo")) -> None:
 
         # Subsequent syncs (reads URL from config)
         prompt-manager sync
+
+        # Sync with custom storage path
+        prompt-manager sync --storage-path /custom/path/storage
     """
     try:
         # Get current working directory
@@ -256,11 +319,23 @@ def sync(repo: str | None = typer.Option(None, "--repo")) -> None:
             )
             raise typer.Exit(code=1)
 
+        # Determine storage path
+        if storage_path and isinstance(storage_path, str):
+            # Use --storage-path flag if provided
+            storage_dir = Path(storage_path).expanduser().resolve()
+        elif config.storage_path:
+            # Use storage_path from config
+            storage_dir = Path(config.storage_path).expanduser().resolve()
+        else:
+            # Use default storage path
+            storage_dir = Path.home() / ".prompt-manager" / "storage"
+
         # Display sync start message
         console.print()
-        console.print("[bold]Syncing prompts...[/bold]")
+        console.print("[bold]Syncing prompts and rules...[/bold]")
         console.print("━" * 80)
         console.print(f"Repository: {repo_url}")
+        console.print(f"Storage: {storage_dir}")
         console.print()
 
         # Clone repository to temporary directory
@@ -268,24 +343,37 @@ def sync(repo: str | None = typer.Option(None, "--repo")) -> None:
         console.print("[dim]Cloning repository...[/dim]")
         temp_dir, repo_obj = git_service.clone_to_temp(repo_url)
 
-        # Get latest commit hash
-        commit_hash = git_service.get_latest_commit(repo_obj)
+        try:
+            # Get latest commit hash
+            commit_hash = git_service.get_latest_commit(repo_obj)
 
-        # Extract prompts/ directory
-        console.print("[dim]Extracting prompts...[/dim]")
-        git_service.extract_prompts_dir(temp_dir, cwd)
+            # Extract prompts/ and rules/ directories to storage
+            console.print("[dim]Extracting prompts and rules...[/dim]")
+            git_service.extract_prompts_dir(temp_dir, storage_dir)
 
-        # Update config with sync information
-        config_manager.update_sync_info(config_path, repo_url, commit_hash)
+            # Update config with sync information
+            config_manager.update_sync_info(config_path, repo_url, commit_hash)
 
-        # Display success message
-        console.print()
-        console.print("[green]✓[/green] Sync complete")
-        console.print("━" * 80)
-        console.print(f"Repository: {repo_url}")
-        console.print(f"Commit: {commit_hash}")
-        console.print(f"Synced to: {cwd / 'prompts'}")
-        console.print()
+            # If storage_path was provided via flag, update config
+            if storage_path and isinstance(storage_path, str):
+                config.storage_path = str(storage_dir)
+                config_manager.save_config(config_path, config)
+
+            # Display success message
+            console.print()
+            console.print("[green]✓[/green] Sync complete")
+            console.print("━" * 80)
+            console.print(f"Repository: {repo_url}")
+            console.print(f"Commit: {commit_hash}")
+            console.print(f"Synced to: {storage_dir}")
+            console.print()
+
+        finally:
+            # Clean up temporary directory
+            import shutil
+
+            if temp_dir.exists():
+                shutil.rmtree(temp_dir, ignore_errors=True)
 
     except ValueError as e:
         # Git errors (invalid URL, auth failures, missing prompts/ directory)
@@ -345,6 +433,15 @@ def status() -> None:
         console.print()
         console.print("[bold]Prompt Manager Status[/bold]")
         console.print("━" * 80)
+
+        # Display storage path
+        if config.storage_path:
+            storage_dir = Path(config.storage_path).expanduser().resolve()
+            console.print(f"Storage: {storage_dir}")
+        else:
+            # Default storage path
+            storage_dir = Path.home() / ".prompt-manager" / "storage"
+            console.print(f"Storage: {storage_dir} [dim](default)[/dim]")
 
         # Display repository URL
         if config.repo_url:

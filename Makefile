@@ -11,11 +11,15 @@
 #
 # Usage: make <target>
 
-.PHONY: install test lint typecheck format check clean
+.PHONY: install test lint typecheck format check clean run
 
 # Install dependencies via Poetry
 install:
 	poetry install
+
+# Run prompt-manager CLI (use: make run ARGS="--version")
+run:
+	@poetry run prompt-manager $(ARGS)
 
 # Run pytest test suite with coverage reporting
 test:

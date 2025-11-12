@@ -19,6 +19,7 @@ class GitConfig(BaseModel):
         repo_url: URL of the Git repository to sync from (None before first sync)
         last_sync_timestamp: ISO 8601 timestamp of last sync (None before first sync)
         last_sync_commit: Commit hash (SHA) from last sync (None before first sync)
+        storage_path: Path to centralized storage directory (defaults to ~/.prompt-manager/storage)
 
     Examples:
         >>> # Configuration after init (all None)
@@ -55,6 +56,14 @@ class GitConfig(BaseModel):
         description="Commit hash (SHA) from last successful sync",
     )
 
+    storage_path: str | None = Field(
+        default=None,
+        description=(
+            "Path to centralized storage directory for prompts and rules "
+            "(defaults to ~/.prompt-manager/storage)"
+        ),
+    )
+
     model_config = {
         "json_schema_extra": {
             "examples": [
@@ -62,11 +71,13 @@ class GitConfig(BaseModel):
                     "repo_url": None,
                     "last_sync_timestamp": None,
                     "last_sync_commit": None,
+                    "storage_path": None,
                 },
                 {
                     "repo_url": "https://github.com/example/prompts.git",
                     "last_sync_timestamp": "2024-11-11T14:30:00Z",
                     "last_sync_commit": "abc1234",
+                    "storage_path": "/home/user/.prompt-manager/storage",
                 },
             ]
         }

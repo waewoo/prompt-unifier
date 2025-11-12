@@ -47,7 +47,7 @@ poetry run prompt-manager status
 
 ## Git Integration Commands
 
-The prompt-manager CLI provides Git integration commands to sync prompts from a central repository to your application project. This enables teams to maintain a single source of truth for prompts while allowing individual projects to stay synchronized.
+The prompt-manager CLI provides Git integration commands to sync prompts and rules from a central repository to your application project. This enables teams to maintain a single source of truth for prompts and coding standards while allowing individual projects to stay synchronized.
 
 ### Initialize Project
 
@@ -59,12 +59,17 @@ prompt-manager init
 
 **What it creates:**
 - `.prompt-manager/` - Configuration directory (tracked in version control)
-- `.prompt-manager/config.yaml` - Stores repository URL and sync metadata
-- `prompts/` - Directory where synced prompts will be stored
-- `rules/` - Directory for prompt rules
-- `.gitignore` - Template file (if it doesn't exist)
+- `.prompt-manager/config.yaml` - Stores repository URL, sync metadata, and storage path
+- `~/.prompt-manager/storage/prompts/` - Centralized directory where synced prompts are stored
+- `~/.prompt-manager/storage/rules/` - Centralized directory for prompt rules
+- `~/.prompt-manager/storage/.gitignore` - Template file (in storage directory)
 
-**Important:** The `.prompt-manager/` directory is tracked in version control so that team members share the same configuration.
+**Centralized Storage:** By default, prompts and rules are stored in `~/.prompt-manager/storage` to enable sharing across multiple projects. This means the `.prompt-manager/` directory in your project contains only configuration, not the actual prompts.
+
+**Custom Storage Location:** Use `--storage-path` to specify a custom location:
+```bash
+prompt-manager init --storage-path /custom/path/storage
+```
 
 **Example:**
 ```bash
@@ -78,8 +83,9 @@ prompt-manager init
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 Created: /path/to/my-app-project/.prompt-manager
 Created: /path/to/my-app-project/.prompt-manager/config.yaml
-Created: /path/to/my-app-project/prompts
-Created: /path/to/my-app-project/rules
+Storage: /home/user/.prompt-manager/storage
+Created: /home/user/.prompt-manager/storage/prompts
+Created: /home/user/.prompt-manager/storage/rules
 
 Next steps:
   1. Run 'prompt-manager sync --repo <git-url>' to sync prompts
@@ -90,9 +96,9 @@ Next steps:
 - Running `init` twice in the same directory will fail with an error message
 - Permission errors will display a clear message about directory permissions
 
-### Sync Prompts
+### Sync Prompts and Rules
 
-The `sync` command synchronizes prompts from a Git repository to your local project. It clones the repository to a temporary location, extracts the `prompts/` directory, and copies it to your project.
+The `sync` command synchronizes prompts and rules from a Git repository to your local project. It clones the repository to a temporary location, extracts the `prompts/` and `rules/` directories, and copies them to your centralized storage.
 
 ```bash
 # First sync - specify repository URL
@@ -103,16 +109,21 @@ prompt-manager sync
 
 # Override repository URL
 prompt-manager sync --repo https://github.com/other/prompts.git
+
+# Override storage location for this sync
+prompt-manager sync --storage-path /custom/path/storage
 ```
 
 **How it works:**
 1. Validates that `init` has been run (checks for `.prompt-manager/config.yaml`)
 2. Uses `--repo` flag if provided, otherwise reads URL from config
-3. Clones repository to temporary directory
-4. Validates that repository contains a `prompts/` directory
-5. Copies `prompts/` directory to your project (overwrites local files)
-6. Updates config with sync timestamp and commit hash
-7. Cleans up temporary directory
+3. Determines storage path (--storage-path flag, config, or default)
+4. Clones repository to temporary directory
+5. Validates that repository contains a `prompts/` directory (required)
+6. Copies `prompts/` directory to centralized storage (overwrites local files)
+7. Copies `rules/` directory if present in repository (optional)
+8. Updates config with sync timestamp and commit hash
+9. Cleans up temporary directory
 
 **Conflict Resolution:**
 The sync command always takes remote changes and overwrites local files. This is intentional - the central repository is the source of truth. If you need custom prompts, maintain them in the central repository.
@@ -125,25 +136,64 @@ prompt-manager sync --repo https://github.com/example/prompts.git
 
 **Output:**
 ```
-Syncing prompts...
+Syncing prompts and rules...
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 Repository: https://github.com/example/prompts.git
+Storage: /home/user/.prompt-manager/storage
 
 Cloning repository...
-Extracting prompts...
+Extracting prompts and rules...
 
 ✓ Sync complete
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 Repository: https://github.com/example/prompts.git
 Commit: abc1234
-Synced to: /path/to/my-app-project/prompts
+Synced to: /home/user/.prompt-manager/storage
 ```
+
+**Authentication for Private Repositories:**
+
+If your repository is private, you need to authenticate. You have **3 authentication options**:
+
+**Option 1: SSH Key (Recommended)**
+```bash
+# Set up SSH keys with your Git provider first
+# Then use SSH URL format:
+prompt-manager sync --repo git@gitlab.com:username/repo.git
+prompt-manager sync --repo git@github.com:username/repo.git
+```
+
+**Option 2: Git Credential Helper**
+```bash
+# Configure Git to store credentials persistently
+git config --global credential.helper store
+
+# Or use cache for temporary storage (credentials expire after 15 minutes)
+git config --global credential.helper cache
+
+# Git will prompt for username/password on first clone
+prompt-manager sync --repo https://github.com/username/private-repo.git
+```
+
+**Option 3: Personal Access Token in URL**
+```bash
+# Create a personal access token from your Git provider
+# Then include it in the URL:
+prompt-manager sync --repo https://username:TOKEN@github.com/username/repo.git
+prompt-manager sync --repo https://username:TOKEN@gitlab.com/username/repo.git
+
+# ⚠️ Warning: Token is visible in command history and process list
+```
+
+**Creating Access Tokens:**
+- **GitLab**: Settings → Access Tokens → Add new token (scopes: `read_repository`)
+- **GitHub**: Settings → Developer settings → Personal access tokens → Generate new token (scopes: `repo`)
 
 **Error Scenarios:**
 - **Init not run:** "Configuration not found. Run 'prompt-manager init' first."
 - **No repository URL:** "No repository URL configured. Use --repo flag to specify a repository."
 - **Invalid repository URL:** "Failed to clone repository. Check URL and network connection."
-- **Authentication failed:** "Authentication failed. Ensure Git credentials are configured."
+- **Authentication failed:** Clear error message with all 3 authentication options explained
 - **Missing prompts/ directory:** "Repository does not contain a prompts/ directory."
 - **Network errors:** Automatically retries 3 times with exponential backoff before failing
 
@@ -156,6 +206,7 @@ prompt-manager status
 ```
 
 **What it shows:**
+- Storage path (where prompts are stored)
 - Repository URL currently configured
 - Last sync timestamp (human-readable format)
 - Last synced commit hash
@@ -169,9 +220,9 @@ prompt-manager status
 
 **Output (up to date):**
 ```
-Git Sync Status
+Prompt Manager Status
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-
+Storage: /home/user/.prompt-manager/storage
 Repository: https://github.com/example/prompts.git
 Last sync:  2 hours ago
 Commit:     abc1234
@@ -181,9 +232,9 @@ Commit:     abc1234
 
 **Output (updates available):**
 ```
-Git Sync Status
+Prompt Manager Status
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-
+Storage: /home/user/.prompt-manager/storage
 Repository: https://github.com/example/prompts.git
 Last sync:  3 days ago
 Commit:     abc1234
@@ -203,12 +254,14 @@ The `.prompt-manager/config.yaml` file stores synchronization metadata:
 repo_url: https://github.com/example/prompts.git
 last_sync_timestamp: 2024-11-11T14:30:00+00:00
 last_sync_commit: abc1234
+storage_path: /home/user/.prompt-manager/storage
 ```
 
 **Fields:**
 - `repo_url` (string | null): Git repository URL to sync from
 - `last_sync_timestamp` (string | null): ISO 8601 timestamp of last sync
 - `last_sync_commit` (string | null): Short SHA hash of last synced commit
+- `storage_path` (string | null): Path to centralized storage directory (defaults to ~/.prompt-manager/storage)
 
 **Note:** This file is managed automatically by the CLI commands. Manual editing is not recommended unless recovering from corruption.
 
@@ -238,8 +291,8 @@ prompt-manager init
 # Sync prompts from central repository
 prompt-manager sync --repo https://github.com/team/central-prompts.git
 
-# Commit the configuration
-git add .prompt-manager/ prompts/ rules/
+# Commit the configuration (prompts/rules are in centralized storage, not in project)
+git add .prompt-manager/
 git commit -m "Initialize prompt-manager with central repository"
 git push
 ```
@@ -307,6 +360,8 @@ prompt-manager init
 **Problem:** "Repository does not contain a prompts/ directory."
 
 **Solution:** Ensure your central repository has a `prompts/` directory at the root level. The sync command requires this specific structure.
+
+**Note:** The `rules/` directory is optional. If your repository contains a `rules/` directory, it will be synced automatically. If not, only the `prompts/` directory will be synced.
 
 ### Permission Errors
 

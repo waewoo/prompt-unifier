@@ -1,35 +1,45 @@
 # Specification: Git Integration & Repository Management
 
 ## Goal
-Enable application projects to sync prompts from a central Git repository by implementing init, sync, and status commands that manage a local .prompt-manager/ configuration directory with read-only synchronization.
+Enable application projects to sync prompts and rules from a central Git repository by implementing init, sync, and status commands that manage a local .prompt-manager/ configuration directory with read-only synchronization.
 
 ## User Stories
-- As a developer, I want to initialize my application project with prompt-manager so that I can sync prompts from a central repository
-- As a developer, I want to sync the latest prompts from the central repository so that my local prompts stay up-to-date automatically
+- As a developer, I want to initialize my application project with prompt-manager so that I can sync prompts and rules from a central repository
+- As a developer, I want to sync the latest prompts and rules from the central repository so that my local content stays up-to-date automatically
 
 ## Specific Requirements
 
+**CLI Global Options**
+- Add --version (-v) flag to display application version and exit
+- Version callback should be eager (processed before commands)
+- Display format: "prompt-manager version X.Y.Z"
+- Exit with code 0 after displaying version
+
 **Init Command Implementation**
 - Create .prompt-manager/ directory in current working directory (application project root)
-- Generate config.yaml file inside .prompt-manager/ with placeholders for repo_url, last_sync_timestamp, and last_sync_commit fields
-- Create prompts/ and rules/ directories at project root
-- Generate .gitignore template file in project root if it doesn't exist (must NOT ignore .prompt-manager/ directory itself)
+- Generate config.yaml file inside .prompt-manager/ with placeholders for repo_url, last_sync_timestamp, last_sync_commit, and storage_path fields
+- Create centralized storage directory (default: ~/.prompt-manager/storage) with prompts/ and rules/ subdirectories
+- Support custom storage path via --storage-path option
+- Generate .gitignore template file in centralized storage directory if it doesn't exist
 - .prompt-manager/ directory must be tracked in version control for team collaboration
-- Error if .prompt-manager/ already exists with clear message to prevent re-initialization
+- **Command is idempotent**: Running init multiple times succeeds without error, creating only missing components
+- Display clear status messages showing what was created (green) vs what already existed (dim)
 - Use pathlib.Path for all directory operations following existing codebase patterns
-- Exit with code 0 on success, code 1 on failure
+- Exit with code 0 on success (including when already initialized), code 1 only on actual errors (permissions, etc.)
 
 **Sync Command Implementation**
 - Accept optional --repo flag to specify or override Git repository URL
+- Accept optional --storage-path flag to override storage location for this sync
 - Validate that init has been run before allowing sync (check for .prompt-manager/config.yaml existence)
 - On first sync or when --repo provided: Store repository URL in .prompt-manager/config.yaml
 - On subsequent syncs: Read repository URL from config.yaml unless --repo override provided
-- Use GitPython library to clone repository to temporary directory using tempfile.TemporaryDirectory
-- Extract only prompts/ directory content from cloned repo and copy to application project's prompts/ directory
+- Use GitPython library to clone repository to temporary directory using tempfile.mkdtemp() (not TemporaryDirectory context manager to avoid premature cleanup)
+- Extract prompts/ directory content from cloned repo and copy to centralized storage's prompts/ directory (required)
+- Extract rules/ directory content if present in repository and copy to centralized storage's rules/ directory (optional)
 - Auto-resolve all conflicts by taking remote changes (overwrite local files completely)
 - Update config.yaml with current timestamp and latest commit hash from remote
-- Clean up temporary cloned repository automatically after sync completes or on error
-- Provide Rich formatted output showing sync progress: repository URL, files synced, timestamp
+- Clean up temporary cloned repository automatically after sync completes (manual cleanup with shutil.rmtree in try/finally)
+- Provide Rich formatted output showing sync progress: repository URL, storage path, commit hash
 - Exit with code 0 on success, code 1 on failure
 
 **Status Command Implementation**
@@ -43,35 +53,48 @@ Enable application projects to sync prompts from a central Git repository by imp
 - Exit with code 0 always (status is informational only)
 
 **Config Management Structure**
-- config.yaml format: repo_url (string), last_sync_timestamp (ISO 8601 string), last_sync_commit (string SHA)
+- config.yaml format: repo_url (string | null), last_sync_timestamp (ISO 8601 string | null), last_sync_commit (string SHA | null), storage_path (string)
 - Use PyYAML for reading and writing config.yaml following existing YAMLParser patterns
 - Validate config file structure when reading: check for required fields and valid data types
 - Create ConfigManager class in new config/ module to handle all config operations
 - Provide methods: load_config(), save_config(), update_sync_info()
 - Handle missing or corrupted config.yaml gracefully with clear error messages
+- When reading existing config, use storage_path if available, otherwise use default
 
 **Git Operations Wrapper**
 - Create GitService class in new git/ module to wrap all GitPython operations
-- Implement methods: clone_repo(), get_latest_commit(), check_remote_updates(), extract_prompts_dir()
-- Use context managers for temporary directory cleanup
-- Handle Git authentication errors with clear messages to configure Git credentials
-- Handle network connectivity errors with retry logic (3 attempts with exponential backoff)
-- Validate that cloned repository contains prompts/ directory before extracting
+- Implement methods: clone_to_temp(), get_latest_commit(), check_remote_updates(), extract_prompts_dir()
+- extract_prompts_dir() extracts both prompts/ (required) and rules/ (optional if present) directories
+- Use tempfile.mkdtemp() for temporary directory creation (manual cleanup in try/finally blocks)
+- Clean up temporary directories with shutil.rmtree() in finally blocks
+- Handle Git authentication errors with clear messages and authentication options (SSH keys, credential helper, PAT in URL)
+- Handle network connectivity errors with retry logic (3 attempts with exponential backoff using retry_with_backoff helper)
+- Validate that cloned repository contains prompts/ directory before extracting (required)
+- Copy rules/ directory if present in repository (optional)
+- Handle empty repositories (no commits) with helpful error message explaining how to fix
 
 **Directory Structure & File Operations**
 - Follow existing pathlib.Path patterns from FileScanner class
 - Use Path.mkdir(parents=True, exist_ok=True) for directory creation
 - Use shutil.copytree for recursive directory copying with dirs_exist_ok=True
 - Ensure all paths are resolved to absolute paths before operations
-- Validate source prompts/ directory exists in cloned repo before copying
+- Validate source prompts/ directory exists in cloned repo before copying (required)
+- Copy source rules/ directory if it exists in cloned repo (optional)
 
 **Error Handling & Validation**
 - Git clone failures: Invalid URL, authentication errors, network issues - exit code 1 with helpful error message
+- Empty repository: Error with detailed instructions on how to add prompts/ directory (and optionally rules/) and commit - exit code 1
 - Missing .prompt-manager/: Clear error message "Run 'prompt-manager init' first" - exit code 1
 - Invalid repository structure: Error if prompts/ directory not found in remote repo - exit code 1
 - Corrupted config file: Error with suggestion to re-run init or manually fix config.yaml - exit code 1
 - Network connectivity issues: Show retry attempts with progress, fail after 3 attempts - exit code 1
 - Permission errors: Clear message about directory permissions - exit code 1
+- Temporary directory cleanup: Always clean up in finally blocks, even on errors
+
+**Development Environment**
+- Ensure Poetry is up to date (poetry self update) to avoid dependency warnings
+- If RequestsDependencyWarning appears, run `poetry self update` to update Poetry's dependencies
+- Use `make run ARGS="<command>"` shortcut for convenient CLI execution during development
 
 ## Visual Design
 No visual assets provided - this is a CLI tool with terminal output only.

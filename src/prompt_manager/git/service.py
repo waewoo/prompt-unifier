@@ -88,8 +88,11 @@ class GitService:
         """Clone repository to temporary directory with retry logic.
 
         This method clones a Git repository to a temporary directory using
-        tempfile.TemporaryDirectory() context manager. It implements retry
-        logic with exponential backoff for network resilience.
+        tempfile.mkdtemp(). It implements retry logic with exponential backoff
+        for network resilience.
+
+        Note: The temporary directory is not automatically cleaned up. The caller
+        should clean it up manually if needed, or rely on the OS to clean up /tmp.
 
         Args:
             repo_url: URL of the Git repository to clone
@@ -109,8 +112,7 @@ class GitService:
             True
         """
         # Create temporary directory for clone
-        temp_dir_obj = tempfile.TemporaryDirectory()
-        temp_dir = Path(temp_dir_obj.__enter__())
+        temp_dir = Path(tempfile.mkdtemp())
 
         try:
 
@@ -125,21 +127,119 @@ class GitService:
             # Clone with retry logic
             repo = retry_with_backoff(clone_operation, max_attempts=3)
 
+            # Check if repository is empty (no commits)
+            try:
+                _ = repo.head.commit
+            except ValueError as e:
+                if "reference at 'HEAD' does not exist" in str(e).lower():
+                    raise ValueError(
+                        f"Failed to clone repository: {repo_url}\n\n"
+                        "Repository is empty (no commits found).\n\n"
+                        "The repository exists and authentication succeeded, but it has "
+                        "no content.\n\n"
+                        "To fix this:\n"
+                        "1. Add a prompts/ directory to the repository\n"
+                        "2. Create some prompt files in prompts/\n"
+                        "3. Commit and push the changes\n"
+                        "4. Try syncing again\n\n"
+                        "Example structure:\n"
+                        "  my-prompts-repo/\n"
+                        "    prompts/\n"
+                        "      example.md\n"
+                        "    rules/  (optional)\n"
+                        "      rule.md"
+                    ) from e
+                raise
+
             return temp_dir, repo
 
-        except (git.exc.GitCommandError, ConnectionError) as e:
+        except (git.exc.GitCommandError, ConnectionError, ValueError) as e:
             # Clean up temp directory on failure
-            temp_dir_obj.__exit__(None, None, None)
+            if temp_dir.exists():
+                shutil.rmtree(temp_dir, ignore_errors=True)
 
-            # Provide clear error message
+            # If it's already a ValueError with our message, re-raise it
+            if isinstance(e, ValueError) and "repository is empty" in str(e).lower():
+                raise
+
+            # Provide clear error message based on error type
             error_msg = str(e).lower()
-            if "authentication" in error_msg or "authentication failed" in error_msg:
+
+            # Check for authentication errors
+            auth_keywords = [
+                "authentication",
+                "authentication failed",
+                "could not read username",
+                "could not read password",
+                "credential",
+                "permission denied",
+                "403",
+                "unauthorized",
+                "fatal: authentication",
+            ]
+
+            if any(keyword in error_msg for keyword in auth_keywords):
                 raise ValueError(
-                    "Failed to clone repository: Authentication failed. "
-                    "Ensure Git credentials are configured."
+                    f"Failed to clone repository: {repo_url}\n\n"
+                    "Authentication failed. The repository may be private or your "
+                    "credentials are invalid.\n\n"
+                    "You have 3 authentication options:\n\n"
+                    "1. SSH Key (Recommended):\n"
+                    "   - Set up SSH keys with your Git provider\n"
+                    "   - Use SSH URL: git@gitlab.com:username/repo.git\n"
+                    "   - Example: prompt-manager sync --repo git@gitlab.com:username/repo.git\n\n"
+                    "2. Git Credential Helper:\n"
+                    "   - Configure Git to store credentials:\n"
+                    "     git config --global credential.helper store\n"
+                    "   - Or use cache for temporary storage:\n"
+                    "     git config --global credential.helper cache\n"
+                    "   - Git will prompt for credentials on first use\n\n"
+                    "3. Personal Access Token in URL:\n"
+                    "   - Create a personal access token from your Git provider\n"
+                    "   - Use URL format: https://username:token@gitlab.com/username/repo.git\n"
+                    "   - Example: prompt-manager sync --repo https://user:ghp_xxxx@github.com/user/repo.git\n"
+                    "   - Note: Less secure, token visible in command history\n\n"
+                    "For GitLab: https://docs.gitlab.com/ee/user/profile/personal_access_tokens.html\n"
+                    "For GitHub: https://docs.github.com/en/authentication/keeping-your-account-and-data-secure/managing-your-personal-access-tokens"
                 ) from e
+
+            # Check for URL/network errors
+            if "could not resolve host" in error_msg or "name or service not known" in error_msg:
+                raise ValueError(
+                    f"Failed to clone repository: {repo_url}\n\n"
+                    "Cannot resolve hostname. Possible causes:\n"
+                    "- Invalid repository URL\n"
+                    "- Network connectivity issues\n"
+                    "- DNS resolution problems\n\n"
+                    "Please check:\n"
+                    "1. Repository URL is correct\n"
+                    "2. You have internet connectivity\n"
+                    "3. The repository exists and you have access"
+                ) from e
+
+            # Check if repository doesn't exist
+            not_found_keywords = ["repository not found", "not found", "404"]
+            if any(keyword in error_msg for keyword in not_found_keywords):
+                raise ValueError(
+                    f"Failed to clone repository: {repo_url}\n\n"
+                    "Repository not found. Possible causes:\n"
+                    "- Repository URL is incorrect\n"
+                    "- Repository is private and authentication is required\n"
+                    "- Repository has been deleted or moved\n\n"
+                    "Please verify:\n"
+                    "1. The repository URL is correct\n"
+                    "2. You have access to the repository\n"
+                    "3. Use authentication if it's a private repository (see auth options above)"
+                ) from e
+
+            # Generic error
             raise ValueError(
-                f"Failed to clone repository: {repo_url}. " "Check URL and network connection."
+                f"Failed to clone repository: {repo_url}\n\n"
+                f"Error: {e}\n\n"
+                "Please check:\n"
+                "- Repository URL is correct\n"
+                "- You have network connectivity\n"
+                "- You have access to the repository"
             ) from e
 
     def get_latest_commit(self, repo: git.Repo) -> str:
@@ -163,15 +263,16 @@ class GitService:
         return full_sha[:7]
 
     def extract_prompts_dir(self, repo_path: Path, target_path: Path) -> None:
-        """Extract prompts/ directory from cloned repo to target location.
+        """Extract prompts/ and rules/ directories from cloned repo to target location.
 
         This method validates that the prompts/ directory exists in the
         cloned repository, then copies it to the target location using
         shutil.copytree with dirs_exist_ok=True to overwrite existing files.
+        If a rules/ directory exists in the repository, it is also copied.
 
         Args:
             repo_path: Path to the cloned repository
-            target_path: Path where prompts/ should be copied to
+            target_path: Path where prompts/ and rules/ should be copied to
 
         Raises:
             ValueError: If prompts/ directory not found in repository
@@ -180,7 +281,7 @@ class GitService:
             >>> service = GitService()
             >>> service.extract_prompts_dir(Path("/tmp/repo"), Path("/app"))
         """
-        # Validate that prompts/ directory exists in repository
+        # Validate that prompts/ directory exists in repository (required)
         source_prompts = repo_path / "prompts"
 
         if not source_prompts.exists() or not source_prompts.is_dir():
@@ -191,9 +292,13 @@ class GitService:
 
         # Copy prompts/ directory to target location
         target_prompts = target_path / "prompts"
-
-        # Use shutil.copytree with dirs_exist_ok=True to overwrite existing files
         shutil.copytree(source_prompts, target_prompts, dirs_exist_ok=True)
+
+        # Copy rules/ directory if it exists (optional)
+        source_rules = repo_path / "rules"
+        if source_rules.exists() and source_rules.is_dir():
+            target_rules = target_path / "rules"
+            shutil.copytree(source_rules, target_rules, dirs_exist_ok=True)
 
     def check_remote_updates(self, repo_url: str, last_commit: str) -> tuple[bool, int]:
         """Check if remote repository has updates since last commit.
@@ -263,6 +368,6 @@ class GitService:
             return has_updates, commits_behind
 
         finally:
-            # Note: In actual usage, the TemporaryDirectory context manager
-            # from clone_to_temp will handle cleanup automatically
-            pass
+            # Clean up temporary directory
+            if repo_path.exists():
+                shutil.rmtree(repo_path, ignore_errors=True)

@@ -36,14 +36,19 @@ class TestCompleteGitWorkflow:
         try:
             os.chdir(tmp_path)
 
-            # Step 1: Initialize project
-            init()
+            # Use temporary storage directory for this test
+            storage_dir = tmp_path / "test_storage"
+
+            # Step 1: Initialize project with custom storage path
+            init(storage_path=str(storage_dir))
 
             # Verify .prompt-manager/ directory and config were created
             assert (tmp_path / ".prompt-manager").exists()
             assert (tmp_path / ".prompt-manager" / "config.yaml").exists()
-            assert (tmp_path / "prompts").exists()
-            assert (tmp_path / "rules").exists()
+
+            # Verify prompts/ and rules/ in storage directory
+            assert (storage_dir / "prompts").exists()
+            assert (storage_dir / "rules").exists()
 
             # Step 2: Mock sync operation (create fake prompts directory in mock repo)
             mock_temp_dir = tmp_path / "mock_repo"
@@ -62,8 +67,8 @@ class TestCompleteGitWorkflow:
                     # Sync with repository
                     sync(repo="https://github.com/example/prompts.git")
 
-                    # Verify prompts were synced
-                    assert (tmp_path / "prompts" / "test.md").exists()
+                    # Verify prompts were synced to storage directory
+                    assert (storage_dir / "prompts" / "test.md").exists()
 
                     # Verify config was updated
                     config_manager = ConfigManager()
@@ -97,11 +102,14 @@ class TestCompleteGitWorkflow:
         try:
             os.chdir(tmp_path)
 
-            # Initialize project
-            init()
+            # Use temporary storage directory for this test
+            storage_dir = tmp_path / "test_storage"
 
-            # Create local prompts with content
-            local_prompts = tmp_path / "prompts"
+            # Initialize project with custom storage path
+            init(storage_path=str(storage_dir))
+
+            # Create local prompts with content in storage directory
+            local_prompts = storage_dir / "prompts"
             (local_prompts / "existing.md").write_text("# Local content")
             (local_prompts / "to_delete.md").write_text("# Will be removed")
 
@@ -287,8 +295,11 @@ class TestCompleteGitWorkflow:
         try:
             os.chdir(tmp_path)
 
-            # Initialize project
-            init()
+            # Use temporary storage directory for this test
+            storage_dir = tmp_path / "test_storage"
+
+            # Initialize project with custom storage path
+            init(storage_path=str(storage_dir))
 
             # First sync with --repo flag
             mock_temp_dir_1 = tmp_path / "mock_repo_1"
@@ -305,8 +316,8 @@ class TestCompleteGitWorkflow:
 
                     sync(repo="https://github.com/example/prompts.git")
 
-                    # Verify first sync
-                    assert (tmp_path / "prompts" / "first.md").exists()
+                    # Verify first sync to storage directory
+                    assert (storage_dir / "prompts" / "first.md").exists()
 
             # Second sync WITHOUT --repo flag (should read from config)
             mock_temp_dir_2 = tmp_path / "mock_repo_2"
@@ -325,8 +336,8 @@ class TestCompleteGitWorkflow:
                     # Pass repo=None explicitly to avoid default OptionInfo
                     sync(repo=None)
 
-                    # Verify second sync updated files
-                    assert (tmp_path / "prompts" / "second.md").exists()
+                    # Verify second sync updated files in storage directory
+                    assert (storage_dir / "prompts" / "second.md").exists()
 
                     # Verify config was updated with new commit
                     config_manager = ConfigManager()
@@ -339,11 +350,11 @@ class TestCompleteGitWorkflow:
         finally:
             os.chdir(original_cwd)
 
-    def test_init_prevents_reinitialization(self, tmp_path: Path) -> None:
-        """Test that init command prevents re-initialization.
+    def test_init_is_idempotent(self, tmp_path: Path) -> None:
+        """Test that init command is idempotent.
 
         This test validates that running init twice in the same directory
-        fails with a clear error message.
+        succeeds both times (idempotent behavior).
         """
         import os
 
@@ -354,11 +365,16 @@ class TestCompleteGitWorkflow:
             # First init should succeed
             init()
 
-            # Second init should fail
-            with pytest.raises(typer.Exit) as exc_info:
-                init()
+            # Verify .prompt-manager/ was created
+            assert (tmp_path / ".prompt-manager").exists()
+            assert (tmp_path / ".prompt-manager" / "config.yaml").exists()
 
-            assert exc_info.value.exit_code == 1
+            # Second init should also succeed (idempotent)
+            init()
+
+            # Verify everything still exists
+            assert (tmp_path / ".prompt-manager").exists()
+            assert (tmp_path / ".prompt-manager" / "config.yaml").exists()
 
         finally:
             os.chdir(original_cwd)

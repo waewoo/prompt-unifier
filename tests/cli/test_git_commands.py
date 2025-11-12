@@ -60,35 +60,36 @@ def test_init_creates_prompt_manager_directory_and_config(tmp_path: Path) -> Non
             assert config.last_sync_commit is None
 
 
-# Test 2: init command creates prompts/ and rules/ directories
+# Test 2: init command creates prompts/ and rules/ directories in centralized storage
 def test_init_creates_prompts_directory_structure(tmp_path: Path) -> None:
-    """Test init command creates prompts/ and rules/ directories at project root."""
+    """Test init command creates prompts/ and rules/ directories in centralized storage."""
     with patch("prompt_manager.cli.commands.Path.cwd", return_value=tmp_path):
         with patch("prompt_manager.cli.commands.ConfigManager"):
             # Run init command
             init()
 
-            # Verify prompts/ directory was created
-            prompts_dir = tmp_path / "prompts"
+            # Verify prompts/ and rules/ are created in storage directory (not in tmp_path)
+            storage_dir = Path.home() / ".prompt-manager" / "storage"
+            prompts_dir = storage_dir / "prompts"
             assert prompts_dir.exists()
             assert prompts_dir.is_dir()
 
-            # Verify rules/ directory was created
-            rules_dir = tmp_path / "rules"
+            rules_dir = storage_dir / "rules"
             assert rules_dir.exists()
             assert rules_dir.is_dir()
 
 
-# Test 3: init command creates .gitignore if it doesn't exist (without ignoring .prompt-manager/)
+# Test 3: init command creates .gitignore in storage directory
 def test_init_creates_gitignore_without_ignoring_prompt_manager(tmp_path: Path) -> None:
-    """Test init command creates .gitignore without ignoring .prompt-manager/."""
+    """Test init command creates .gitignore in centralized storage directory."""
     with patch("prompt_manager.cli.commands.Path.cwd", return_value=tmp_path):
         with patch("prompt_manager.cli.commands.ConfigManager"):
             # Run init command
             init()
 
-            # Verify .gitignore was created
-            gitignore = tmp_path / ".gitignore"
+            # Verify .gitignore was created in storage directory
+            storage_dir = Path.home() / ".prompt-manager" / "storage"
+            gitignore = storage_dir / ".gitignore"
             assert gitignore.exists()
 
             # Verify .prompt-manager/ is NOT in .gitignore
@@ -97,18 +98,33 @@ def test_init_creates_gitignore_without_ignoring_prompt_manager(tmp_path: Path) 
             assert ".prompt-manager" not in content
 
 
-# Test 4: init command fails if .prompt-manager/ already exists
-def test_init_fails_if_prompt_manager_already_exists(tmp_path: Path) -> None:
-    """Test init command fails if .prompt-manager/ already exists."""
+# Test 4: init command is idempotent (succeeds when already initialized)
+def test_init_is_idempotent_when_already_exists(tmp_path: Path) -> None:
+    """Test init command is idempotent and succeeds when .prompt-manager/ already exists."""
     with patch("prompt_manager.cli.commands.Path.cwd", return_value=tmp_path):
-        # Create .prompt-manager/ directory before running init
-        (tmp_path / ".prompt-manager").mkdir(parents=True)
+        with patch("prompt_manager.cli.commands.ConfigManager") as mock_manager_class:
+            mock_manager = MagicMock()
+            mock_manager_class.return_value = mock_manager
 
-        # Run init command - should raise Exit(1)
-        with pytest.raises(typer.Exit) as exc_info:
+            # Create .prompt-manager/ directory and config.yaml before running init
+            (tmp_path / ".prompt-manager").mkdir(parents=True)
+            config_path = tmp_path / ".prompt-manager" / "config.yaml"
+            config_path.write_text("repo_url: null\nlast_sync_timestamp: null\n")
+
+            # Mock load_config to return existing config
+            from prompt_manager.models.git_config import GitConfig
+
+            mock_manager.load_config.return_value = GitConfig(
+                repo_url=None,
+                last_sync_timestamp=None,
+                last_sync_commit=None,
+                storage_path="/root/.prompt-manager/storage",
+            )
+
+            # Run init command - should succeed (not raise)
             init()
 
-        assert exc_info.value.exit_code == 1
+            # Should not raise any exception - init is idempotent
 
 
 # Test 5: sync command fails if init not run first (missing config.yaml)
