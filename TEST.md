@@ -486,6 +486,186 @@ poetry run prompt-manager validate /tmp/test-prompts-invalid
 
 ---
 
+## Tests des Règles (Rules)
+
+### Test 5.6: Validation d'un répertoire avec règles valides
+
+```bash
+# Créer un répertoire de test avec une règle valide
+mkdir -p /tmp/test-rules
+cat > /tmp/test-rules/python-style.md << 'EOF'
+name: python-style-guide
+description: Python coding standards and best practices
+type: rule
+category: coding-standards
+tags:
+  - python
+  - pep8
+  - style
+version: 1.0.0
+author: team-platform
+>>>
+# Python Style Guide
+
+## Naming Conventions
+- Use snake_case for functions and variables
+- Use PascalCase for classes
+- Use UPPER_CASE for constants
+
+## Code Organization
+- Maximum line length: 100 characters
+- Use type hints for function signatures
+- Docstrings required for all public functions
+EOF
+
+# Valider
+poetry run prompt-manager validate /tmp/test-rules
+```
+
+**Résultat attendu:**
+- Message de succès indiquant que tous les fichiers sont valides
+- Affichage du nombre de fichiers validés (incluant les règles)
+- Code de sortie: 0
+
+### Test 5.7: Validation d'une règle avec catégorie manquante (cas d'erreur)
+
+```bash
+# Créer une règle invalide sans catégorie
+mkdir -p /tmp/test-rules-invalid
+cat > /tmp/test-rules-invalid/invalid-rule.md << 'EOF'
+name: invalid-rule
+description: Rule missing required category field
+type: rule
+>>>
+# Invalid Rule
+
+This rule is missing the required 'category' field.
+EOF
+
+# Valider
+poetry run prompt-manager validate /tmp/test-rules-invalid
+```
+
+**Résultat attendu:**
+- Message d'erreur indiquant que le champ 'category' est manquant
+- Code de sortie: 1
+
+### Test 5.8: Validation d'une règle avec catégorie personnalisée (warning)
+
+```bash
+# Créer une règle avec catégorie personnalisée
+cat > /tmp/test-rules/custom-category.md << 'EOF'
+name: custom-rule
+description: Rule with custom category
+type: rule
+category: my-custom-category
+>>>
+# Custom Rule
+
+This rule uses a custom category.
+EOF
+
+# Valider
+poetry run prompt-manager validate /tmp/test-rules
+```
+
+**Résultat attendu:**
+- Warning indiquant que la catégorie n'est pas standard
+- Liste des catégories valides suggérées
+- Validation réussie malgré le warning
+- Code de sortie: 0
+
+### Test 5.9: Validation d'une règle avec applies_to
+
+```bash
+# Créer une règle avec applies_to
+cat > /tmp/test-rules/api-design.md << 'EOF'
+name: api-design-patterns
+description: REST API design best practices
+type: rule
+category: architecture
+tags:
+  - rest
+  - api
+  - http
+version: 1.2.0
+applies_to:
+  - python
+  - fastapi
+  - flask
+>>>
+# API Design Patterns
+
+## Resource Naming
+- Use plural nouns for collections: `/users`, `/posts`
+- Use singular for singletons: `/profile`
+EOF
+
+# Valider
+poetry run prompt-manager validate /tmp/test-rules
+```
+
+**Résultat attendu:**
+- Validation réussie
+- Affichage confirmant la règle avec le champ applies_to
+- Code de sortie: 0
+
+### Test 5.10: Validation mixte prompts et règles
+
+```bash
+# Créer un répertoire avec les deux types
+mkdir -p /tmp/test-mixed
+cat > /tmp/test-mixed/prompt.md << 'EOF'
+name: example-prompt
+description: An example prompt
+>>>
+This is a prompt.
+EOF
+
+cat > /tmp/test-mixed/rule.md << 'EOF'
+name: example-rule
+description: An example rule
+type: rule
+category: testing
+>>>
+This is a rule.
+EOF
+
+# Valider
+poetry run prompt-manager validate /tmp/test-mixed
+```
+
+**Résultat attendu:**
+- Validation réussie pour les deux types de fichiers
+- Distinction claire entre prompts et règles dans l'output
+- Code de sortie: 0
+
+### Test 5.11: Validation d'une règle avec nom invalide (cas d'erreur)
+
+```bash
+# Créer une règle avec nom invalide (pas en kebab-case)
+cat > /tmp/test-rules-invalid/invalid-name.md << 'EOF'
+name: InvalidName_With_Underscores
+description: Rule with invalid name format
+type: rule
+category: testing
+>>>
+# Invalid Name
+
+This rule has an invalid name format.
+EOF
+
+# Valider
+poetry run prompt-manager validate /tmp/test-rules-invalid
+```
+
+**Résultat attendu:**
+- Message d'erreur indiquant que le nom doit être en kebab-case
+- Exemples de noms valides fournis
+- Code de sortie: 1
+
+---
+
 ## Tests de Gestion d'Erreurs
 
 ### Test 6.1: Permissions insuffisantes (cas d'erreur)
@@ -673,6 +853,14 @@ Utilisez cette checklist pour suivre votre progression :
 - [ ] Test 5.3: Erreur répertoire inexistant
 - [ ] Test 5.4: Erreur fichier au lieu de répertoire
 - [ ] Test 5.5: Validation avec erreurs
+
+### Règles (Rules)
+- [ ] Test 5.6: Validation règles valides
+- [ ] Test 5.7: Erreur catégorie manquante
+- [ ] Test 5.8: Warning catégorie personnalisée
+- [ ] Test 5.9: Validation avec applies_to
+- [ ] Test 5.10: Validation mixte prompts/règles
+- [ ] Test 5.11: Erreur nom invalide (kebab-case)
 
 ### Gestion d'Erreurs
 - [ ] Test 6.1: Permissions insuffisantes

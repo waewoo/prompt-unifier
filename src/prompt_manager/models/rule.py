@@ -6,7 +6,7 @@ including required and optional fields specific to rules/context files.
 
 import re
 import warnings
-from typing import Literal
+from typing import Any
 
 from pydantic import BaseModel, Field, field_validator
 
@@ -29,106 +29,82 @@ class RuleFrontmatter(BaseModel):
     This model validates the YAML frontmatter structure of rule files,
     enforcing required fields for rules and providing rule-specific validation.
 
+    Type detection is based on file location (rules/ directory), not a type field.
+
     Required Fields:
-        name: Non-empty string identifier for the rule (kebab-case)
-        description: Non-empty string describing the rule's purpose
-        type: Must be "rule" (literal)
+        title: Human-readable title for the rule
+        description: Brief description of the rule's purpose
         category: Rule category (one of predefined categories)
 
     Optional Fields:
-        tags: List of string tags for categorization (max 10, lowercase)
+        tags: List of string tags (YAML array format: [tag1, tag2], max 10)
         version: Semantic version string (e.g., "1.0.0")
-        applies_to: List of languages/frameworks this rule applies to
+        applies_to: List of glob patterns for files (e.g., [*.py, *.js])
         author: String identifying the rule author
+        language: Primary language for the rule (e.g., "python")
 
     Examples:
         >>> # Minimal valid rule
         >>> rule = RuleFrontmatter(
-        ...     name="python-style",
+        ...     title="Python Style Guide",
         ...     description="Python coding standards",
-        ...     type="rule",
         ...     category="coding-standards"
         ... )
-        >>> rule.name
-        'python-style'
+        >>> rule.title
+        'Python Style Guide'
 
         >>> # Full rule with all fields
         >>> rule = RuleFrontmatter(
-        ...     name="api-design-guide",
+        ...     title="API Design Patterns",
         ...     description="REST API design best practices",
-        ...     type="rule",
         ...     category="architecture",
         ...     tags=["rest", "api", "http"],
         ...     version="1.2.0",
-        ...     applies_to=["python", "fastapi"],
-        ...     author="team-platform"
+        ...     applies_to=["*.py", "api/*.js"],
+        ...     author="team-platform",
+        ...     language="python"
         ... )
         >>> rule.category
         'architecture'
     """
 
     # Required fields
-    name: str = Field(description="Rule identifier (required, kebab-case)")
+    title: str = Field(description="Rule title (required, human-readable)")
     description: str = Field(
         min_length=1, max_length=200, description="Rule description (required, 1-200 chars)"
     )
-    type: Literal["rule"] = Field(default="rule", description="File type, must be 'rule'")
     category: str = Field(description="Rule category (required)")
 
     # Optional fields
     tags: list[str] = Field(
-        default_factory=list, max_length=10, description="Searchable tags (max 10)"
+        default_factory=list, max_length=10, description="Searchable tags (max 10, YAML array)"
     )
     version: str = Field(default="1.0.0", description="Semantic version (default: 1.0.0)")
     applies_to: list[str] = Field(
         default_factory=list,
-        description="Languages/frameworks this rule applies to",
+        description="Glob patterns for files this rule applies to (e.g., [*.py])",
     )
     author: str | None = Field(default=None, description="Rule author (optional)")
+    language: str | None = Field(default=None, description="Primary language (optional)")
 
-    @field_validator("name")
+    @field_validator("title", "description")
     @classmethod
-    def validate_name_format(cls, v: str) -> str:
-        """Validate that name follows kebab-case format.
+    def validate_non_empty_string(cls, v: str, info: Any) -> str:
+        """Validate that title and description are non-empty.
 
         Args:
-            v: The name value to validate
+            v: The field value to validate
+            info: Pydantic validation info containing field name
 
         Returns:
-            The validated name string
+            The validated string
 
         Raises:
-            ValueError: If name doesn't follow kebab-case format
+            ValueError: If the string is empty or only whitespace
         """
         if not v or not v.strip():
-            raise ValueError("Field 'name' must be a non-empty string")
-
-        # Kebab-case pattern: lowercase letters, numbers, hyphens
-        # Must start with lowercase letter
-        kebab_pattern = r"^[a-z][a-z0-9-]*$"
-        if not re.match(kebab_pattern, v):
-            raise ValueError(
-                f"Field 'name' must be in kebab-case (lowercase with hyphens). "
-                f"Got: '{v}'. Examples: python-style, api-guide, security-checklist"
-            )
-        return v
-
-    @field_validator("description")
-    @classmethod
-    def validate_description(cls, v: str) -> str:
-        """Validate that description is non-empty.
-
-        Args:
-            v: The description value to validate
-
-        Returns:
-            The validated description string
-
-        Raises:
-            ValueError: If description is empty or only whitespace
-        """
-        if not v or not v.strip():
-            raise ValueError("Field 'description' must be a non-empty string")
+            field_name = info.field_name
+            raise ValueError(f"Field '{field_name}' must be a non-empty string")
         return v
 
     @field_validator("category")
@@ -151,26 +127,26 @@ class RuleFrontmatter(BaseModel):
             )
         return v
 
-    @field_validator("tags")
+    @field_validator("applies_to")
     @classmethod
-    def validate_tags(cls, v: list[str]) -> list[str]:
-        """Validate tags are lowercase without spaces.
+    def validate_glob_patterns(cls, v: list[str]) -> list[str]:
+        """Validate glob patterns in applies_to field.
+
+        Ensures patterns are non-empty strings. Basic validation only,
+        actual glob pattern syntax is not strictly validated.
 
         Args:
-            v: The list of tags to validate
+            v: The list of glob patterns to validate
 
         Returns:
-            The validated list of tags
+            The validated list of patterns
 
         Raises:
-            ValueError: If any tag contains uppercase or spaces
+            ValueError: If any pattern is empty
         """
-        for tag in v:
-            if not tag.islower() or " " in tag:
-                raise ValueError(
-                    f"Tag '{tag}' must be lowercase without spaces. "
-                    f"Suggested: {tag.lower().replace(' ', '-')}"
-                )
+        for pattern in v:
+            if not pattern or not pattern.strip():
+                raise ValueError("Glob patterns in 'applies_to' must be non-empty strings")
         return v
 
     @field_validator("version")
@@ -204,16 +180,15 @@ class RuleFrontmatter(BaseModel):
 class RuleFile(RuleFrontmatter):
     """Complete rule file model including content.
 
-    Extends RuleFrontmatter to include the rule content (text after >>> separator).
+    Extends RuleFrontmatter to include the rule content (text after closing ---).
 
     Additional Field:
         content: The rule content/body text (required, non-empty)
 
     Examples:
         >>> rule = RuleFile(
-        ...     name="python-style",
+        ...     title="Python Style Guide",
         ...     description="Python coding standards",
-        ...     type="rule",
         ...     category="coding-standards",
         ...     content="# Python Style Guide\\n\\nUse PEP 8..."
         ... )
@@ -221,7 +196,7 @@ class RuleFile(RuleFrontmatter):
         True
     """
 
-    content: str = Field(min_length=1, description="Rule content (after >>> separator)")
+    content: str = Field(min_length=1, description="Rule content (markdown after closing ---)")
 
     @field_validator("content")
     @classmethod

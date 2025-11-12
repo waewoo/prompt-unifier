@@ -14,9 +14,8 @@ class TestRuleFrontmatterValid:
     def test_valid_rule_with_all_fields(self):
         """Test valid rule with all required and optional fields."""
         rule = RuleFrontmatter(
-            name="python-style-guide",
+            title="python-style-guide",
             description="Python coding standards and best practices",
-            type="rule",
             category="coding-standards",
             tags=["python", "pep8", "style"],
             version="1.2.0",
@@ -24,9 +23,8 @@ class TestRuleFrontmatterValid:
             author="team-platform",
         )
 
-        assert rule.name == "python-style-guide"
+        assert rule.title == "python-style-guide"
         assert rule.description == "Python coding standards and best practices"
-        assert rule.type == "rule"
         assert rule.category == "coding-standards"
         assert rule.tags == ["python", "pep8", "style"]
         assert rule.version == "1.2.0"
@@ -36,15 +34,13 @@ class TestRuleFrontmatterValid:
     def test_valid_rule_with_minimal_fields(self):
         """Test valid rule with only required fields."""
         rule = RuleFrontmatter(
-            name="api-guide",
+            title="api-guide",
             description="REST API design guidelines",
-            type="rule",
             category="architecture",
         )
 
-        assert rule.name == "api-guide"
+        assert rule.title == "api-guide"
         assert rule.description == "REST API design guidelines"
-        assert rule.type == "rule"
         assert rule.category == "architecture"
         assert rule.tags == []  # Default empty list
         assert rule.version == "1.0.0"  # Default version
@@ -55,79 +51,68 @@ class TestRuleFrontmatterValid:
         """Test all valid predefined categories."""
         for category in VALID_CATEGORIES:
             rule = RuleFrontmatter(
-                name="test-rule",
+                title="test-rule",
                 description="Test rule",
-                type="rule",
                 category=category,
             )
             assert rule.category == category
 
 
 class TestRuleFrontmatterInvalidName:
-    """Test invalid name formats."""
+    """Test invalid title formats."""
 
     def test_name_with_uppercase(self):
-        """Test that name with uppercase letters is rejected."""
-        with pytest.raises(ValidationError) as exc_info:
-            RuleFrontmatter(
-                name="Python-Style",
-                description="Test",
-                type="rule",
-                category="coding-standards",
-            )
-        assert "must be in kebab-case" in str(exc_info.value)
+        """Test that title with uppercase letters is accepted."""
+        rule = RuleFrontmatter(
+            title="Python Style Guide",
+            description="Test",
+            category="coding-standards",
+        )
+        assert rule.title == "Python Style Guide"
 
     def test_name_with_spaces(self):
-        """Test that name with spaces is rejected."""
-        with pytest.raises(ValidationError) as exc_info:
-            RuleFrontmatter(
-                name="python style",
-                description="Test",
-                type="rule",
-                category="coding-standards",
-            )
-        assert "must be in kebab-case" in str(exc_info.value)
+        """Test that title with spaces is accepted."""
+        rule = RuleFrontmatter(
+            title="python style",
+            description="Test",
+            category="coding-standards",
+        )
+        assert rule.title == "python style"
 
     def test_name_with_underscores(self):
-        """Test that name with underscores is rejected."""
-        with pytest.raises(ValidationError) as exc_info:
-            RuleFrontmatter(
-                name="python_style",
-                description="Test",
-                type="rule",
-                category="coding-standards",
-            )
-        assert "must be in kebab-case" in str(exc_info.value)
+        """Test that title with underscores is accepted."""
+        rule = RuleFrontmatter(
+            title="python_style",
+            description="Test",
+            category="coding-standards",
+        )
+        assert rule.title == "python_style"
 
     def test_name_starting_with_number(self):
-        """Test that name starting with number is rejected."""
-        with pytest.raises(ValidationError) as exc_info:
-            RuleFrontmatter(
-                name="1-python-style",
-                description="Test",
-                type="rule",
-                category="coding-standards",
-            )
-        assert "must be in kebab-case" in str(exc_info.value)
+        """Test that title starting with number is accepted."""
+        rule = RuleFrontmatter(
+            title="1 Python Style",
+            description="Test",
+            category="coding-standards",
+        )
+        assert rule.title == "1 Python Style"
 
     def test_name_empty(self):
-        """Test that empty name is rejected."""
+        """Test that empty title is rejected."""
         with pytest.raises(ValidationError) as exc_info:
             RuleFrontmatter(
-                name="",
+                title="",
                 description="Test",
-                type="rule",
                 category="coding-standards",
             )
         assert "must be a non-empty string" in str(exc_info.value)
 
     def test_name_whitespace_only(self):
-        """Test that whitespace-only name is rejected."""
+        """Test that whitespace-only title is rejected."""
         with pytest.raises(ValidationError) as exc_info:
             RuleFrontmatter(
-                name="   ",
+                title="   ",
                 description="Test",
-                type="rule",
                 category="coding-standards",
             )
         assert "must be a non-empty string" in str(exc_info.value)
@@ -141,17 +126,15 @@ class TestRuleFrontmatterMissingFields:
         with pytest.raises(ValidationError) as exc_info:
             RuleFrontmatter(
                 description="Test",
-                type="rule",
                 category="coding-standards",
             )
-        assert "name" in str(exc_info.value).lower()
+        assert "title" in str(exc_info.value).lower()
 
     def test_missing_description(self):
         """Test that missing description is rejected."""
         with pytest.raises(ValidationError) as exc_info:
             RuleFrontmatter(
-                name="test-rule",
-                type="rule",
+                title="test-rule",
                 category="coding-standards",
             )
         assert "description" in str(exc_info.value).lower()
@@ -160,9 +143,8 @@ class TestRuleFrontmatterMissingFields:
         """Test that missing category is rejected."""
         with pytest.raises(ValidationError) as exc_info:
             RuleFrontmatter(
-                name="test-rule",
+                title="test-rule",
                 description="Test",
-                type="rule",
             )
         assert "category" in str(exc_info.value).lower()
 
@@ -176,9 +158,8 @@ class TestRuleFrontmatterInvalidCategory:
             warnings.simplefilter("always")
 
             rule = RuleFrontmatter(
-                name="test-rule",
+                title="test-rule",
                 description="Test",
-                type="rule",
                 category="custom-category",
             )
 
@@ -193,9 +174,8 @@ class TestRuleFrontmatterInvalidCategory:
             warnings.simplefilter("always")
 
             RuleFrontmatter(
-                name="test-rule",
+                title="test-rule",
                 description="Test",
-                type="rule",
                 category="my-custom-cat",
             )
 
@@ -210,36 +190,31 @@ class TestRuleFrontmatterInvalidTags:
     """Test tag validation."""
 
     def test_tags_with_uppercase(self):
-        """Test that uppercase tags are rejected."""
-        with pytest.raises(ValidationError) as exc_info:
-            RuleFrontmatter(
-                name="test-rule",
-                description="Test",
-                type="rule",
-                category="coding-standards",
-                tags=["Python", "PEP8"],
-            )
-        assert "must be lowercase" in str(exc_info.value)
+        """Test that uppercase tags are accepted."""
+        rule = RuleFrontmatter(
+            title="test-rule",
+            description="Test",
+            category="coding-standards",
+            tags=["Python", "PEP8"],
+        )
+        assert rule.tags == ["Python", "PEP8"]
 
     def test_tags_with_spaces(self):
-        """Test that tags with spaces are rejected."""
-        with pytest.raises(ValidationError) as exc_info:
-            RuleFrontmatter(
-                name="test-rule",
-                description="Test",
-                type="rule",
-                category="coding-standards",
-                tags=["python style", "pep 8"],
-            )
-        assert "must be lowercase without spaces" in str(exc_info.value)
+        """Test that tags with spaces are accepted."""
+        rule = RuleFrontmatter(
+            title="test-rule",
+            description="Test",
+            category="coding-standards",
+            tags=["python style", "pep 8"],
+        )
+        assert rule.tags == ["python style", "pep 8"]
 
     def test_too_many_tags(self):
         """Test that more than 10 tags are rejected."""
         with pytest.raises(ValidationError) as exc_info:
             RuleFrontmatter(
-                name="test-rule",
+                title="test-rule",
                 description="Test",
-                type="rule",
                 category="coding-standards",
                 tags=[f"tag{i}" for i in range(11)],  # 11 tags
             )
@@ -248,9 +223,8 @@ class TestRuleFrontmatterInvalidTags:
     def test_valid_tags(self):
         """Test that valid lowercase tags are accepted."""
         rule = RuleFrontmatter(
-            name="test-rule",
+            title="test-rule",
             description="Test",
-            type="rule",
             category="coding-standards",
             tags=["python", "pep8", "style-guide"],
         )
@@ -264,9 +238,8 @@ class TestRuleFrontmatterInvalidVersion:
         """Test that non-semver version is rejected."""
         with pytest.raises(ValidationError) as exc_info:
             RuleFrontmatter(
-                name="test-rule",
+                title="test-rule",
                 description="Test",
-                type="rule",
                 category="coding-standards",
                 version="1.0",
             )
@@ -276,9 +249,8 @@ class TestRuleFrontmatterInvalidVersion:
         """Test that version with text is rejected."""
         with pytest.raises(ValidationError) as exc_info:
             RuleFrontmatter(
-                name="test-rule",
+                title="test-rule",
                 description="Test",
-                type="rule",
                 category="coding-standards",
                 version="v1.0.0",
             )
@@ -290,9 +262,8 @@ class TestRuleFrontmatterInvalidVersion:
 
         for version in valid_versions:
             rule = RuleFrontmatter(
-                name="test-rule",
+                title="test-rule",
                 description="Test",
-                type="rule",
                 category="coding-standards",
                 version=version,
             )
@@ -308,9 +279,8 @@ class TestRuleFrontmatterDescription:
 
         with pytest.raises(ValidationError) as exc_info:
             RuleFrontmatter(
-                name="test-rule",
+                title="test-rule",
                 description=long_desc,
-                type="rule",
                 category="coding-standards",
             )
         assert "200" in str(exc_info.value)
@@ -320,9 +290,8 @@ class TestRuleFrontmatterDescription:
         desc = "a" * 200
 
         rule = RuleFrontmatter(
-            name="test-rule",
+            title="test-rule",
             description=desc,
-            type="rule",
             category="coding-standards",
         )
         assert len(rule.description) == 200
@@ -334,25 +303,23 @@ class TestRuleFileComplete:
     def test_valid_rule_file_with_content(self):
         """Test valid RuleFile with all fields including content."""
         rule = RuleFile(
-            name="python-style",
+            title="python-style",
             description="Python coding standards",
-            type="rule",
             category="coding-standards",
             tags=["python", "pep8"],
             version="1.0.0",
             content="# Python Style Guide\n\nUse PEP 8...",
         )
 
-        assert rule.name == "python-style"
+        assert rule.title == "python-style"
         assert rule.content == "# Python Style Guide\n\nUse PEP 8..."
         assert len(rule.content) > 0
 
     def test_rule_file_minimal(self):
         """Test RuleFile with minimal fields."""
         rule = RuleFile(
-            name="test-rule",
+            title="test-rule",
             description="Test",
-            type="rule",
             category="testing",
             content="Test content",
         )
@@ -363,9 +330,8 @@ class TestRuleFileComplete:
         """Test that empty content is rejected."""
         with pytest.raises(ValidationError) as exc_info:
             RuleFile(
-                name="test-rule",
+                title="test-rule",
                 description="Test",
-                type="rule",
                 category="testing",
                 content="",
             )
@@ -375,9 +341,8 @@ class TestRuleFileComplete:
         """Test that whitespace-only content is rejected."""
         with pytest.raises(ValidationError) as exc_info:
             RuleFile(
-                name="test-rule",
+                title="test-rule",
                 description="Test",
-                type="rule",
                 category="testing",
                 content="   \n  \n  ",
             )
@@ -385,16 +350,15 @@ class TestRuleFileComplete:
 
     def test_rule_file_inherits_frontmatter_validation(self):
         """Test that RuleFile inherits all frontmatter validation."""
-        # Invalid name should still be rejected
+        # Empty title should still be rejected
         with pytest.raises(ValidationError) as exc_info:
             RuleFile(
-                name="Invalid_Name",
+                title="",
                 description="Test",
-                type="rule",
                 category="testing",
                 content="Test content",
             )
-        assert "kebab-case" in str(exc_info.value)
+        assert "must be a non-empty string" in str(exc_info.value)
 
 
 class TestRuleFrontmatterExtraFields:
@@ -404,9 +368,8 @@ class TestRuleFrontmatterExtraFields:
         """Test that extra field not in model is rejected."""
         with pytest.raises(ValidationError) as exc_info:
             RuleFrontmatter(
-                name="test-rule",
+                title="test-rule",
                 description="Test",
-                type="rule",
                 category="testing",
                 unknown_field="should fail",  # type: ignore
             )

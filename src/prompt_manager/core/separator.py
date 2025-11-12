@@ -1,153 +1,141 @@
-"""Separator validation logic for prompt files.
+"""Separator validation logic for content files.
 
-This module validates the >>> separator that divides frontmatter from content.
+This module validates the YAML frontmatter delimiters (---) that separate
+frontmatter from content in standard Markdown format.
 """
 
 from prompt_manager.models.validation import ErrorCode, ValidationIssue, ValidationSeverity
 
 
 class SeparatorValidator:
-    """Validates the >>> separator in prompt files.
+    """Validates YAML frontmatter delimiters in content files.
 
-    The separator must:
-    - Appear exactly once in the file
-    - Be on its own line (no other characters)
-    - Have no leading or trailing whitespace on its line
-    - Be followed by non-empty content
+    The format must be:
+    - File starts with '---' on line 1
+    - YAML frontmatter in between
+    - Second '---' to close frontmatter
+    - Content after closing delimiter
 
     Examples:
         >>> validator = SeparatorValidator()
-        >>> fm, content, issues = validator.validate_separator("name: test\\n>>>\\nContent")
+        >>> fm, content, issues = validator.validate_separator("---\\ntitle: test\\n---\\nContent")
         >>> len(issues)
         0
         >>> fm
-        'name: test'
+        'title: test'
         >>> content
         'Content'
     """
 
-    SEPARATOR = ">>>"
+    DELIMITER = "---"
 
     def validate_separator(self, file_content: str) -> tuple[str, str, list[ValidationIssue]]:
-        """Validate the separator in the file content.
+        """Validate the YAML frontmatter delimiters in the file content.
 
         This method performs line-by-line analysis to detect:
-        - Presence of exactly one separator
-        - Separator on its own line without whitespace
-        - Non-empty content after separator
+        - File starts with '---' delimiter
+        - Presence of closing '---' delimiter
+        - Non-empty frontmatter and content
 
         Args:
             file_content: The complete file content as a string
 
         Returns:
             A tuple containing:
-            - frontmatter_text: Text before the separator (empty if errors)
-            - content_text: Text after the separator (empty if errors)
+            - frontmatter_text: YAML text between delimiters (empty if errors)
+            - content_text: Markdown text after closing delimiter (empty if errors)
             - issues: List of ValidationIssue objects for any problems found
 
         Examples:
             >>> validator = SeparatorValidator()
-            >>> fm, content, issues = validator.validate_separator("name: test\\n>>>\\nPrompt")
+            >>> content = "---\\ntitle: test\\n---\\nContent"
+            >>> fm, content, issues = validator.validate_separator(content)
             >>> len(issues)
             0
         """
         issues: list[ValidationIssue] = []
         lines = file_content.split("\n")
 
-        # Find all lines that contain the separator
-        separator_lines: list[int] = []
-        for line_num, line in enumerate(lines, start=1):
-            if self.SEPARATOR in line:
-                separator_lines.append(line_num)
-
-        # Check 1: No separator found
-        if len(separator_lines) == 0:
+        if not lines:
             issues.append(
                 ValidationIssue(
                     line=None,
                     severity=ValidationSeverity.ERROR,
                     code=ErrorCode.NO_SEPARATOR.value,
-                    message="No '>>>' separator found in file",
+                    message="File is empty",
                     excerpt=None,
-                    suggestion=(
-                        "Add a '>>>' separator on its own line between " "frontmatter and content"
-                    ),
+                    suggestion="Add YAML frontmatter enclosed in '---' delimiters",
                 )
             )
             return "", "", issues
 
-        # Check 2: Multiple separators found
-        if len(separator_lines) > 1:
+        # Check 1: File must start with opening delimiter
+        if lines[0].strip() != self.DELIMITER:
             issues.append(
                 ValidationIssue(
-                    line=separator_lines[1],  # Report second separator location
+                    line=1,
                     severity=ValidationSeverity.ERROR,
-                    code=ErrorCode.MULTIPLE_SEPARATORS.value,
-                    message=(
-                        f"Multiple '>>>' separators found ({len(separator_lines)}), "
-                        "only 1 allowed"
-                    ),
-                    excerpt=None,
-                    suggestion="Remove extra '>>>' separators, keep only one",
+                    code=ErrorCode.NO_SEPARATOR.value,
+                    message="File must start with '---' delimiter",
+                    excerpt=f"1 | {lines[0]}" if lines[0] else "1 | (empty)",
+                    suggestion="Add '---' as the first line of the file",
                 )
             )
-            # Continue validation with first separator to provide more feedback
-            separator_line_num = separator_lines[0]
-        else:
-            separator_line_num = separator_lines[0]
+            return "", "", issues
 
-        # Get the separator line (0-indexed)
-        separator_line_idx = separator_line_num - 1
-        separator_line = lines[separator_line_idx]
+        # Find closing delimiter (second ---)
+        closing_delimiter_idx = None
+        for idx in range(1, len(lines)):
+            if lines[idx].strip() == self.DELIMITER:
+                closing_delimiter_idx = idx
+                break
 
-        # Check 3: Separator must be exactly ">>>" with no whitespace
-        if separator_line != self.SEPARATOR:
-            # Check if it's a whitespace issue or content issue
-            if separator_line.strip() == self.SEPARATOR:
-                # It's whitespace (leading or trailing)
-                issues.append(
-                    ValidationIssue(
-                        line=separator_line_num,
-                        severity=ValidationSeverity.ERROR,
-                        code=ErrorCode.SEPARATOR_WHITESPACE.value,
-                        message=(
-                            "Separator '>>>' must not have leading or trailing "
-                            "whitespace on its line"
-                        ),
-                        excerpt=f"{separator_line_num} | {separator_line}",
-                        suggestion="Remove all whitespace before and after '>>>' on its line",
-                    )
-                )
-            else:
-                # It has other content
-                issues.append(
-                    ValidationIssue(
-                        line=separator_line_num,
-                        severity=ValidationSeverity.ERROR,
-                        code=ErrorCode.SEPARATOR_NOT_ALONE.value,
-                        message=(
-                            "Separator '>>>' must be on its own line without " "other characters"
-                        ),
-                        excerpt=f"{separator_line_num} | {separator_line}",
-                        suggestion="Move '>>>' to its own line with no other text",
-                    )
-                )
-
-        # Split content at the first separator
-        frontmatter_text = "\n".join(lines[:separator_line_idx])
-        content_lines = lines[separator_line_idx + 1 :]
-        content_text = "\n".join(content_lines)
-
-        # Check 4: Empty content after separator
-        if not content_text.strip():
+        # Check 2: Must have closing delimiter
+        if closing_delimiter_idx is None:
             issues.append(
                 ValidationIssue(
-                    line=separator_line_num + 1 if separator_line_num < len(lines) else None,
+                    line=None,
+                    severity=ValidationSeverity.ERROR,
+                    code=ErrorCode.NO_SEPARATOR.value,
+                    message="No closing '---' delimiter found",
+                    excerpt=None,
+                    suggestion="Add '---' after the YAML frontmatter to close it",
+                )
+            )
+            return "", "", issues
+
+        # Extract frontmatter (between opening and closing delimiters)
+        frontmatter_lines = lines[1:closing_delimiter_idx]
+        frontmatter_text = "\n".join(frontmatter_lines)
+
+        # Check 3: Frontmatter must not be empty
+        if not frontmatter_text.strip():
+            issues.append(
+                ValidationIssue(
+                    line=2,
                     severity=ValidationSeverity.ERROR,
                     code=ErrorCode.EMPTY_CONTENT.value,
-                    message=("Content after '>>>' separator is empty or contains only whitespace"),
+                    message="YAML frontmatter is empty",
                     excerpt=None,
-                    suggestion="Add prompt content after the '>>>' separator",
+                    suggestion="Add YAML frontmatter between the '---' delimiters",
+                )
+            )
+
+        # Extract content (after closing delimiter)
+        content_lines = lines[closing_delimiter_idx + 1 :]
+        content_text = "\n".join(content_lines)
+
+        # Check 4: Content should not be empty (warning only)
+        if not content_text.strip():
+            line_num = closing_delimiter_idx + 2 if closing_delimiter_idx + 1 < len(lines) else None
+            issues.append(
+                ValidationIssue(
+                    line=line_num,
+                    severity=ValidationSeverity.ERROR,
+                    code=ErrorCode.EMPTY_CONTENT.value,
+                    message="Content after frontmatter is empty",
+                    excerpt=None,
+                    suggestion="Add markdown content after the closing '---' delimiter",
                 )
             )
 

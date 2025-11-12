@@ -21,11 +21,11 @@ class TestPromptFrontmatterRequiredFields:
     def test_valid_minimal_prompt(self) -> None:
         """Test that prompt with only required fields is valid."""
         data = {
-            "name": "test-prompt",
+            "title": "test-prompt",
             "description": "A test prompt description",
         }
         prompt = PromptFrontmatter(**data)
-        assert prompt.name == "test-prompt"
+        assert prompt.title == "test-prompt"
         assert prompt.description == "A test prompt description"
         assert prompt.version is None
         assert prompt.tags is None
@@ -38,11 +38,11 @@ class TestPromptFrontmatterRequiredFields:
             PromptFrontmatter(**data)
 
         errors = exc_info.value.errors()
-        assert any(error["loc"] == ("name",) and error["type"] == "missing" for error in errors)
+        assert any(error["loc"] == ("title",) and error["type"] == "missing" for error in errors)
 
     def test_missing_description_field(self) -> None:
         """Test that missing 'description' field raises ValidationError."""
-        data = {"name": "test-prompt"}
+        data = {"title": "test-prompt"}
         with pytest.raises(ValidationError) as exc_info:
             PromptFrontmatter(**data)
 
@@ -54,7 +54,7 @@ class TestPromptFrontmatterRequiredFields:
     def test_empty_name_rejected(self) -> None:
         """Test that empty 'name' string is rejected."""
         data = {
-            "name": "",
+            "title": "",
             "description": "A description",
         }
         with pytest.raises(ValidationError) as exc_info:
@@ -62,12 +62,12 @@ class TestPromptFrontmatterRequiredFields:
 
         errors = exc_info.value.errors()
         # Should fail validation for empty string
-        assert any("name" in str(error["loc"]) for error in errors)
+        assert any("title" in str(error["loc"]) for error in errors)
 
     def test_empty_description_rejected(self) -> None:
         """Test that empty 'description' string is rejected."""
         data = {
-            "name": "test-prompt",
+            "title": "test-prompt",
             "description": "",
         }
         with pytest.raises(ValidationError) as exc_info:
@@ -84,14 +84,14 @@ class TestPromptFrontmatterOptionalFields:
     def test_valid_prompt_with_all_fields(self) -> None:
         """Test that prompt with all optional fields is valid."""
         data = {
-            "name": "full-prompt",
+            "title": "full-prompt",
             "description": "A full featured prompt",
             "version": "1.0.0",
             "tags": ["python", "backend"],
             "author": "John Doe",
         }
         prompt = PromptFrontmatter(**data)
-        assert prompt.name == "full-prompt"
+        assert prompt.title == "full-prompt"
         assert prompt.description == "A full featured prompt"
         assert prompt.version == "1.0.0"
         assert prompt.tags == ["python", "backend"]
@@ -100,7 +100,7 @@ class TestPromptFrontmatterOptionalFields:
     def test_optional_version_field(self) -> None:
         """Test that 'version' field is optional."""
         data = {
-            "name": "test-prompt",
+            "title": "test-prompt",
             "description": "A description",
             "version": "2.1.3",
         }
@@ -110,7 +110,7 @@ class TestPromptFrontmatterOptionalFields:
     def test_optional_tags_field(self) -> None:
         """Test that 'tags' field is optional and accepts list."""
         data = {
-            "name": "test-prompt",
+            "title": "test-prompt",
             "description": "A description",
             "tags": ["tag1", "tag2", "tag3"],
         }
@@ -120,7 +120,7 @@ class TestPromptFrontmatterOptionalFields:
     def test_optional_author_field(self) -> None:
         """Test that 'author' field is optional."""
         data = {
-            "name": "test-prompt",
+            "title": "test-prompt",
             "description": "A description",
             "author": "Jane Smith",
         }
@@ -130,7 +130,7 @@ class TestPromptFrontmatterOptionalFields:
     def test_empty_tags_list_allowed(self) -> None:
         """Test that empty tags list is allowed (will trigger warning elsewhere)."""
         data = {
-            "name": "test-prompt",
+            "title": "test-prompt",
             "description": "A description",
             "tags": [],
         }
@@ -147,7 +147,7 @@ class TestPromptFrontmatterSemanticVersioning:
 
         for version in valid_versions:
             data = {
-                "name": "test-prompt",
+                "title": "test-prompt",
                 "description": "A description",
                 "version": version,
             }
@@ -167,7 +167,7 @@ class TestPromptFrontmatterSemanticVersioning:
 
         for version in invalid_versions:
             data = {
-                "name": "test-prompt",
+                "title": "test-prompt",
                 "description": "A description",
                 "version": version,
             }
@@ -184,7 +184,7 @@ class TestPromptFrontmatterProhibitedFields:
     def test_prohibited_tools_field_rejected(self) -> None:
         """Test that 'tools' field is rejected."""
         data = {
-            "name": "test-prompt",
+            "title": "test-prompt",
             "description": "A description",
             "tools": ["continue", "cursor"],
         }
@@ -202,7 +202,7 @@ class TestPromptFrontmatterFieldTypes:
     def test_tags_must_be_list_of_strings(self) -> None:
         """Test that tags must be a list of strings."""
         data = {
-            "name": "test-prompt",
+            "title": "test-prompt",
             "description": "A description",
             "tags": "not-a-list",  # Should be list
         }
@@ -215,14 +215,14 @@ class TestPromptFrontmatterFieldTypes:
     def test_name_must_be_string(self) -> None:
         """Test that name must be a string."""
         data = {
-            "name": 123,  # Should be string
+            "title": 123,  # Should be string
             "description": "A description",
         }
         with pytest.raises(ValidationError) as exc_info:
             PromptFrontmatter(**data)
 
         errors = exc_info.value.errors()
-        assert any("name" in str(error["loc"]) for error in errors)
+        assert any("title" in str(error["loc"]) for error in errors)
 
 
 class TestPromptFrontmatterSerialization:
@@ -231,7 +231,7 @@ class TestPromptFrontmatterSerialization:
     def test_model_serialization_to_dict(self) -> None:
         """Test that model can be serialized to dictionary."""
         data = {
-            "name": "test-prompt",
+            "title": "test-prompt",
             "description": "A description",
             "version": "1.0.0",
             "tags": ["python"],
@@ -241,7 +241,7 @@ class TestPromptFrontmatterSerialization:
         serialized = prompt.model_dump()
 
         assert isinstance(serialized, dict)
-        assert serialized["name"] == "test-prompt"
+        assert serialized["title"] == "test-prompt"
         assert serialized["description"] == "A description"
         assert serialized["version"] == "1.0.0"
         assert serialized["tags"] == ["python"]
@@ -250,13 +250,13 @@ class TestPromptFrontmatterSerialization:
     def test_model_serialization_with_none_values(self) -> None:
         """Test serialization with None values for optional fields."""
         data = {
-            "name": "minimal-prompt",
+            "title": "minimal-prompt",
             "description": "Minimal description",
         }
         prompt = PromptFrontmatter(**data)
         serialized = prompt.model_dump()
 
-        assert serialized["name"] == "minimal-prompt"
+        assert serialized["title"] == "minimal-prompt"
         assert serialized["description"] == "Minimal description"
         assert serialized["version"] is None
         assert serialized["tags"] is None

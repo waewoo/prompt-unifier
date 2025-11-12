@@ -54,20 +54,26 @@ def main_callback(
     pass
 
 
-@app.command(name="validate", help="Validate prompt file format in a directory")
+@app.command(name="validate", help="Validate prompt and rule files in a directory")
 def validate(
-    directory: str,
+    directory: str | None = typer.Argument(
+        None, help="Directory to validate (defaults to synchronized storage)"
+    ),
     json: bool = typer.Option(False, "--json"),
     verbose: bool = typer.Option(False, "--verbose", "-v"),
 ) -> None:
-    """Validate prompt file format in a directory.
+    """Validate prompt and rule files in a directory.
+
+    If no directory is provided, validates files in the synchronized storage
+    location (requires 'init' to have been run first).
 
     Args:
-        directory: Directory containing prompt files to validate
+        directory: Directory containing prompt/rule files to validate (optional)
         json: Output in JSON format (use --json flag)
         verbose: Show detailed progress (use --verbose or -v flag)
     """
-    validate_command(Path(directory), json_output=json, verbose=verbose)
+    dir_path = Path(directory) if directory is not None else None
+    validate_command(dir_path, json_output=json, verbose=verbose)
 
 
 @app.command(name="init", help="Initialize prompt-manager in current directory")

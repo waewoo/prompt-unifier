@@ -14,9 +14,9 @@ class TestBatchValidator:
 
         # Create valid and invalid files
         (tmp_path / "valid.md").write_text(
-            "name: test\ndescription: A test prompt\n>>>\nThis is the content."
+            "title: test\ndescription: A test prompt\n---\n\nThis is the content."
         )
-        (tmp_path / "invalid.md").write_text("name: test\n>>>\nMissing description.")
+        (tmp_path / "invalid.md").write_text("---\ntitle: test\n---\n\nMissing description.")
 
         summary = validator.validate_directory(tmp_path)
 
@@ -28,8 +28,8 @@ class TestBatchValidator:
         validator = BatchValidator()
 
         # Create files with errors
-        (tmp_path / "error1.md").write_text("name: test\n>>>\nNo description")
-        (tmp_path / "error2.md").write_text("description: test\n>>>\nNo name")
+        (tmp_path / "error1.md").write_text("---\ntitle: test\n---\n\nNo description")
+        (tmp_path / "error2.md").write_text("description: test\n---\n\nNo name")
 
         summary = validator.validate_directory(tmp_path)
 
@@ -43,8 +43,12 @@ class TestBatchValidator:
         validator = BatchValidator()
 
         # Create files with warnings (missing optional fields)
-        (tmp_path / "warn1.md").write_text("name: test1\ndescription: Test 1\n>>>\nContent here")
-        (tmp_path / "warn2.md").write_text("name: test2\ndescription: Test 2\n>>>\nContent here")
+        (tmp_path / "warn1.md").write_text(
+            "---\ntitle: test1\ndescription: Test 1\n---\n\nContent here"
+        )
+        (tmp_path / "warn2.md").write_text(
+            "---\ntitle: test2\ndescription: Test 2\n---\n\nContent here"
+        )
 
         summary = validator.validate_directory(tmp_path)
 
@@ -59,9 +63,9 @@ class TestBatchValidator:
         validator = BatchValidator()
 
         # Create mixed scenario
-        (tmp_path / "pass1.md").write_text("name: pass1\ndescription: Pass 1\n>>>\nContent")
-        (tmp_path / "pass2.md").write_text("name: pass2\ndescription: Pass 2\n>>>\nContent")
-        (tmp_path / "fail1.md").write_text("name: fail1\n>>>\nNo description")
+        (tmp_path / "pass1.md").write_text("---\ntitle: pass1\ndescription: Pass 1\n---\n\nContent")
+        (tmp_path / "pass2.md").write_text("---\ntitle: pass2\ndescription: Pass 2\n---\n\nContent")
+        (tmp_path / "fail1.md").write_text("---\ntitle: fail1\n---\n\nNo description")
 
         summary = validator.validate_directory(tmp_path)
 
@@ -77,8 +81,10 @@ class TestBatchValidator:
 
         # Create files with various errors
         (tmp_path / "error1.md").write_text("invalid yaml: [")
-        (tmp_path / "error2.md").write_text("name: test\n>>>\nNo description")
-        (tmp_path / "valid.md").write_text("name: valid\ndescription: Valid file\n>>>\nContent")
+        (tmp_path / "error2.md").write_text("---\ntitle: test\n---\n\nNo description")
+        (tmp_path / "valid.md").write_text(
+            "---\ntitle: valid\ndescription: Valid file\n---\n\nContent"
+        )
 
         summary = validator.validate_directory(tmp_path)
 
@@ -94,13 +100,13 @@ class TestBatchValidator:
 
         # Create files with different outcomes
         (tmp_path / "pass.md").write_text(
-            "name: pass\ndescription: Pass\nversion: 1.0.0\nauthor: Test\n>>>\nContent"
+            "---\ntitle: pass\ndescription: Pass\nversion: 1.0.0\nauthor: Test\n---\n\nContent"
         )
         (tmp_path / "warn.md").write_text(
-            "name: warn\ndescription: Warn\n>>>\nContent"  # Missing optional fields
+            "---\ntitle: warn\ndescription: Warn\n---\n\nContent"  # Missing optional fields
         )
         (tmp_path / "fail.md").write_text(
-            "name: fail\n>>>\nNo description"  # Missing required field
+            "---\ntitle: fail\n---\n\nNo description"  # Missing required field
         )
 
         summary = validator.validate_directory(tmp_path)
@@ -123,10 +129,12 @@ class TestBatchValidator:
 
         # Create only valid files
         (tmp_path / "valid1.md").write_text(
-            "name: valid1\ndescription: Valid 1\nversion: 1.0.0\nauthor: Test\n>>>\nContent 1"
+            "---\ntitle: valid1\ndescription: Valid 1\nversion: 1.0.0\n"
+            "author: Test\n---\n\nContent 1"
         )
         (tmp_path / "valid2.md").write_text(
-            "name: valid2\ndescription: Valid 2\nversion: 2.0.0\nauthor: Test\n>>>\nContent 2"
+            "---\ntitle: valid2\ndescription: Valid 2\nversion: 2.0.0\n"
+            "author: Test\n---\n\nContent 2"
         )
 
         summary = validator.validate_directory(tmp_path)

@@ -19,9 +19,11 @@ class TestPromptValidatorOrchestration:
     def test_valid_minimal_prompt_passes(self, validator: PromptValidator, tmp_path: Path) -> None:
         """Test that a valid minimal prompt (name, description only) passes validation."""
         test_file = tmp_path / "minimal.md"
-        content = """name: code-reviewer
+        content = """---
+title: code-reviewer
 description: Reviews code for best practices
->>>
+---
+
 You are a code reviewer focused on identifying bugs and improvements."""
         test_file.write_text(content, encoding="utf-8")
 
@@ -43,14 +45,16 @@ You are a code reviewer focused on identifying bugs and improvements."""
         but this test uses all fields to show NO warnings scenario.
         """
         test_file = tmp_path / "full.md"
-        content = """name: python-expert
+        content = """---
+title: python-expert
 description: Expert Python developer with focus on clean code
 version: 1.0.0
 tags:
   - python
   - backend
 author: John Doe
->>>
+---
+
 You are an expert Python developer with deep knowledge of clean code."""
         test_file.write_text(content, encoding="utf-8")
 
@@ -68,8 +72,10 @@ You are an expert Python developer with deep knowledge of clean code."""
     ) -> None:
         """Test that missing required field generates MISSING_REQUIRED_FIELD error."""
         test_file = tmp_path / "missing_description.md"
-        content = """name: broken-prompt
->>>
+        content = """---
+title: broken-prompt
+---
+
 This will fail validation - missing description."""
         test_file.write_text(content, encoding="utf-8")
 
@@ -95,12 +101,14 @@ This will fail validation - missing description."""
     ) -> None:
         """Test that prohibited field generates PROHIBITED_FIELD error."""
         test_file = tmp_path / "prohibited_tools.md"
-        content = """name: has-tools
+        content = """---
+title: has-tools
 description: Contains prohibited tools field
 tools:
   - continue
   - cursor
->>>
+---
+
 Content here"""
         test_file.write_text(content, encoding="utf-8")
 
@@ -124,10 +132,12 @@ Content here"""
     ) -> None:
         """Test that invalid semantic version generates INVALID_SEMVER error."""
         test_file = tmp_path / "invalid_semver.md"
-        content = """name: bad-version
+        content = """---
+title: bad-version
 description: Has invalid version format
 version: 1.0
->>>
+---
+
 Content here"""
         test_file.write_text(content, encoding="utf-8")
 
@@ -147,9 +157,11 @@ Content here"""
     ) -> None:
         """Test that missing optional fields generate MISSING_OPTIONAL_FIELD warnings."""
         test_file = tmp_path / "no_optional.md"
-        content = """name: general-assistant
+        content = """---
+title: general-assistant
 description: General purpose coding assistant
->>>
+---
+
 You are a helpful coding assistant."""
         test_file.write_text(content, encoding="utf-8")
 
@@ -177,10 +189,12 @@ You are a helpful coding assistant."""
     ) -> None:
         """Test that empty tags list generates EMPTY_TAGS_LIST warning."""
         test_file = tmp_path / "empty_tags.md"
-        content = """name: general-assistant
+        content = """---
+title: general-assistant
 description: General purpose coding assistant
 tags: []
->>>
+---
+
 You are a helpful coding assistant."""
         test_file.write_text(content, encoding="utf-8")
 
@@ -203,11 +217,14 @@ You are a helpful coding assistant."""
         """Test that multiple errors are collected without stopping at first error."""
         test_file = tmp_path / "multiple_errors.md"
         # Missing description, invalid semver, multiple separators
-        content = """name: broken-prompt
+        content = """---
+title: broken-prompt
 version: invalid
->>>
+---
+
 First section
->>>
+---
+
 Second section"""
         test_file.write_text(content, encoding="utf-8")
 
@@ -244,8 +261,10 @@ class TestValidationResultAggregation:
     ) -> None:
         """Test that file with only errors has status='failed'."""
         test_file = tmp_path / "errors_only.md"
-        content = """name: test
->>>
+        content = """---
+title: test
+---
+
 Missing description field"""
         test_file.write_text(content, encoding="utf-8")
 
@@ -260,10 +279,12 @@ Missing description field"""
     ) -> None:
         """Test that file with only warnings has status='passed'."""
         test_file = tmp_path / "warnings_only.md"
-        content = """name: test
+        content = """---
+title: test
 description: A test prompt
 tags: []
->>>
+---
+
 Content here"""
         test_file.write_text(content, encoding="utf-8")
 
@@ -280,9 +301,11 @@ Content here"""
         """Test that file with both errors and warnings has status='failed'."""
         test_file = tmp_path / "mixed.md"
         # Missing description (error) and empty tags (warning)
-        content = """name: test
+        content = """---
+title: test
 tags: []
->>>
+---
+
 Missing description"""
         test_file.write_text(content, encoding="utf-8")
 
@@ -298,13 +321,15 @@ Missing description"""
     ) -> None:
         """Test that file with no issues has status='passed'."""
         test_file = tmp_path / "perfect.md"
-        content = """name: perfect-prompt
+        content = """---
+title: perfect-prompt
 description: A perfect prompt with all fields
 version: 1.0.0
 tags:
   - test
 author: Test Author
->>>
+---
+
 Perfect content here"""
         test_file.write_text(content, encoding="utf-8")
 
@@ -321,10 +346,12 @@ Perfect content here"""
         """Test that error and warning counts are properly aggregated."""
         test_file = tmp_path / "counts.md"
         # Multiple warnings: missing version, missing author, empty tags
-        content = """name: test
+        content = """---
+title: test
 description: Test prompt
 tags: []
->>>
+---
+
 Content"""
         test_file.write_text(content, encoding="utf-8")
 
@@ -341,7 +368,9 @@ Content"""
         """Test that is_valid property correctly reflects validation status."""
         # Valid file
         valid_file = tmp_path / "valid.md"
-        valid_file.write_text("name: test\ndescription: Test\n>>>\nContent", encoding="utf-8")
+        valid_file.write_text(
+            "---\ntitle: test\ndescription: Test\n---\n\nContent", encoding="utf-8"
+        )
         valid_result = validator.validate_file(valid_file)
 
         assert valid_result.is_valid is True
@@ -349,7 +378,7 @@ Content"""
 
         # Invalid file
         invalid_file = tmp_path / "invalid.md"
-        invalid_file.write_text("name: test\n>>>\nMissing description", encoding="utf-8")
+        invalid_file.write_text("---\ntitle: test\n---\n\nMissing description", encoding="utf-8")
         invalid_result = validator.validate_file(invalid_file)
 
         assert invalid_result.is_valid is False

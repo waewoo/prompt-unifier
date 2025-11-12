@@ -23,30 +23,65 @@ console = Console()
 
 
 def validate(
-    directory: Path,
+    directory: Path | None = None,
     json_output: bool = False,
     verbose: bool = False,
 ) -> None:
-    """Validate prompt file format in a directory.
+    """Validate prompt and rule files in a directory.
 
-    Validates all .md files in the specified directory against the prompt
-    format specification. Checks for required fields, valid YAML frontmatter,
-    proper separator format, and UTF-8 encoding.
+    Validates all .md files against the format specification. Checks for
+    required fields, valid YAML frontmatter, proper separator format,
+    and UTF-8 encoding.
+
+    If no directory is provided, validates files in the synchronized storage
+    location (requires 'init' to have been run).
 
     Exit codes:
         0: Validation passed (warnings are acceptable)
         1: Validation failed (errors found)
 
     Examples:
-        # Validate prompts with Rich output
+        # Validate synchronized storage (default)
+        prompt-manager validate
+
+        # Validate specific directory
         prompt-manager validate ./prompts
 
         # Validate with JSON output
         prompt-manager validate ./prompts --json
 
         # Validate with verbose progress
-        prompt-manager validate ./prompts --verbose
+        prompt-manager validate --verbose
     """
+    # If no directory provided, use storage path from config
+    if directory is None:
+        cwd = Path.cwd()
+        config_path = cwd / ".prompt-manager" / "config.yaml"
+
+        if not config_path.exists():
+            typer.echo(
+                "Error: No directory specified and configuration not found.\n"
+                "Either provide a directory path or run 'prompt-manager init' first.",
+                err=True,
+            )
+            raise typer.Exit(code=1)
+
+        config_manager = ConfigManager()
+        config = config_manager.load_config(config_path)
+
+        if config is None or config.storage_path is None:
+            typer.echo(
+                "Error: Storage path not configured.\n"
+                "Either provide a directory path or run 'prompt-manager init' to set up storage.",
+                err=True,
+            )
+            raise typer.Exit(code=1)
+
+        directory = Path(config.storage_path).expanduser().resolve()
+
+        if verbose:
+            console.print(f"[dim]Using storage path: {directory}[/dim]")
+
     # Check if directory exists and is valid
     if not directory.exists():
         typer.echo(f"Error: Directory '{directory}' does not exist", err=True)

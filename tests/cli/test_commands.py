@@ -17,10 +17,12 @@ def temp_valid_directory(tmp_path: Path) -> Path:
     """Create a temporary directory with valid prompt files."""
     prompt_file = tmp_path / "valid-prompt.md"
     prompt_file.write_text(
-        """name: test-prompt
+        """---
+title: test-prompt
 description: A test prompt for validation
 version: 1.0.0
->>>
+---
+
 This is the content of the prompt.
 """
     )
@@ -32,8 +34,10 @@ def temp_invalid_directory(tmp_path: Path) -> Path:
     """Create a temporary directory with invalid prompt files."""
     prompt_file = tmp_path / "invalid-prompt.md"
     prompt_file.write_text(
-        """name: broken-prompt
->>>
+        """---
+title: broken-prompt
+---
+
 Content without description field.
 """
     )

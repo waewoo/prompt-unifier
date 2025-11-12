@@ -92,16 +92,25 @@ class YAMLParser:
             if hasattr(e, "problem_mark") and e.problem_mark:
                 line_number = e.problem_mark.line + 1  # Convert 0-indexed to 1-indexed
 
+            error_str = str(e)
+
+            # Detect glob pattern error (unquoted * in arrays)
+            if "while scanning an alias" in error_str and "*.py" in yaml_text:
+                suggestion = (
+                    "Glob patterns with '*' must be quoted in YAML arrays. "
+                    'Use: applies_to: ["*.py"] instead of applies_to: [*.py]'
+                )
+            else:
+                suggestion = "Check YAML syntax: ensure proper indentation, quotes, and structure"
+
             issues.append(
                 ValidationIssue(
                     line=line_number,
                     severity=ValidationSeverity.ERROR,
                     code=ErrorCode.INVALID_YAML.value,
-                    message=f"Invalid YAML syntax: {str(e)}",
+                    message=f"Invalid YAML syntax: {error_str}",
                     excerpt=None,
-                    suggestion=(
-                        "Check YAML syntax: ensure proper indentation, quotes, and structure"
-                    ),
+                    suggestion=suggestion,
                 )
             )
             return None, issues

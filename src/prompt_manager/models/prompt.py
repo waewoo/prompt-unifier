@@ -17,47 +17,54 @@ class PromptFrontmatter(BaseModel):
     enforcing required fields, optional fields, and rejecting prohibited fields.
 
     Required Fields:
-        name: Non-empty string identifier for the prompt
-        description: Non-empty string describing the prompt's purpose
+        title: Human-readable title for the prompt
+        description: Brief description of the prompt's purpose
 
     Optional Fields:
         version: Semantic version string (e.g., "1.0.0")
-        tags: List of string tags for categorization
+        tags: List of string tags for categorization (YAML array format)
         author: String identifying the prompt author
+        language: Primary language for the prompt (e.g., "python")
 
     Prohibited Fields:
         tools: Not allowed in this format
 
     Examples:
         >>> # Minimal valid prompt
-        >>> prompt = PromptFrontmatter(name="test", description="A test prompt")
-        >>> prompt.name
-        'test'
+        >>> prompt = PromptFrontmatter(title="Test Prompt", description="A test prompt")
+        >>> prompt.title
+        'Test Prompt'
 
         >>> # Full prompt with all fields
         >>> prompt = PromptFrontmatter(
-        ...     name="python-expert",
-        ...     description="Expert Python developer",
+        ...     title="Python Expert",
+        ...     description="Expert Python developer assistant",
         ...     version="1.0.0",
         ...     tags=["python", "backend"],
-        ...     author="John Doe"
+        ...     author="John Doe",
+        ...     language="python"
         ... )
         >>> prompt.version
         '1.0.0'
     """
 
     # Required fields
-    name: str = Field(description="Prompt identifier (required, non-empty)")
+    title: str = Field(description="Prompt title (required, non-empty)")
     description: str = Field(description="Prompt description (required, non-empty)")
 
     # Optional fields
+    category: str | None = Field(default=None, description="Category (optional)")
     version: str | None = Field(
         default=None, description="Semantic version (optional, format: X.Y.Z)"
     )
-    tags: list[str] | None = Field(default=None, description="List of tags (optional)")
+    tags: list[str] | None = Field(default=None, description="List of tags (optional, YAML array)")
     author: str | None = Field(default=None, description="Author name (optional)")
+    language: str | None = Field(default=None, description="Primary language (optional)")
+    applies_to: list[str] | None = Field(
+        default=None, description="Glob patterns for applicable files (optional)"
+    )
 
-    @field_validator("name", "description")
+    @field_validator("title", "description")
     @classmethod
     def validate_non_empty_string(cls, v: str, info: Any) -> str:
         """Validate that name and description are non-empty strings.

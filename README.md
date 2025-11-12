@@ -1,6 +1,6 @@
 # Prompt Manager CLI
 
-A Python CLI tool for managing AI prompt templates with YAML frontmatter, enabling version control, validation, and deployment workflows.
+A Python CLI tool for managing AI prompt templates and coding rules with YAML frontmatter, enabling version control, validation, and deployment workflows for both prompts and organizational standards.
 
 ## Installation
 
@@ -43,6 +43,170 @@ poetry run prompt-manager sync --repo https://github.com/example/prompts.git
 
 # Check sync status
 poetry run prompt-manager status
+```
+
+## File Types: Prompts and Rules
+
+The prompt-manager supports two types of content files:
+
+### Prompts
+AI prompt templates for use with language models. Prompts are identified by the absence of a `type` field or `type: prompt` in the frontmatter.
+
+**Example prompt file:**
+```markdown
+name: code-review
+description: Review code for bugs and improvements
+version: 1.0.0
+tags:
+  - python
+  - review
+>>>
+# Code Review Prompt
+
+You are an expert code reviewer...
+```
+
+### Rules
+Coding standards, best practices, and organizational guidelines. Rules require a `type: rule` field and a `category` field in the frontmatter.
+
+**Example rule file:**
+```markdown
+name: python-style-guide
+description: Python coding standards and best practices
+type: rule
+category: coding-standards
+tags:
+  - python
+  - pep8
+version: 1.0.0
+applies_to:
+  - python
+  - django
+>>>
+# Python Style Guide
+
+## Naming Conventions
+- Use snake_case for functions and variables
+- Use PascalCase for classes...
+```
+
+**Rule Categories:**
+- `coding-standards` - Code style and formatting rules
+- `architecture` - System design and architecture patterns
+- `security` - Security best practices and guidelines
+- `testing` - Testing strategies and requirements
+- `documentation` - Documentation standards
+- `performance` - Performance optimization guidelines
+- `deployment` - Deployment and CI/CD practices
+- `git` - Git workflow and commit conventions
+
+**Special Fields:**
+- `category` (required): Categorizes the rule for organization
+- `applies_to` (optional): List of languages/frameworks the rule applies to
+
+Both prompts and rules use the same format: YAML frontmatter followed by `>>>` separator and markdown content.
+
+## Commands Reference
+
+### Global Options
+
+```bash
+prompt-manager --help      # Show help and exit
+prompt-manager --version   # Show version and exit
+```
+
+### validate
+
+Validate prompt and rule files in a directory for syntax errors and required fields.
+
+```bash
+prompt-manager validate [DIRECTORY] [OPTIONS]
+```
+
+**Arguments:**
+- `DIRECTORY` (optional): Path to directory containing .md files to validate. If not provided, validates files in the synchronized storage location (requires `init` to have been run).
+
+**Options:**
+- `--json`: Output results in JSON format
+- `--verbose` / `-v`: Show detailed validation progress
+- `--help`: Show command help
+
+**Examples:**
+```bash
+# Validate synchronized storage (default location)
+prompt-manager validate
+
+# Validate specific directory
+prompt-manager validate ./prompts
+
+# Validate with JSON output
+prompt-manager validate ./prompts --json
+
+# Validate synchronized storage with verbose output
+prompt-manager validate --verbose
+```
+
+### init
+
+Initialize prompt-manager configuration in the current directory.
+
+```bash
+prompt-manager init [OPTIONS]
+```
+
+**Options:**
+- `--storage-path TEXT`: Custom storage location (default: `~/.prompt-manager/storage`)
+- `--help`: Show command help
+
+**Examples:**
+```bash
+# Initialize with default storage
+prompt-manager init
+
+# Initialize with custom storage location
+prompt-manager init --storage-path /custom/storage
+```
+
+### sync
+
+Synchronize prompts and rules from a Git repository.
+
+```bash
+prompt-manager sync [OPTIONS]
+```
+
+**Options:**
+- `--repo TEXT`: Git repository URL to sync from
+- `--storage-path TEXT`: Override storage location for this sync
+- `--help`: Show command help
+
+**Examples:**
+```bash
+# First sync with repository URL
+prompt-manager sync --repo git@github.com:team/prompts.git
+
+# Subsequent syncs (uses URL from config)
+prompt-manager sync
+
+# Sync with custom storage location
+prompt-manager sync --storage-path /custom/storage
+```
+
+### status
+
+Display current synchronization status and check for remote updates.
+
+```bash
+prompt-manager status
+```
+
+**Options:**
+- `--help`: Show command help
+
+**Examples:**
+```bash
+# Check sync status
+prompt-manager status
 ```
 
 ## Git Integration Commands
@@ -264,6 +428,53 @@ storage_path: /home/user/.prompt-manager/storage
 - `storage_path` (string | null): Path to centralized storage directory (defaults to ~/.prompt-manager/storage)
 
 **Note:** This file is managed automatically by the CLI commands. Manual editing is not recommended unless recovering from corruption.
+
+## Validation
+
+The `validate` command checks prompts and rules for syntax errors, required fields, and adherence to standards.
+
+```bash
+# Validate files in a directory
+poetry run prompt-manager validate /path/to/directory
+
+# Validate with JSON output
+poetry run prompt-manager validate /path/to/directory --json
+```
+
+**What gets validated:**
+
+For all files:
+- UTF-8 encoding
+- YAML frontmatter syntax
+- Required `>>>` separator
+- Non-empty content
+
+For prompts:
+- Required fields: `name`, `description`
+- Optional fields: `version`, `tags`, `author`
+- Semantic versioning format (if specified)
+- No prohibited fields (e.g., `tools`)
+
+For rules:
+- Required fields: `name`, `description`, `type: rule`, `category`
+- Optional fields: `version`, `tags`, `author`, `applies_to`
+- Valid category (warns if non-standard)
+- Kebab-case name format (e.g., `python-style-guide`)
+- Semantic versioning format (if specified)
+
+**Example validation output:**
+```
+Validating directory: /tmp/test-rules
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+✓ python-style.md (rule)
+✓ code-review.md (prompt)
+✗ invalid-rule.md (rule)
+  Error: Field 'category' is required for rules
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+Summary: 2 passed, 1 failed
+```
 
 ## Common Workflows
 

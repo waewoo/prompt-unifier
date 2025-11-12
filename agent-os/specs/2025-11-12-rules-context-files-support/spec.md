@@ -28,18 +28,19 @@ Extend the Prompt Manager CLI to fully support rules/context files alongside pro
 
 ### 1. Rules File Format
 
-Rules use the **same format** as prompts: YAML frontmatter + >>> separator + content
+Rules use **standard Markdown with YAML frontmatter** format (Jekyll/Hugo style), delimited by `---` markers.
+
+**Type Detection:** Rules are identified by their location in the `rules/` directory (no `type` field needed).
 
 #### Required Fields
 
 ```yaml
 ---
-name: python-style-guide
-description: Python coding standards and best practices
-type: rule
+title: Python Coding Standards
+description: Comprehensive coding standards for Python development
 category: coding-standards
 ---
->>>
+
 # Content goes here...
 ```
 
@@ -47,40 +48,40 @@ category: coding-standards
 
 | Field | Type | Required | Description | Validation |
 |-------|------|----------|-------------|------------|
-| `name` | string | Yes | Unique identifier (kebab-case) | `^[a-z][a-z0-9-]*$` |
-| `description` | string | Yes | Human-readable description | 1-200 chars |
-| `type` | literal | Yes | Must be "rule" | Exactly "rule" |
-| `category` | string | Yes | Rule category | One of predefined categories |
-| `tags` | list[str] | No | Searchable tags | Max 10 tags |
+| `title` | string | Yes | Human-readable title | Any string |
+| `description` | string | Yes | Brief description | 1-200 chars |
+| `category` | string | Yes (rules only) | Rule category | One of predefined categories |
+| `tags` | array | No | Searchable tags | YAML array: `[tag1, tag2]`, max 10 |
 | `version` | string | No | Semantic version | Default: "1.0.0" |
-| `applies_to` | list[str] | No | Languages/frameworks | e.g., ["python", "fastapi"] |
-| `author` | string | No | Rule author | Optional |
+| `applies_to` | array | No | Glob patterns for files | **Must quote patterns**: `["*.py", "*.js"]` |
+| `author` | string | No | Author name | Optional |
+| `language` | string | No | Primary language | e.g., "python", "javascript" |
 
-#### Optional Fields
+**Important:** The `applies_to` field must use quoted strings for glob patterns to avoid YAML anchor conflicts with `*` character.
+
+#### Full Example
 
 ```yaml
 ---
-name: api-design-guide
-description: REST API design best practices
-type: rule
+title: API Design Patterns
+description: REST API design best practices for microservices
 category: architecture
-tags:
-  - rest
-  - api
-  - http
+tags: [rest, api, http, microservices]
 version: 1.2.0
-applies_to:
-  - python
-  - fastapi
-  - flask
+applies_to: ["*.py", "api/*.js"]
 author: team-platform
+language: python
 ---
->>>
+
 # API Design Guide
 
 ## Resource Naming
 - Use plural nouns for collections: `/users`, `/posts`
 - Use singular for singletons: `/profile`
+
+## HTTP Methods
+- GET: Retrieve resources (idempotent)
+- POST: Create new resources
 ...
 ```
 
