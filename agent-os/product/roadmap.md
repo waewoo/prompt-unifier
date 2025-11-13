@@ -12,7 +12,7 @@
 
 3.7. [x] Security & Secrets Detection — Implement pre-commit hooks to prevent committing secrets (API keys, tokens, passwords) using tools like detect-secrets or gitleaks. Add AppSec security checks (dependency scanning, SAST, vulnerability detection) via pre-commit hooks and GitLab CI pipeline. Configure security scanning for Python dependencies (safety, pip-audit), add SAST with bandit or semgrep, implement secrets baseline for legitimate test fixtures, and create security policy documentation. Ensure all security checks run locally (pre-commit) and in CI/CD with appropriate failure thresholds. `M`
 
-4. [ ] Rules/Context Files Support — Extend system to support rules/context files alongside prompts using same format (YAML frontmatter + >>> separator), create separate `rules/` directory structure parallel to `prompts/`, reuse existing validation engine for rules files, and update sync/list/validate commands to handle both prompts and rules with appropriate filtering and display. `S`
+4. [x] Rules/Context Files Support — Extend system to support rules/context files alongside prompts using standard YAML frontmatter format (---  delimiters), create separate `rules/` directory structure parallel to `prompts/`, implement path-based type detection (files in rules/ are rules), reuse existing validation engine for rules files, and update validate command with --type flag to filter by content type (all/prompts/rules). `S`
 
 5. [ ] Strategy Pattern Architecture for Tool Handlers — Design and implement Python Protocol for ToolHandler interface, create abstract base handler with common deployment logic, establish handler registration system for extensibility, and document how to add new tool handlers. `S`
 

@@ -1,7 +1,6 @@
 ---
 title: invalid-rule
 description: Rule missing required category field
-type: rule
 ---
 
 # Invalid Rule

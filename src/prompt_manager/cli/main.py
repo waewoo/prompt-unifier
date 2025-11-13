@@ -61,6 +61,9 @@ def validate(
     ),
     json: bool = typer.Option(False, "--json"),
     verbose: bool = typer.Option(False, "--verbose", "-v"),
+    type: str = typer.Option(
+        "all", "--type", "-t", help="Content type to validate: all, prompts, or rules"
+    ),
 ) -> None:
     """Validate prompt and rule files in a directory.
 
@@ -71,9 +74,10 @@ def validate(
         directory: Directory containing prompt/rule files to validate (optional)
         json: Output in JSON format (use --json flag)
         verbose: Show detailed progress (use --verbose or -v flag)
+        type: Content type to validate: 'all' (default), 'prompts', or 'rules'
     """
     dir_path = Path(directory) if directory is not None else None
-    validate_command(dir_path, json_output=json, verbose=verbose)
+    validate_command(dir_path, json_output=json, verbose=verbose, content_type=type)
 
 
 @app.command(name="init", help="Initialize prompt-manager in current directory")

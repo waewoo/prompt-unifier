@@ -1,7 +1,6 @@
 ---
 title: python-style-guide
 description: Python coding standards and best practices
-type: rule
 category: coding-standards
 tags: [python, pep8, style]
 version: 1.0.0

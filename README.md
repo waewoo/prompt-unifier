@@ -47,42 +47,39 @@ poetry run prompt-manager status
 
 ## File Types: Prompts and Rules
 
-The prompt-manager supports two types of content files:
+The prompt-manager supports two types of content files using standard YAML frontmatter format (Jekyll/Hugo style):
 
 ### Prompts
-AI prompt templates for use with language models. Prompts are identified by the absence of a `type` field or `type: prompt` in the frontmatter.
+AI prompt templates for use with language models. Prompts are stored in the `prompts/` directory.
 
 **Example prompt file:**
 ```markdown
-name: code-review
+---
+title: code-review
 description: Review code for bugs and improvements
 version: 1.0.0
-tags:
-  - python
-  - review
->>>
+tags: [python, review]
+---
+
 # Code Review Prompt
 
 You are an expert code reviewer...
 ```
 
 ### Rules
-Coding standards, best practices, and organizational guidelines. Rules require a `type: rule` field and a `category` field in the frontmatter.
+Coding standards, best practices, and organizational guidelines. Rules are stored in the `rules/` directory and require a `category` field.
 
 **Example rule file:**
 ```markdown
-name: python-style-guide
+---
+title: Python Coding Standards
 description: Python coding standards and best practices
-type: rule
 category: coding-standards
-tags:
-  - python
-  - pep8
+tags: [python, pep8]
 version: 1.0.0
-applies_to:
-  - python
-  - django
->>>
+applies_to: ["*.py", "*.pyi"]
+---
+
 # Python Style Guide
 
 ## Naming Conventions
@@ -100,11 +97,16 @@ applies_to:
 - `deployment` - Deployment and CI/CD practices
 - `git` - Git workflow and commit conventions
 
-**Special Fields:**
-- `category` (required): Categorizes the rule for organization
-- `applies_to` (optional): List of languages/frameworks the rule applies to
+**Type Detection:**
+Files are automatically detected as prompts or rules based on their location:
+- Files in `prompts/` directory → Prompts
+- Files in `rules/` directory → Rules
 
-Both prompts and rules use the same format: YAML frontmatter followed by `>>>` separator and markdown content.
+**Special Fields:**
+- `category` (required for rules): Categorizes the rule for organization
+- `applies_to` (optional): List of glob patterns (must be quoted: `["*.py"]`)
+
+Both prompts and rules use the same format: YAML frontmatter delimited by `---` markers, followed by markdown content.
 
 ## Commands Reference
 
@@ -127,14 +129,21 @@ prompt-manager validate [DIRECTORY] [OPTIONS]
 - `DIRECTORY` (optional): Path to directory containing .md files to validate. If not provided, validates files in the synchronized storage location (requires `init` to have been run).
 
 **Options:**
+- `--type` / `-t`: Content type to validate: `all` (default), `prompts`, or `rules`
 - `--json`: Output results in JSON format
 - `--verbose` / `-v`: Show detailed validation progress
 - `--help`: Show command help
 
 **Examples:**
 ```bash
-# Validate synchronized storage (default location)
+# Validate everything (prompts + rules) in synchronized storage
 prompt-manager validate
+
+# Validate only prompts
+prompt-manager validate --type prompts
+
+# Validate only rules
+prompt-manager validate --type rules
 
 # Validate specific directory
 prompt-manager validate ./prompts

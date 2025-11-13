@@ -19,12 +19,12 @@ class ContentFileParser:
     """Parse and validate content files (prompts or rules).
 
     This parser automatically detects whether a file is a prompt or rule
-    based on the 'type' field in the YAML frontmatter, then validates
-    it against the appropriate model.
+    based on the file path. Files in 'rules/' directory are treated as rules,
+    all others are treated as prompts.
 
     Examples:
         >>> parser = ContentFileParser()
-        >>> content_file = parser.parse_file(Path("my-rule.md"))
+        >>> content_file = parser.parse_file(Path("rules/my-rule.md"))
         >>> isinstance(content_file, RuleFile)
         True
     """
@@ -38,9 +38,9 @@ class ContentFileParser:
     def parse_file(self, file_path: Path) -> ContentFile:
         """Parse a content file and return appropriate model instance.
 
-        Automatically detects file type from the 'type' field in frontmatter:
-        - type: "rule" → Returns RuleFile instance
-        - type: "prompt" or missing → Returns PromptFrontmatter instance
+        Automatically detects file type from the file path:
+        - Files in 'rules/' directory → Returns RuleFile instance
+        - All other files → Returns PromptFrontmatter instance
 
         Args:
             file_path: Path to the content file to parse
@@ -54,9 +54,9 @@ class ContentFileParser:
 
         Examples:
             >>> parser = ContentFileParser()
-            >>> rule = parser.parse_file(Path("python-style.md"))
-            >>> rule.type
-            'rule'
+            >>> rule = parser.parse_file(Path("storage/rules/python-style.md"))
+            >>> isinstance(rule, RuleFile)
+            True
         """
         # Step 1: Validate encoding
         file_content, encoding_issues = self.encoding_validator.validate_encoding(file_path)
@@ -78,22 +78,18 @@ class ContentFileParser:
         if yaml_dict is None:
             raise ValueError(f"Failed to parse YAML in file {file_path}: invalid YAML syntax")
 
-        # Step 4: Detect file type from frontmatter
-        file_type = yaml_dict.get("type", "prompt")  # Default to prompt
+        # Step 4: Detect file type from path
+        # Check if file is in a 'rules' directory
+        is_rule = "rules" in file_path.parts
 
         # Step 5: Validate and instantiate appropriate model
-        if file_type == "rule":
-            # Remove 'type' field if present, as RuleFile doesn't have it
-            rule_dict = {k: v for k, v in yaml_dict.items() if k != "type"}
-            return RuleFile(**rule_dict, content=content_text)
-        elif file_type == "prompt":
-            # Remove 'type' field if present, as PromptFrontmatter doesn't have it
-            prompt_dict = {k: v for k, v in yaml_dict.items() if k != "type"}
-            return PromptFrontmatter(**prompt_dict)
+        # Remove 'type' field if present (for backward compatibility)
+        yaml_dict.pop("type", None)
+
+        if is_rule:
+            return RuleFile(**yaml_dict, content=content_text)
         else:
-            raise ValueError(
-                f"Unknown file type '{file_type}' in {file_path}. " f"Must be 'prompt' or 'rule'"
-            )
+            return PromptFrontmatter(**yaml_dict)
 
     def parse_file_with_validation(
         self, file_path: Path
@@ -136,7 +132,7 @@ def parse_content_file(file_path: Path) -> ContentFile:
     """Parse a content file (prompt or rule) and return appropriate model.
 
     Convenience function that creates a parser and parses the file.
-    Automatically detects file type from frontmatter.
+    Automatically detects file type from path (files in 'rules/' are rules).
 
     Args:
         file_path: Path to the content file to parse
@@ -150,13 +146,13 @@ def parse_content_file(file_path: Path) -> ContentFile:
 
     Examples:
         >>> from pathlib import Path
-        >>> rule = parse_content_file(Path("python-style.md"))
-        >>> rule.type
-        'rule'
+        >>> rule = parse_content_file(Path("storage/rules/python-style.md"))
+        >>> isinstance(rule, RuleFile)
+        True
 
-        >>> prompt = parse_content_file(Path("code-review.md"))
-        >>> prompt.type
-        'prompt'
+        >>> prompt = parse_content_file(Path("storage/prompts/code-review.md"))
+        >>> isinstance(prompt, PromptFrontmatter)
+        True
     """
     parser = ContentFileParser()
     return parser.parse_file(file_path)

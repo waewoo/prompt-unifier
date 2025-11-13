@@ -1,7 +1,6 @@
 ---
 title: api-design-patterns
 description: REST API design best practices
-type: rule
 category: architecture
 tags: [rest, api, http]
 version: 1.2.0

@@ -72,11 +72,11 @@ class TestContentFileParserPrompts:
         assert "python" in result.tags
         assert result.version == "1.0.0"
 
-    def test_parse_prompt_with_explicit_type(self):
-        """Test parsing prompt with explicit type='prompt'."""
+    def test_parse_prompt_without_rules_in_path(self):
+        """Test parsing prompt file (no 'rules' in path)."""
         parser = ContentFileParser()
 
-        # Create temporary prompt file with explicit type
+        # Create temporary prompt file (path doesn't contain 'rules')
         import tempfile
 
         with tempfile.NamedTemporaryFile(mode="w", suffix=".md", delete=False) as f:
@@ -84,7 +84,6 @@ class TestContentFileParserPrompts:
                 """---
 title: test-prompt
 description: Test prompt
-type: prompt
 ---
 
 Test content"""
@@ -103,8 +102,8 @@ Test content"""
 class TestContentFileParserTypeDetection:
     """Test automatic type detection."""
 
-    def test_detects_rule_type(self):
-        """Test that type='rule' is correctly detected."""
+    def test_detects_rule_from_path(self):
+        """Test that files in 'rules/' directory are detected as rules."""
         parser = ContentFileParser()
         rule_path = RULES_DIR / "python-style.md"
 
@@ -112,8 +111,8 @@ class TestContentFileParserTypeDetection:
 
         assert isinstance(result, RuleFile)
 
-    def test_defaults_to_prompt_when_no_type(self):
-        """Test that missing type defaults to prompt."""
+    def test_defaults_to_prompt_without_rules_in_path(self):
+        """Test that files not in 'rules/' directory are treated as prompts."""
         parser = ContentFileParser()
         prompt_path = PROMPTS_DIR / "code-review.md"
 
@@ -121,18 +120,19 @@ class TestContentFileParserTypeDetection:
 
         assert isinstance(result, PromptFrontmatter)
 
-    def test_unknown_type_raises_error(self):
-        """Test that unknown type value raises ValueError."""
+    def test_ignores_type_field_for_backward_compatibility(self):
+        """Test that 'type' field is ignored if present (backward compatibility)."""
         parser = ContentFileParser()
 
         import tempfile
 
+        # Create a file with 'type' field but not in 'rules/' directory
         with tempfile.NamedTemporaryFile(mode="w", suffix=".md", delete=False) as f:
             f.write(
                 """---
 title: test
 description: Test
-type: unknown-type
+type: rule
 category: testing
 ---
 
@@ -141,11 +141,9 @@ Content"""
             temp_path = Path(f.name)
 
         try:
-            with pytest.raises(ValueError) as exc_info:
-                parser.parse_file(temp_path)
-
-            assert "Unknown file type 'unknown-type'" in str(exc_info.value)
-            assert "Must be 'prompt' or 'rule'" in str(exc_info.value)
+            # Should be treated as prompt because path doesn't contain 'rules'
+            result = parser.parse_file(temp_path)
+            assert isinstance(result, PromptFrontmatter)
         finally:
             temp_path.unlink()
 
@@ -183,7 +181,6 @@ class TestContentFileParserErrors:
                 """---
 title: test
 description: Test
-type: rule
 category: testing
 No closing delimiter, just content"""
             )
@@ -208,7 +205,6 @@ No closing delimiter, just content"""
                 """---
 title: test
 description: [invalid yaml structure
-type: rule
 ---
 
 Content"""

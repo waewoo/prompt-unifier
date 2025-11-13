@@ -26,10 +26,11 @@ def validate(
     directory: Path | None = None,
     json_output: bool = False,
     verbose: bool = False,
+    content_type: str = "all",
 ) -> None:
     """Validate prompt and rule files in a directory.
 
-    Validates all .md files against the format specification. Checks for
+    Validates .md files against the format specification. Checks for
     required fields, valid YAML frontmatter, proper separator format,
     and UTF-8 encoding.
 
@@ -41,8 +42,14 @@ def validate(
         1: Validation failed (errors found)
 
     Examples:
-        # Validate synchronized storage (default)
+        # Validate everything (prompts + rules)
         prompt-manager validate
+
+        # Validate only prompts
+        prompt-manager validate --type prompts
+
+        # Validate only rules
+        prompt-manager validate --type rules
 
         # Validate specific directory
         prompt-manager validate ./prompts
@@ -81,6 +88,28 @@ def validate(
 
         if verbose:
             console.print(f"[dim]Using storage path: {directory}[/dim]")
+
+    # Validate content_type parameter
+    if content_type not in ["all", "prompts", "rules"]:
+        typer.echo(
+            f"Error: Invalid --type '{content_type}'. Must be 'all', 'prompts', or 'rules'",
+            err=True,
+        )
+        raise typer.Exit(code=1)
+
+    # Determine which directory to validate based on content_type
+    if content_type == "prompts":
+        target_dir = directory / "prompts"
+        if not target_dir.exists():
+            typer.echo(f"Error: Prompts directory '{target_dir}' does not exist", err=True)
+            raise typer.Exit(code=1)
+        directory = target_dir
+    elif content_type == "rules":
+        target_dir = directory / "rules"
+        if not target_dir.exists():
+            typer.echo(f"Error: Rules directory '{target_dir}' does not exist", err=True)
+            raise typer.Exit(code=1)
+        directory = target_dir
 
     # Check if directory exists and is valid
     if not directory.exists():
