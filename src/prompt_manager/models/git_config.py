@@ -9,7 +9,7 @@ from pydantic import BaseModel, Field
 
 
 class GitConfig(BaseModel):
-    """Configuration model for Git repository synchronization.
+    """Configuration model for Git repository synchronization and deployment.
 
     This model stores metadata about the Git repository being synced,
     including the repository URL, last sync timestamp, and commit hash.
@@ -20,6 +20,8 @@ class GitConfig(BaseModel):
         last_sync_timestamp: ISO 8601 timestamp of last sync (None before first sync)
         last_sync_commit: Commit hash (SHA) from last sync (None before first sync)
         storage_path: Path to centralized storage directory (defaults to ~/.prompt-manager/storage)
+        deploy_tags: List of tags to filter prompts and rules for deployment (None to deploy all)
+        target_handlers: List of target handlers for deployment (None to use all registered)
 
     Examples:
         >>> # Configuration after init (all None)
@@ -31,11 +33,13 @@ class GitConfig(BaseModel):
         >>> config.repo_url is None
         True
 
-        >>> # Configuration after sync
+        >>> # Configuration after sync with deployment settings
         >>> config = GitConfig(
         ...     repo_url="https://github.com/example/prompts.git",
         ...     last_sync_timestamp="2024-11-11T14:30:00Z",
-        ...     last_sync_commit="abc1234"
+        ...     last_sync_commit="abc1234",
+        ...     deploy_tags=["python", "review"],
+        ...     target_handlers=["continue", "cursor"]
         ... )
         >>> config.repo_url
         'https://github.com/example/prompts.git'
@@ -64,9 +68,14 @@ class GitConfig(BaseModel):
         ),
     )
 
-    enabled_handlers: list[str] = Field(
-        default_factory=list,
-        description="List of enabled tool handlers",
+    deploy_tags: list[str] | None = Field(
+        default=None,
+        description="List of tags to filter prompts and rules for deployment (None to deploy all)",
+    )
+
+    target_handlers: list[str] | None = Field(
+        default=None,
+        description="List of target handlers for deployment (None to use all registered)",
     )
 
     model_config = {
@@ -83,6 +92,8 @@ class GitConfig(BaseModel):
                     "last_sync_timestamp": "2024-11-11T14:30:00Z",
                     "last_sync_commit": "abc1234",
                     "storage_path": "/home/user/.prompt-manager/storage",
+                    "deploy_tags": ["python", "review"],
+                    "target_handlers": ["continue", "cursor"],
                 },
             ]
         }

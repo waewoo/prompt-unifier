@@ -170,3 +170,77 @@ class TestConfigManager:
         assert config.repo_url == repo_url
         assert config.last_sync_commit == commit_hash
         assert config.last_sync_timestamp is not None
+
+    def test_save_config_with_deploy_fields(self, tmp_path: Path) -> None:
+        """Test that save_config handles deploy_tags and target_handlers fields."""
+        manager = ConfigManager()
+        config_path = tmp_path / "config.yaml"
+
+        config = GitConfig(
+            repo_url="https://github.com/example/prompts.git",
+            last_sync_timestamp="2024-11-11T14:30:00Z",
+            last_sync_commit="abc1234",
+            deploy_tags=["python", "review"],
+            target_handlers=["continue", "cursor"],
+        )
+
+        manager.save_config(config_path, config)
+
+        # Verify file was created
+        assert config_path.exists()
+
+        # Verify YAML contains new fields
+        with open(config_path, encoding="utf-8") as f:
+            data = yaml.safe_load(f)
+
+        assert data["repo_url"] == "https://github.com/example/prompts.git"
+        assert data["deploy_tags"] == ["python", "review"]
+        assert data["target_handlers"] == ["continue", "cursor"]
+
+    def test_load_config_with_deploy_fields(self, tmp_path: Path) -> None:
+        """Test that load_config successfully loads config with deploy fields."""
+        manager = ConfigManager()
+        config_path = tmp_path / "config.yaml"
+
+        # Create a valid config file with deploy fields
+        config_data = {
+            "repo_url": "https://github.com/example/prompts.git",
+            "last_sync_timestamp": "2024-11-11T14:30:00Z",
+            "last_sync_commit": "abc1234",
+            "deploy_tags": ["python", "api"],
+            "target_handlers": ["continue"],
+        }
+        with open(config_path, "w", encoding="utf-8") as f:
+            yaml.safe_dump(config_data, f, default_flow_style=False)
+
+        # Load and verify
+        config = manager.load_config(config_path)
+
+        assert config is not None
+        assert config.repo_url == "https://github.com/example/prompts.git"
+        assert config.deploy_tags == ["python", "api"]
+        assert config.target_handlers == ["continue"]
+
+    def test_save_config_with_none_deploy_fields(self, tmp_path: Path) -> None:
+        """Test that save_config properly handles None values for deploy fields."""
+        manager = ConfigManager()
+        config_path = tmp_path / "config.yaml"
+
+        # Create config with None deploy fields
+        config = GitConfig(
+            repo_url="https://github.com/example/prompts.git",
+            deploy_tags=None,
+            target_handlers=None,
+        )
+
+        manager.save_config(config_path, config)
+
+        # Verify file was created and None values are properly saved
+        assert config_path.exists()
+
+        with open(config_path, encoding="utf-8") as f:
+            data = yaml.safe_load(f)
+
+        # YAML represents None as null
+        assert data["deploy_tags"] is None
+        assert data["target_handlers"] is None

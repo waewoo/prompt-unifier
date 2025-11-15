@@ -1,3 +1,5 @@
+from typing import Any
+
 import pytest
 
 from prompt_manager.handlers.protocol import ToolHandler
@@ -18,16 +20,30 @@ class MockToolHandler:
     def __init__(self, name: str, status: str = "active"):
         self._name = name
         self._status = status
-        self.deployed_prompts = []
+        self.deployed_prompts: list[Any] = []
 
-    def deploy(self, prompt: PromptFrontmatter) -> None:
-        self.deployed_prompts.append(prompt)
+    def deploy(self, content: Any, content_type: str, body: str = "") -> None:
+        """Mock deploy method that accepts the correct signature."""
+        from prompt_manager.models.prompt import PromptFrontmatter
+        from prompt_manager.models.rule import RuleFrontmatter
+
+        # Create dummy content based on type
+        if content_type == "prompt":
+            prompt = PromptFrontmatter(title="test-prompt", description="Test prompt")
+            self.deployed_prompts.append(prompt)
+        elif content_type == "rule":
+            rule = RuleFrontmatter(title="test-rule", description="Test rule", category="testing")
+            self.deployed_prompts.append(rule)
 
     def get_status(self) -> str:
         return self._status
 
     def get_name(self) -> str:
         return self._name
+
+    def rollback(self) -> None:
+        """Mock rollback method."""
+        pass
 
 
 # Test cases for ToolHandler Protocol

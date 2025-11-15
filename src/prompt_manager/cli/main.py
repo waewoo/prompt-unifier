@@ -123,16 +123,22 @@ def status() -> None:
     status_command()
 
 
-@app.command(name="deploy", help="Deploy a prompt to the specified tool handlers")
+@app.command(name="deploy", help="Deploy prompts and rules to tool handlers")
 def deploy(
-    prompt_name: str = typer.Argument(..., help="The name of the prompt to deploy"),
+    prompt_name: str | None = typer.Option(
+        None, "--name", help="Name of the prompt to deploy (optional)"
+    ),
+    tags: str | None = typer.Option(
+        None, "--tags", help="Tags to filter (comma-separated, optional)"
+    ),
     handlers: str | None = typer.Option(
-        None, "--handlers", "-h", help="Comma-separated list of handlers to use"
+        None, "--handlers", help="Handlers to deploy to (comma-separated, optional)"
     ),
 ) -> None:
-    """Deploy a prompt to the specified tool handlers."""
+    """Deploy prompts and rules to the specified tool handlers."""
+    tag_list = tags.split(",") if tags else None
     handler_list = handlers.split(",") if handlers else None
-    deploy_command(prompt_name, handlers=handler_list)
+    deploy_command(prompt_name=prompt_name, tags=tag_list, handlers=handler_list)
 
 
 def main() -> None:

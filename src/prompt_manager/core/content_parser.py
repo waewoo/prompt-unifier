@@ -1,158 +1,101 @@
-"""Content file parser for both prompts and rules.
-
-This module provides functionality to parse content files (prompts or rules)
-and automatically detect the file type based on the frontmatter.
-"""
-
-from contextlib import suppress
+import re
 from pathlib import Path
 
-from prompt_manager.core.encoding import EncodingValidator
-from prompt_manager.core.separator import SeparatorValidator
-from prompt_manager.core.validator import PromptValidator
-from prompt_manager.core.yaml_parser import YAMLParser
-from prompt_manager.models import ContentFile, PromptFrontmatter, RuleFile
+import yaml
+from pydantic import ValidationError
+
+from prompt_manager.models.prompt import PromptFile, PromptFrontmatter
+from prompt_manager.models.rule import RuleFile, RuleFrontmatter
 from prompt_manager.models.validation import ValidationResult
 
 
 class ContentFileParser:
-    """Parse and validate content files (prompts or rules).
-
-    This parser automatically detects whether a file is a prompt or rule
-    based on the file path. Files in 'rules/' directory are treated as rules,
-    all others are treated as prompts.
-
-    Examples:
-        >>> parser = ContentFileParser()
-        >>> content_file = parser.parse_file(Path("rules/my-rule.md"))
-        >>> isinstance(content_file, RuleFile)
-        True
+    """
+    Parses and validates content files (prompts or rules) with YAML frontmatter.
     """
 
-    def __init__(self) -> None:
-        """Initialize the ContentFileParser with component validators."""
-        self.encoding_validator = EncodingValidator()
-        self.separator_validator = SeparatorValidator()
-        self.yaml_parser = YAMLParser()
-
-    def parse_file(self, file_path: Path) -> ContentFile:
-        """Parse a content file and return appropriate model instance.
-
-        Automatically detects file type from the file path:
-        - Files in 'rules/' directory → Returns RuleFile instance
-        - All other files → Returns PromptFrontmatter instance
-
-        Args:
-            file_path: Path to the content file to parse
-
-        Returns:
-            Either PromptFrontmatter or RuleFile instance
-
-        Raises:
-            ValueError: If file cannot be read, parsed, or validated
-            ValidationError: If content doesn't match the schema
-
-        Examples:
-            >>> parser = ContentFileParser()
-            >>> rule = parser.parse_file(Path("storage/rules/python-style.md"))
-            >>> isinstance(rule, RuleFile)
-            True
-        """
-        # Step 1: Validate encoding
-        file_content, encoding_issues = self.encoding_validator.validate_encoding(file_path)
-
-        if file_content is None:
-            raise ValueError(f"Failed to read file {file_path}: encoding validation failed")
-
-        # Step 2: Validate and split by separator
-        frontmatter_text, content_text, separator_issues = (
-            self.separator_validator.validate_separator(file_content)
+    def __init__(self, separator: str = "---"):
+        self.separator = separator
+        self.frontmatter_pattern = re.compile(
+            rf"^{re.escape(separator)}\s*\n(.*?)\n^{re.escape(separator)}\s*\n(.*)",
+            re.DOTALL | re.MULTILINE,
         )
 
-        if not frontmatter_text or not content_text:
-            raise ValueError(f"Failed to parse file {file_path}: separator validation failed")
-
-        # Step 3: Parse YAML frontmatter
-        yaml_dict, yaml_issues = self.yaml_parser.parse_yaml(frontmatter_text)
-
-        if yaml_dict is None:
-            raise ValueError(f"Failed to parse YAML in file {file_path}: invalid YAML syntax")
-
-        # Step 4: Detect file type from path
-        # Check if file is in a 'rules' directory
-        is_rule = "rules" in file_path.parts
-
-        # Step 5: Validate and instantiate appropriate model
-        # Remove 'type' field if present (for backward compatibility)
-        yaml_dict.pop("type", None)
-
-        if is_rule:
-            return RuleFile(**yaml_dict, content=content_text)
-        else:
-            return PromptFrontmatter(**yaml_dict)
-
-    def parse_file_with_validation(
+    def parse_file(
         self, file_path: Path
-    ) -> tuple[ContentFile | None, ValidationResult]:
-        """Parse file and return both the parsed model and full validation result.
-
-        This method provides complete validation feedback including all errors
-        and warnings, while also attempting to return the parsed model if possible.
-
-        Args:
-            file_path: Path to the content file to parse
-
-        Returns:
-            Tuple of (parsed_model, validation_result)
-            - parsed_model: ContentFile instance if parsing succeeded, None otherwise
-            - validation_result: Full validation result with all errors/warnings
-
-        Examples:
-            >>> parser = ContentFileParser()
-            >>> model, result = parser.parse_file_with_validation(Path("test.md"))
-            >>> if result.is_valid:
-            ...     print(f"Type: {model.type}")
+    ) -> PromptFile | RuleFile | PromptFrontmatter | RuleFrontmatter:
         """
-        # For now, use existing PromptValidator
-        # TODO: Create RuleValidator and composite validator
-        validator = PromptValidator()
-        result = validator.validate_file(file_path)
+        Parses a content file, separating frontmatter and body.
+        """
+        try:
+            content = file_path.read_text(encoding="utf-8")
+        except UnicodeDecodeError:
+            raise ValueError("encoding validation failed") from None
 
-        model = None
-        if result.is_valid:
-            with suppress(Exception):
-                # Validation passed but parsing failed - shouldn't happen
-                # but handle gracefully
-                model = self.parse_file(file_path)
+        match = self.frontmatter_pattern.match(content)
 
-        return model, result
+        if not match:
+            raise ValueError("separator validation failed")
+
+        frontmatter_str, body = match.groups()
+        try:
+            frontmatter = yaml.safe_load(frontmatter_str)
+        except yaml.YAMLError:
+            raise ValueError("invalid yaml") from None
+
+        # Remove 'type' field for backward compatibility (ignored)
+        frontmatter.pop("type", None)
+
+        content_type = self._determine_content_type(file_path)
+
+        if content_type == "prompt":
+            return PromptFile(**frontmatter, content=body.strip())
+        elif content_type == "rule":
+            return RuleFile(**frontmatter, content=body.strip())
+        else:
+            raise ValueError(f"Unknown content type for file: {file_path}")
+
+    def validate_file(self, file_path: Path) -> ValidationResult:
+        """
+        Validates a content file against the appropriate Pydantic model.
+        """
+        try:
+            self.parse_file(file_path)
+            return ValidationResult(file=file_path, status="passed")
+        except (ValueError, ValidationError) as e:
+            from prompt_manager.models.validation import ValidationIssue, ValidationSeverity
+
+            error_issue = ValidationIssue(
+                line=None,
+                severity=ValidationSeverity.ERROR,
+                code="VALIDATION_ERROR",
+                message=str(e),
+                suggestion="Fix the validation error",
+            )
+            return ValidationResult(file=file_path, status="failed", errors=[error_issue])
+
+    def _determine_content_type(self, file_path: Path) -> str:
+        """
+        Determines the content type (prompt or rule) based on the file's path.
+        """
+        if "rules" in file_path.parts:
+            return "rule"
+        else:
+            # Default to prompt if not in rules directory
+            return "prompt"
 
 
-def parse_content_file(file_path: Path) -> ContentFile:
-    """Parse a content file (prompt or rule) and return appropriate model.
-
-    Convenience function that creates a parser and parses the file.
-    Automatically detects file type from path (files in 'rules/' are rules).
+def parse_content_file(
+    file_path: Path,
+) -> PromptFile | RuleFile | PromptFrontmatter | RuleFrontmatter:
+    """
+    Convenience function to parse a content file.
 
     Args:
-        file_path: Path to the content file to parse
+        file_path: Path to the content file to parse.
 
     Returns:
-        Either PromptFrontmatter or RuleFile instance
-
-    Raises:
-        ValueError: If file cannot be read, parsed, or validated
-        ValidationError: If content doesn't match the schema
-
-    Examples:
-        >>> from pathlib import Path
-        >>> rule = parse_content_file(Path("storage/rules/python-style.md"))
-        >>> isinstance(rule, RuleFile)
-        True
-
-        >>> prompt = parse_content_file(Path("storage/prompts/code-review.md"))
-        >>> isinstance(prompt, PromptFrontmatter)
-        True
+        Parsed content file object (PromptFile, RuleFile, etc.).
     """
     parser = ContentFileParser()
     return parser.parse_file(file_path)

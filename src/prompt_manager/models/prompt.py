@@ -63,6 +63,9 @@ class PromptFrontmatter(BaseModel):
     applies_to: list[str] | None = Field(
         default=None, description="Glob patterns for applicable files (optional)"
     )
+    invokable: bool | None = Field(
+        default=None, description="Whether the prompt is invokable (optional)"
+    )
 
     @field_validator("title", "description")
     @classmethod
@@ -137,3 +140,33 @@ class PromptFrontmatter(BaseModel):
         "extra": "forbid",  # Reject any extra fields not defined in the model
         "str_strip_whitespace": True,  # Strip whitespace from strings
     }
+
+
+class PromptFile(PromptFrontmatter):
+    """Complete prompt file model including content.
+
+    Extends PromptFrontmatter to include the prompt content (text after closing ---).
+
+    Additional Field:
+        content: The prompt content/body text (required, non-empty)
+    """
+
+    content: str = Field(min_length=1, description="Prompt content (markdown after closing ---)")
+
+    @field_validator("content")
+    @classmethod
+    def validate_content(cls, v: str) -> str:
+        """Validate that content is non-empty.
+
+        Args:
+            v: The content value to validate
+
+        Returns:
+            The validated content string
+
+        Raises:
+            ValueError: If content is empty or only whitespace
+        """
+        if not v or not v.strip():
+            raise ValueError("Field 'content' must be a non-empty string")
+        return v

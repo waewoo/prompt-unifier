@@ -1,0 +1,1 @@
+@/root/travail/prompt-manager/agent-os/product/tech-stack.md

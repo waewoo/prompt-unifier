@@ -1,12 +1,14 @@
 """Unit tests for ContentFileParser."""
 
 from pathlib import Path
+from unittest.mock import patch
 
 import pytest
 from pydantic import ValidationError
 
 from prompt_manager.core.content_parser import ContentFileParser, parse_content_file
 from prompt_manager.models import PromptFrontmatter, RuleFile
+from prompt_manager.models.prompt import PromptFile
 
 # Fixture paths
 FIXTURES_DIR = Path(__file__).parent.parent / "fixtures"
@@ -85,7 +87,6 @@ class TestContentFileParserPrompts:
 title: test-prompt
 description: Test prompt
 ---
-
 Test content"""
             )
             temp_path = Path(f.name)
@@ -135,7 +136,6 @@ description: Test
 type: rule
 category: testing
 ---
-
 Content"""
             )
             temp_path = Path(f.name)
@@ -270,3 +270,365 @@ class TestContentFileParserBackwardCompatibility:
         assert result.version == "1.0.0"
         assert result.tags == ["python", "review"]
         assert result.author == "test-user"
+
+
+# Tests supplémentaires pour améliorer la couverture
+
+
+class TestContentParserAdditionalCoverage:
+    """Tests supplémentaires pour ContentFileParser."""
+
+    def test_parse_file_encoding_error(self, tmp_path: Path):
+        """Test parse_file avec une erreur d'encodage."""
+        parser = ContentFileParser()
+
+        # Créer un fichier avec un encodage invalide
+        test_file = tmp_path / "invalid_encoding.md"
+        test_file.write_bytes(b"\xff\xfe\x00invalid utf-8")
+
+        with pytest.raises(ValueError, match="encoding validation failed"):
+            parser.parse_file(test_file)
+
+    def test_parse_file_separator_validation_failed(self, tmp_path: Path):
+        """Test parse_file quand la validation du séparateur échoue."""
+        parser = ContentFileParser()
+
+        # Créer un fichier sans séparateur YAML valide
+        test_file = tmp_path / "no_separator.md"
+        test_file.write_text("Contenu sans frontmatter valide")
+
+        with pytest.raises(ValueError, match="separator validation failed"):
+            parser.parse_file(test_file)
+
+    def test_parse_file_invalid_yaml(self, tmp_path: Path):
+        """Test parse_file avec du YAML invalide."""
+        parser = ContentFileParser()
+
+        # Créer un fichier avec du YAML invalide
+        test_file = tmp_path / "invalid_yaml.md"
+        test_file.write_text("""---
+nom: test
+  description: test
+invalid yaml
+---
+content""")
+
+        with pytest.raises(ValueError, match="invalid yaml"):
+            parser.parse_file(test_file)
+
+    def test_parse_file_unknown_content_type(self, tmp_path: Path):
+        """Test parse_file avec un type de contenu inconnu."""
+        parser = ContentFileParser()
+
+        # Créer un fichier dans un répertoire qui n'est ni prompts ni rules
+        test_file = tmp_path / "unknown" / "test.md"
+        test_file.parent.mkdir()
+        test_file.write_text("""---
+title: test
+description: test
+---
+content""")
+
+        # Forcer le type de contenu à être inconnu
+        with patch.object(parser, "_determine_content_type", return_value="unknown"):
+            with pytest.raises(ValueError, match="Unknown content type for file"):
+                parser.parse_file(test_file)
+
+    def test_parse_file_remove_type_field(self, tmp_path: Path):
+        """Test que le champ 'type' est retiré pour la compatibilité descendante."""
+        parser = ContentFileParser()
+
+        # Créer un fichier avec un champ 'type'
+        test_file = tmp_path / "prompts" / "test.md"
+        test_file.parent.mkdir()
+        test_file.write_text("""---
+title: test
+description: test
+type: prompt
+---
+content""")
+
+        result = parser.parse_file(test_file)
+        assert isinstance(result, PromptFile)
+        assert result.title == "test"
+        # Le champ 'type' devrait avoir été retiré
+        assert not hasattr(result, "type")
+
+    def test_validate_file_with_validation_error(self, tmp_path: Path):
+        """Test validate_file avec une erreur de validation Pydantic."""
+        parser = ContentFileParser()
+
+        # Créer un fichier avec des données qui causeront une erreur de validation
+        test_file = tmp_path / "prompts" / "invalid.md"
+        test_file.parent.mkdir()
+        test_file.write_text("""---
+title: test
+description: test
+version: not-a-semver
+---
+content""")
+
+        # validate_file ne lève pas d'exception, il retourne un ValidationResult
+        # avec status="failed"
+        result = parser.validate_file(test_file)
+        assert result.status == "failed"
+        assert len(result.errors) > 0
+        assert "validation error" in result.errors[0].message.lower()
+
+    def test_validate_file_with_value_error(self, tmp_path: Path):
+        """Test validate_file avec une ValueError."""
+        parser = ContentFileParser()
+
+        # Créer un fichier sans séparateur valide
+        test_file = tmp_path / "invalid.md"
+        test_file.write_text("invalid content without proper separators")
+
+        # validate_file ne lève pas d'exception, il retourne un ValidationResult
+        # avec status="failed"
+        result = parser.validate_file(test_file)
+        assert result.status == "failed"
+        assert len(result.errors) > 0
+        assert "separator validation failed" in result.errors[0].message.lower()
+
+    def test_determine_content_type_rules_directory(self, tmp_path: Path):
+        """Test _determine_content_type pour un fichier dans rules/."""
+        parser = ContentFileParser()
+
+        test_file = tmp_path / "rules" / "test.md"
+        test_file.parent.mkdir()
+
+        content_type = parser._determine_content_type(test_file)
+        assert content_type == "rule"
+
+    def test_determine_content_type_prompts_directory(self, tmp_path: Path):
+        """Test _determine_content_type pour un fichier dans prompts/."""
+        parser = ContentFileParser()
+
+        test_file = tmp_path / "prompts" / "test.md"
+        test_file.parent.mkdir()
+
+        content_type = parser._determine_content_type(test_file)
+        assert content_type == "prompt"
+
+    def test_determine_content_type_default(self, tmp_path: Path):
+        """Test _determine_content_type avec le comportement par défaut."""
+        parser = ContentFileParser()
+
+        test_file = tmp_path / "other" / "test.md"
+        test_file.parent.mkdir()
+
+        content_type = parser._determine_content_type(test_file)
+        assert content_type == "prompt"  # Par défaut
+
+    def test_parse_content_file_convenience_function(self, tmp_path: Path):
+        """Test la fonction utilitaire parse_content_file."""
+        test_file = tmp_path / "prompts" / "test.md"
+        test_file.parent.mkdir()
+        test_file.write_text("""---
+title: test
+description: test
+---
+content""")
+
+        result = parse_content_file(test_file)
+        assert isinstance(result, PromptFile)
+        assert result.title == "test"
+        assert result.content == "content"
+
+    def test_parse_content_file_error(self, tmp_path: Path):
+        """Test parse_content_file avec une erreur."""
+        test_file = tmp_path / "invalid.md"
+        test_file.write_text("invalid content")
+
+        with pytest.raises(ValueError, match="separator validation failed"):
+            parse_content_file(test_file)
+
+    def test_parse_file_custom_separator(self, tmp_path: Path):
+        """Test parse_file avec un séparateur personnalisé."""
+        parser = ContentFileParser(separator="+++")
+
+        test_file = tmp_path / "prompts" / "test.md"
+        test_file.parent.mkdir()
+        test_file.write_text("""+++
+title: test
+description: test
++++
+content""")
+
+        result = parser.parse_file(test_file)
+        assert isinstance(result, PromptFile)
+        assert result.title == "test"
+
+    def test_parse_file_complex_frontmatter(self, tmp_path: Path):
+        """Test parse_file avec un frontmatter complexe."""
+        parser = ContentFileParser()
+
+        test_file = tmp_path / "prompts" / "complex.md"
+        test_file.parent.mkdir()
+        test_file.write_text("""---
+title: Complex Prompt
+description: A complex prompt with multiple fields
+category: testing
+version: 1.0.0
+tags: ["python", "test"]
+author: Test Author
+language: en
+---
+This is the content body
+with multiple lines
+and special characters: àáâãäåæçèéêë 🚀 🎉
+""")
+
+        result = parser.parse_file(test_file)
+        assert isinstance(result, PromptFile)
+        assert result.title == "Complex Prompt"
+        assert result.description == "A complex prompt with multiple fields"
+        assert result.category == "testing"
+        assert result.version == "1.0.0"
+        assert result.tags == ["python", "test"]
+        assert result.author == "Test Author"
+        assert result.language == "en"
+        assert "This is the content body" in result.content
+        assert "àáâãäåæçèéêë 🚀 🎉" in result.content
+
+    def test_parse_file_minimal_frontmatter(self, tmp_path: Path):
+        """Test parse_file avec un frontmatter minimal."""
+        parser = ContentFileParser()
+
+        test_file = tmp_path / "prompts" / "minimal.md"
+        test_file.parent.mkdir()
+        test_file.write_text("""---
+title: Minimal
+description: A minimal prompt
+---
+Minimal content""")
+
+        result = parser.parse_file(test_file)
+        assert isinstance(result, PromptFile)
+        assert result.title == "Minimal"
+        assert result.description == "A minimal prompt"
+        assert result.content == "Minimal content"
+
+    def test_parse_file_empty_body(self, tmp_path: Path):
+        """Test parse_file avec un corps vide."""
+        parser = ContentFileParser()
+
+        test_file = tmp_path / "prompts" / "empty_body.md"
+        test_file.parent.mkdir()
+        test_file.write_text("""---
+title: Empty Body
+description: A prompt with empty body
+---
+Some minimal content""")
+
+        result = parser.parse_file(test_file)
+        assert isinstance(result, PromptFile)
+        assert result.title == "Empty Body"
+        assert result.description == "A prompt with empty body"
+        assert result.content == "Some minimal content"
+
+    def test_parse_file_multiline_body(self, tmp_path: Path):
+        """Test parse_file avec un corps multiligne."""
+        parser = ContentFileParser()
+
+        test_file = tmp_path / "prompts" / "multiline.md"
+        test_file.parent.mkdir()
+        test_file.write_text("""---
+title: Multiline
+description: A multiline prompt
+---
+First line
+
+Second line
+
+Third line""")
+
+        result = parser.parse_file(test_file)
+        assert isinstance(result, PromptFile)
+        assert result.title == "Multiline"
+        assert result.description == "A multiline prompt"
+        assert "First line" in result.content
+        assert "Second line" in result.content
+        assert "Third line" in result.content
+
+    def test_parse_file_special_characters_in_content(self, tmp_path: Path):
+        """Test parse_file avec des caractères spéciaux dans le contenu."""
+        parser = ContentFileParser()
+
+        test_file = tmp_path / "prompts" / "special_chars.md"
+        test_file.parent.mkdir()
+        test_file.write_text("""---
+title: Special Characters
+description: Prompt with unicode characters
+---
+Content with special characters: àáâãäåæçèéêë 🚀 🎉 💻
+And some code:
+```python
+def hello():
+    print("Hello, world!")
+```
+""")
+
+        result = parser.parse_file(test_file)
+        assert isinstance(result, PromptFile)
+        assert result.title == "Special Characters"
+        assert result.description == "Prompt with unicode characters"
+        assert "àáâãäåæçèéêë 🚀 🎉 💻" in result.content
+        assert "```python" in result.content
+        assert 'print("Hello, world!")' in result.content
+
+    def test_parse_file_frontmatter_with_quotes(self, tmp_path: Path):
+        """Test parse_file avec des guillemets dans le frontmatter."""
+        parser = ContentFileParser()
+
+        test_file = tmp_path / "prompts" / "quotes.md"
+        test_file.parent.mkdir()
+        test_file.write_text("""---
+title: "Prompt with quotes"
+description: 'Description with "quotes"'
+tags: ["tag with spaces", 'single quoted']
+---
+Content""")
+
+        result = parser.parse_file(test_file)
+        assert isinstance(result, PromptFile)
+        assert result.title == "Prompt with quotes"
+        assert result.description == 'Description with "quotes"'
+        assert result.tags == ["tag with spaces", "single quoted"]
+
+    def test_parse_file_nested_paths(self, tmp_path: Path):
+        """Test parse_file avec des chemins imbriqués."""
+        parser = ContentFileParser()
+
+        # Test avec un chemin très imbriqué
+        test_file = tmp_path / "very" / "deeply" / "nested" / "path" / "prompts" / "test.md"
+        test_file.parent.mkdir(parents=True)
+        test_file.write_text("""---
+title: Nested Path
+description: A deeply nested prompt
+---
+Content""")
+
+        result = parser.parse_file(test_file)
+        assert isinstance(result, PromptFile)
+        assert result.title == "Nested Path"
+        assert result.description == "A deeply nested prompt"
+
+    def test_parse_file_rule_with_applies_to(self, tmp_path: Path):
+        """Test parse_file pour une règle avec applies_to."""
+        parser = ContentFileParser()
+
+        test_file = tmp_path / "rules" / "python_rule.md"
+        test_file.parent.mkdir(parents=True)
+        test_file.write_text("""---
+title: Python Rule
+description: Rule for Python files
+category: coding-standards
+applies_to: ["*.py", "*.pyx"]
+---
+This rule applies to Python files""")
+
+        result = parser.parse_file(test_file)
+        assert isinstance(result, RuleFile)
+        assert result.title == "Python Rule"
+        assert result.applies_to == ["*.py", "*.pyx"]

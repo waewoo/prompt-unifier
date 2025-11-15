@@ -1,6 +1,4 @@
-from typing import Protocol, runtime_checkable
-
-from prompt_manager.models.prompt import PromptFrontmatter
+from typing import Any, Protocol, runtime_checkable
 
 
 @runtime_checkable
@@ -11,12 +9,14 @@ class ToolHandler(Protocol):
     Any class implementing this protocol must provide the specified methods.
     """
 
-    def deploy(self, prompt: PromptFrontmatter) -> None:
+    def deploy(self, content: Any, content_type: str, body: str = "") -> None:
         """
-        Deploys a given prompt to the specific AI tool.
+        Deploys a given content (prompt or rule) to the specific AI tool.
 
         Args:
-            prompt: The PromptFrontmatter object to deploy.
+            content: The content object (PromptFrontmatter or RuleFrontmatter) to deploy.
+            content_type: The type of content ("prompt" or "rule").
+            body: The body content as a string.
         """
         ...
 
@@ -35,5 +35,11 @@ class ToolHandler(Protocol):
 
         Returns:
             A string representing the name (e.g., "continue", "cursor").
+        """
+        ...
+
+    def rollback(self) -> None:
+        """
+        Rolls back the deployment in case of failure.
         """
         ...

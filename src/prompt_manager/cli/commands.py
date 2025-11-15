@@ -12,16 +12,40 @@ from rich.console import Console
 
 from prompt_manager.config.manager import ConfigManager
 from prompt_manager.core.batch_validator import BatchValidator
+from prompt_manager.core.content_parser import ContentFileParser
 from prompt_manager.git.service import GitService
+from prompt_manager.handlers.continue_handler import ContinueToolHandler
 from prompt_manager.handlers.registry import ToolHandlerRegistry
 from prompt_manager.models.git_config import GitConfig
 from prompt_manager.models.prompt import PromptFrontmatter
+from prompt_manager.models.rule import RuleFrontmatter
 from prompt_manager.output.json_formatter import JSONFormatter
 from prompt_manager.output.rich_formatter import RichFormatter
 from prompt_manager.utils.formatting import format_timestamp
 
 # Initialize Rich Console for formatted output
 console = Console()
+
+# Constants for default values to avoid function calls in argument defaults
+DEFAULT_PROMPT_NAME = None
+DEFAULT_TAGS = None
+DEFAULT_HANDLERS = None
+
+DEFAULT_PROMPT_NAME_OPTION = typer.Option(
+    DEFAULT_PROMPT_NAME,
+    "--name",
+    help="Name of the prompt to deploy (optional, deploys all if not specified)",
+)
+DEFAULT_TAGS_OPTION = typer.Option(
+    DEFAULT_TAGS,
+    "--tags",
+    help="Tags to filter prompts and rules (optional, deploys all if not specified)",
+)
+DEFAULT_HANDLERS_OPTION = typer.Option(
+    None,
+    "--handlers",
+    help="Target handlers to deploy to (optional, deploys to all registered if not specified)",
+)
 
 
 def validate(
@@ -207,6 +231,8 @@ def init(storage_path: str | None = typer.Option(None, "--storage-path")) -> Non
                 last_sync_timestamp=None,
                 last_sync_commit=None,
                 storage_path=str(storage_dir),
+                deploy_tags=None,
+                target_handlers=None,
             )
             config_manager.save_config(config_path, empty_config)
             created_items.append(f"Created: {config_path}")
@@ -564,54 +590,140 @@ def status() -> None:
         console.print()
 
 
-class MockToolHandler:
-    def __init__(self, name: str, should_fail: bool = False):
-        self._name = name
-        self._should_fail = should_fail
-        self.deployed_prompts: list[PromptFrontmatter] = []
-        self.rolled_back = False
-
-    def deploy(self, prompt: PromptFrontmatter) -> None:
-        if self._should_fail:
-            raise ValueError("Deployment failed as requested for testing.")
-        self.deployed_prompts.append(prompt)
-
-    def rollback(self) -> None:
-        self.rolled_back = True
-
-    def get_status(self) -> str:
-        return "active"
-
-    def get_name(self) -> str:
-        return self._name
-
-
-def deploy(prompt_name: str, handlers: list[str] | None = None) -> None:
+def deploy(
+    prompt_name: str | None = DEFAULT_PROMPT_NAME_OPTION,
+    tags: list[str] | None = DEFAULT_TAGS_OPTION,
+    handlers: list[str] | None = DEFAULT_HANDLERS_OPTION,
+) -> None:
     """
-    Deploys a prompt to the specified tool handlers.
+    Deploys prompts and rules to the specified tool handlers based on configuration and CLI options.
     """
-    registry: ToolHandlerRegistry = ToolHandlerRegistry()
-    # For testing purposes, we'll register some mock handlers
-    registry.register(MockToolHandler("handler1"))
-    registry.register(MockToolHandler("handler2", should_fail=True))
-    registry.register(MockToolHandler("handler3"))
+    try:
+        # Load configuration
+        cwd = Path.cwd()
+        config_path = cwd / ".prompt-manager" / "config.yaml"
+        if not config_path.exists():
+            typer.echo("Error: Configuration not found. Run 'prompt-manager init' first.", err=True)
+            raise typer.Exit(code=1)
 
-    all_handlers = registry.get_all_handlers()
+        config_manager = ConfigManager()
+        config = config_manager.load_config(config_path)
+        if config is None or config.storage_path is None:
+            typer.echo("Error: Storage path not configured.", err=True)
+            raise typer.Exit(code=1)
 
-    if handlers:
-        all_handlers = [h for h in all_handlers if h.get_name() in handlers]
+        storage_dir = Path(config.storage_path).expanduser().resolve()
+        if not storage_dir.exists():
+            typer.echo(f"Error: Storage directory '{storage_dir}' does not exist.", err=True)
+            raise typer.Exit(code=1)
 
-    # For now, we'll just use a dummy prompt
-    prompt = PromptFrontmatter(title="Test Prompt", description="A test prompt")
+        # Determine deploy tags
+        deploy_tags = tags if tags is not None else config.deploy_tags
 
-    for handler in all_handlers:
-        try:
-            console.print(f"Deploying to {handler.get_name()}...")
-            handler.deploy(prompt)
-            console.print(f"[green]✓ Deployment to {handler.get_name()} successful.[/green]")
-        except Exception as e:
-            console.print(f"[red]✗ Deployment to {handler.get_name()} failed: {e}[/red]")
-            if hasattr(handler, "rollback"):
-                console.print(f"Rolling back {handler.get_name()}...")
-                handler.rollback()
-                console.print(f"[yellow]✓ Rollback for {handler.get_name()} complete.[/yellow]")
+        # Determine target handlers
+        target_handlers = handlers if handlers is not None else config.target_handlers
+
+        # Register handlers
+        registry: ToolHandlerRegistry = ToolHandlerRegistry()
+        registry.register(ContinueToolHandler())
+
+        all_handlers = registry.get_all_handlers()
+        if target_handlers:
+            all_handlers = [h for h in all_handlers if h.get_name() in target_handlers]
+            if not all_handlers:
+                typer.echo(f"Error: No matching handlers found for {target_handlers}.", err=True)
+                raise typer.Exit(code=1)
+
+        # Scan for content files
+        parser = ContentFileParser()
+        content_files = []
+
+        prompts_dir = storage_dir / "prompts"
+        if prompts_dir.exists():
+            for md_file in prompts_dir.glob("*.md"):
+                try:
+                    parsed_content = parser.parse_file(md_file)
+                    content_files.append((parsed_content, "prompt", md_file))
+                except Exception as e:
+                    console.print(f"[yellow]Warning: Failed to parse {md_file}: {e}[/yellow]")
+
+        rules_dir = storage_dir / "rules"
+        if rules_dir.exists():
+            for md_file in rules_dir.glob("*.md"):
+                try:
+                    parsed_content = parser.parse_file(md_file)
+                    content_files.append((parsed_content, "rule", md_file))
+                except Exception as e:
+                    console.print(f"[yellow]Warning: Failed to parse {md_file}: {e}[/yellow]")
+
+        # Filter by tags and name
+        filtered_files = []
+        for parsed_content, content_type, file_path in content_files:
+            # Filter by name if specified
+            if prompt_name and parsed_content.title != prompt_name:
+                continue
+            # Filter by tags if specified
+            if deploy_tags:
+                content_tags = getattr(parsed_content, "tags", []) or []
+                if not any(tag in content_tags for tag in deploy_tags):
+                    continue
+            filtered_files.append((parsed_content, content_type, file_path))
+
+        if not filtered_files:
+            console.print("[yellow]No content files match the specified criteria.[/yellow]")
+            return
+
+        # Deploy to handlers
+        total_deployed = 0
+        for handler in all_handlers:
+            handler_name = handler.get_name()
+            console.print(f"Deploying to {handler_name}...")
+            handler_deployed = 0
+            for parsed_content, content_type, _file_path in filtered_files:
+                try:
+                    body = str(parsed_content.content) if hasattr(parsed_content, "content") else ""
+                    if content_type == "prompt":
+                        frontmatter_dict = parsed_content.model_dump(exclude={"content"})
+                        prompt_content = PromptFrontmatter(**frontmatter_dict)
+                        handler.deploy(prompt_content, content_type, body)
+                    elif content_type == "rule":
+                        frontmatter_dict = parsed_content.model_dump(exclude={"content"})
+                        rule_content = RuleFrontmatter(**frontmatter_dict)
+                        handler.deploy(rule_content, content_type, body)
+                    handler_deployed += 1
+                    total_deployed += 1
+                    console.print(
+                        f"  [green]✓[/green] Deployed {parsed_content.title} ({content_type})"
+                    )
+                except Exception as e:
+                    console.print(
+                        f"  [red]✗[/red] Failed to deploy {parsed_content.title} "
+                        f"({content_type}): {e}"
+                    )
+                    # Attempt rollback if available
+                    if hasattr(handler, "rollback"):
+                        try:
+                            handler.rollback()
+                            console.print("  [yellow]Rollback completed.[/yellow]")
+                        except Exception as rollback_e:
+                            console.print(f"  [red]Rollback failed: {rollback_e}[/red]")
+
+            if handler_deployed > 0:
+                console.print(
+                    f"[green]✓ Deployment to {handler_name} completed "
+                    f"({handler_deployed} items).[/green]"
+                )
+            else:
+                console.print(f"[yellow]⚠ No items deployed to {handler_name}.[/yellow]")
+
+        console.print(
+            f"\n[bold]Deployment summary:[/bold] {total_deployed} items deployed "
+            f"to {len(all_handlers)} handler(s)."
+        )
+
+        # Don't exit with error code even if deployment fails partially
+        return
+
+    except Exception as e:
+        typer.echo(f"Error during deployment: {e}", err=True)
+        raise typer.Exit(code=1) from e
