@@ -97,7 +97,7 @@ poetry run pytest --cov=src/prompt_manager --cov-report=term-missing
 
 **Results:**
 - ✅ Coverage: 86.04%
-- ✅ Threshold: 85% (PASSED)
+- ✅ Threshold: 95% (PASSED)
 - ✅ All critical paths covered
 
 ### Pre-commit Hooks
@@ -170,7 +170,7 @@ Core Changes:
 
 Testing:
 - All 231 tests passing
-- Code coverage: 86.04% (above 85% threshold)
+- Code coverage: 86.04% (above 95% threshold)
 - Added 6 new CLI tests for content_type parameter
 ```
 
@@ -223,7 +223,7 @@ If user demand requires, consider:
 - ✅ Backward compatibility maintained
 
 ### Non-Functional Requirements
-- ✅ Test coverage > 85%
+- ✅ Test coverage > 95%
 - ✅ All pre-commit hooks pass
 - ✅ Performance acceptable (< 2s for validation)
 - ✅ No breaking changes

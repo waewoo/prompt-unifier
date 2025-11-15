@@ -218,6 +218,59 @@ prompt-manager status
 prompt-manager status
 ```
 
+### deploy
+
+Deploy prompts and rules to one or more tool handlers (e.g., Continue, Cursor) based on tags and configuration.
+
+```bash
+prompt-manager deploy [NAME] [OPTIONS]
+```
+
+**Arguments:**
+- `NAME` (optional): The name of a specific prompt or rule to deploy (e.g., "code-review"). If not specified, deploys all prompts and rules matching the filter criteria.
+
+**Options:**
+- `--tags TEXT`: Comma-separated list of tags to filter prompts/rules (e.g., "python,review"). Overrides `deploy_tags` from config.yaml.
+- `--handlers TEXT`: Comma-separated list of handlers to deploy to (e.g., "continue,cursor"). Overrides `target_handlers` from config.yaml.
+- `--help`: Show command help
+
+**Behavior:**
+- **Without options**: Deploys all prompts/rules matching `deploy_tags` from config.yaml to handlers in `target_handlers`
+- **With --tags**: Filters prompts/rules by specified tags (overrides config)
+- **With --handlers**: Deploys to specified handlers only (overrides config)
+- **If no config values set**: Deploys ALL prompts/rules to ALL registered handlers
+
+**Examples:**
+```bash
+# Deploy all prompts/rules with tags from config.yaml
+prompt-manager deploy
+
+# Deploy specific prompt
+prompt-manager deploy code-review
+
+# Deploy only items tagged "python" to Continue
+prompt-manager deploy --tags python --handlers continue
+
+# Deploy items with multiple tags to multiple handlers
+prompt-manager deploy --tags python,review --handlers continue,cursor
+
+# Deploy all items (ignore config filters) to all handlers
+prompt-manager deploy --tags "" --handlers ""
+```
+
+**What it does:**
+- Loads the specified prompt or rule from centralized storage
+- Processes the content for the target handler (e.g., adds `invokable: true` for Continue prompts)
+- Backs up existing files in the target directory
+- Copies the processed file to the handler's directory (e.g., `~/.continue/prompts/`)
+- Verifies the deployment (file exists, content correct)
+- Supports rollback on failure (if implemented by handler)
+
+**Error Scenarios:**
+- "Prompt/Rule 'name' not found in storage" if the item doesn't exist
+- "ToolHandler with name 'handler' not found" for invalid handlers
+- Permission errors for target directories
+
 ## Git Integration Commands
 
 The prompt-manager CLI provides Git integration commands to sync prompts and rules from a central repository to your application project. This enables teams to maintain a single source of truth for prompts and coding standards while allowing individual projects to stay synchronized.
@@ -421,22 +474,64 @@ If the status command cannot reach the remote repository (network issues), it wi
 
 ## Configuration File Format
 
-The `.prompt-manager/config.yaml` file stores synchronization metadata:
+The `.prompt-manager/config.yaml` file stores synchronization metadata and deployment preferences:
 
 ```yaml
 repo_url: https://github.com/example/prompts.git
 last_sync_timestamp: 2024-11-11T14:30:00+00:00
 last_sync_commit: abc1234
 storage_path: /home/user/.prompt-manager/storage
+deploy_tags:
+  - python
+  - review
+target_handlers:
+  - continue
+  - cursor
 ```
 
 **Fields:**
+
+**Synchronization:**
 - `repo_url` (string | null): Git repository URL to sync from
 - `last_sync_timestamp` (string | null): ISO 8601 timestamp of last sync
 - `last_sync_commit` (string | null): Short SHA hash of last synced commit
 - `storage_path` (string | null): Path to centralized storage directory (defaults to ~/.prompt-manager/storage)
 
-**Note:** This file is managed automatically by the CLI commands. Manual editing is not recommended unless recovering from corruption.
+**Deployment (optional):**
+- `deploy_tags` (list[string] | null): Tags to filter prompts/rules during deployment. Only items with at least one matching tag will be deployed. If null or empty, all items are deployed.
+- `target_handlers` (list[string] | null): Tool handlers to deploy to (e.g., "continue", "cursor"). If null or empty, deploys to all registered handlers.
+
+**Examples:**
+
+```yaml
+# Minimal configuration (no deployment filters)
+repo_url: https://github.com/example/prompts.git
+storage_path: /home/user/.prompt-manager/storage
+```
+
+```yaml
+# With deployment filters - only deploy Python items to Continue
+repo_url: https://github.com/example/prompts.git
+storage_path: /home/user/.prompt-manager/storage
+deploy_tags:
+  - python
+target_handlers:
+  - continue
+```
+
+```yaml
+# Deploy multiple tags to multiple handlers
+deploy_tags:
+  - python
+  - typescript
+  - review
+target_handlers:
+  - continue
+  - cursor
+  - windsurf
+```
+
+**Note:** Sync-related fields are managed automatically by the CLI commands. You can manually edit `deploy_tags` and `target_handlers` to configure your deployment preferences, or override them using `--tags` and `--handlers` CLI options.
 
 ## Validation
 

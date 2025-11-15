@@ -236,7 +236,7 @@ poetry run prompt-manager init
 - 2 tests updated for idempotent behavior
 - No regressions introduced
 
-**Coverage:** 87.44% (required: 85%) ✅
+**Coverage:** 87.44% (required: 95%) ✅
 - Above threshold
 - Main uncovered code: error handling edge cases
 

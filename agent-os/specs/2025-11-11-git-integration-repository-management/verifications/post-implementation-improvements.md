@@ -248,7 +248,7 @@ Leçon : Toujours vérifier que les outils (Poetry, pip, etc.) sont à jour avan
 - [x] Tous les tests passent (180/180)
 - [x] Lint passe sans erreur
 - [x] Type checking réussit
-- [x] Coverage > 85% (87.44%)
+- [x] Coverage > 95% (87.44%)
 - [x] Documentation mise à jour (spec.md)
 - [x] README mis à jour (suppression références aux workarounds)
 - [x] Pas de régression fonctionnelle

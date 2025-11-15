@@ -88,7 +88,7 @@ No visual assets provided.
 - PyYAML (>=6.0.1) available for frontmatter parsing
 - Rich (>=13.7.0) available for terminal formatting and colored output
 - Typer (>=0.12.0) configured for CLI framework with automatic help generation
-- pytest with coverage requirement (>85%) enforced via tool.coverage.report
+- pytest with coverage requirement (>95%) enforced via tool.coverage.report
 - Ruff and mypy configured with strict type checking and linting rules
 
 **Established Development Workflow**

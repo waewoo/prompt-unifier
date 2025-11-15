@@ -3,7 +3,7 @@
 ## Overview
 **Total Task Groups:** 7
 **Tech Stack:** Python 3.12+, Pydantic v2, PyYAML, Rich, Typer, pytest
-**Methodology:** TDD with 85%+ coverage requirement
+**Methodology:** TDD with 95%+ coverage requirement
 **Exit Criteria:** All tests pass, mypy/ruff validation passes, validation engine fully functional
 
 ## Task List
@@ -446,10 +446,10 @@
     - Generate random valid YAML frontmatter and verify acceptance
     - Generate random invalid separators and verify rejection
     - Test with random UTF-8 strings for robustness
-    - ONLY if coverage still below 85% after 7.4
+    - ONLY if coverage still below 95% after 7.4
   - [ ] 7.6 Run comprehensive test suite
     - Execute: `pytest tests/ -v --cov=src/prompt_manager --cov-report=term-missing --cov-report=html`
-    - Verify coverage >= 85% (project requirement)
+    - Verify coverage >= 95% (project requirement)
     - Verify all critical paths covered
     - Expected total tests: approximately 39-62 tests maximum
   - [ ] 7.7 Verify type checking and linting
@@ -468,7 +468,7 @@
 
 **Acceptance Criteria:**
 - All feature-specific tests pass (approximately 39-62 tests total)
-- Test coverage >= 85% for validation engine code
+- Test coverage >= 95% for validation engine code
 - No more than 10 additional tests added in gap-filling phase
 - All 12 error codes have test coverage
 - All 3 warning codes have test coverage
@@ -516,7 +516,7 @@
 7. **Task Group 7: Comprehensive Testing & Test Gap Analysis** (Verify completeness)
    - Depends on ALL previous groups (1-6)
    - Reviews cumulative test coverage
-   - Fills critical gaps to reach 85% coverage
+   - Fills critical gaps to reach 95% coverage
    - Final validation of entire feature
 
 ---
@@ -659,7 +659,7 @@ Batch Validator (Group 4) ← uses PromptValidator
 - [ ] JSON output matches specification exactly
 
 ### Quality Metrics
-- [ ] Test coverage >= 85%
+- [ ] Test coverage >= 95%
 - [x] mypy passes with strict mode (100% type hints)
 - [x] ruff linting passes (zero warnings)
 - [x] All tests pass consistently (for Task Groups 1-4)

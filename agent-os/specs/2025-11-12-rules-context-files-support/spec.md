@@ -777,7 +777,7 @@ $ prompt-manager list
 - ✅ Rules validation accuracy: 100%
 - ✅ List command performance: < 1s for 100 files
 - ✅ Validation performance: < 2s for 50 files
-- ✅ Test coverage: > 85% for new code
+- ✅ Test coverage: > 95% for new code
 - ✅ Zero breaking changes to existing prompts functionality
 
 **Monitoring:**

@@ -923,6 +923,326 @@ Tests échoués: ___ / ___
 
 ---
 
+## Tests de la Commande Deploy
+
+### Test 9.1: Deploy d'un prompt vers Continue (succès)
+
+```bash
+# Assurer que le storage est synchronisé
+cd /tmp/test-prompt-manager-1
+poetry run prompt-manager sync
+
+# Deploy un prompt spécifique vers Continue
+poetry run prompt-manager deploy "code-review" --handlers continue
+```
+
+**Résultat attendu:**
+- Message "Deploying to continue..."
+- Message "✓ Deployment to continue successful."
+- Fichier créé dans `~/.continue/prompts/code-review.md`
+- Frontmatter contient `name`, `description`, `invokable: true`
+- Backup créé si fichier existait (ex: code-review.md.bak)
+- Code de sortie: 0
+
+**Vérifications:**
+```bash
+cat ~/.continue/prompts/code-review.md | head -10
+# Vérifier présence de name, description, invokable: true
+ls ~/.continue/prompts/ | grep code-review
+```
+
+### Test 9.2: Deploy d'une règle vers Continue (succès)
+
+```bash
+# Deploy une règle spécifique
+poetry run prompt-manager deploy "python-style" --handlers continue
+```
+
+**Résultat attendu:**
+- Message "Deploying to continue..."
+- Message "✓ Deployment to continue successful."
+- Fichier créé dans `~/.continue/rules/python-style.md`
+- Frontmatter contient `name`, optionnels comme `globs`, `description`, `alwaysApply: false`
+- Backup créé si fichier existait
+- Code de sortie: 0
+
+**Vérifications:**
+```bash
+cat ~/.continue/rules/python-style.md | head -10
+ls ~/.continue/rules/ | grep python-style
+```
+
+### Test 9.3: Deploy avec handlers multiples (succès)
+
+```bash
+# Si d'autres handlers sont implémentés, tester avec plusieurs
+# Pour l'instant, seulement continue
+poetry run prompt-manager deploy "code-review" --handlers continue
+```
+
+**Résultat attendu:**
+- Déploiement réussi pour le handler spécifié
+- Code de sortie: 0
+
+### Test 9.4: Deploy sans handler spécifié (succès)
+
+```bash
+poetry run prompt-manager deploy "code-review"
+```
+
+**Résultat attendu:**
+- Déploiement vers tous les handlers enregistrés (actuellement continue)
+- Messages de succès pour chaque handler
+- Code de sortie: 0
+
+### Test 9.5: Deploy d'un prompt inexistant (erreur)
+
+```bash
+poetry run prompt-manager deploy "non-existent-prompt" --handlers continue
+```
+
+**Résultat attendu:**
+- Message d'erreur: "Prompt 'non-existent-prompt' not found in storage"
+- Code de sortie: 1
+
+### Test 9.6: Deploy avec handler invalide (erreur)
+
+```bash
+poetry run prompt-manager deploy "code-review" --handlers invalid-handler
+```
+
+**Résultat attendu:**
+- Message d'erreur: "ToolHandler with name 'invalid-handler' not found."
+- Code de sortie: 1
+
+### Test 9.7: Vérification du mécanisme de backup
+
+```bash
+# Créer un fichier existant dans Continue
+echo "old content" > ~/.continue/prompts/code-review.md
+
+# Deploy à nouveau
+poetry run prompt-manager deploy "code-review" --handlers continue
+
+# Vérifier backup
+ls ~/.continue/prompts/ | grep code-review.bak
+cat ~/.continue/prompts/code-review.md  # Nouveau contenu
+```
+
+**Résultat attendu:**
+- Backup créé: code-review.md.bak avec "old content"
+- Fichier principal mis à jour avec nouveau contenu
+- Message de backup dans l'output
+
+### Test 9.8: Vérification de déploiement
+
+```bash
+# Après deploy, vérifier que le contenu est correct
+poetry run prompt-manager deploy "code-review" --handlers continue
+
+# Le handler vérifie automatiquement, mais pour manuel:
+cat ~/.continue/prompts/code-review.md | grep -E "(name|description|invokable)"
+```
+
+**Résultat attendu:**
+- Frontmatter correct avec name, description, invokable: true
+- Contenu du prompt présent
+
+### Test 9.9: Deploy avec filtrage par tags (CLI)
+
+**Prérequis:** Avoir des prompts/rules avec différents tags dans le storage
+
+```bash
+# Synchroniser le storage avec des prompts taggés
+cd /tmp/test-prompt-manager-1
+poetry run prompt-manager sync
+
+# Vérifier les tags des prompts (exemple)
+# code-review.md devrait avoir tags: ["python", "review"]
+# python-style.md devrait avoir tags: ["python", "style"]
+
+# Deploy uniquement les items avec tag "python"
+poetry run prompt-manager deploy --tags python --handlers continue
+
+# Vérifier les fichiers déployés
+ls ~/.continue/prompts/
+ls ~/.continue/rules/
+```
+
+**Résultat attendu:**
+- Seuls les prompts/rules contenant le tag "python" sont déployés
+- Items sans ce tag sont ignorés
+- Messages de déploiement uniquement pour items filtrés
+- Code de sortie: 0
+
+### Test 9.10: Deploy avec tags multiples (CLI)
+
+```bash
+# Deploy items avec tags "python" OU "review"
+poetry run prompt-manager deploy --tags python,review --handlers continue
+
+# Vérifier
+ls ~/.continue/prompts/ | wc -l
+```
+
+**Résultat attendu:**
+- Items contenant au moins un des tags spécifiés sont déployés
+- Plus d'items que le test 9.9 (qui ne filtrait que "python")
+- Code de sortie: 0
+
+### Test 9.11: Configuration de deploy_tags dans config.yaml
+
+```bash
+cd /tmp/test-prompt-manager-1
+
+# Éditer manuellement config.yaml pour ajouter deploy_tags
+cat > .prompt-manager/config.yaml << 'EOF'
+repo_url: https://github.com/example/prompts.git
+last_sync_timestamp: 2024-11-15T10:00:00+00:00
+last_sync_commit: abc1234
+storage_path: ~/.prompt-manager/storage
+deploy_tags:
+  - python
+  - review
+EOF
+
+# Deploy sans options (utilise deploy_tags de config)
+poetry run prompt-manager deploy --handlers continue
+
+# Vérifier
+ls ~/.continue/prompts/
+```
+
+**Résultat attendu:**
+- Seuls les items avec tags "python" OU "review" sont déployés
+- Comportement identique à `--tags python,review`
+- Config.yaml est utilisé automatiquement
+- Code de sortie: 0
+
+### Test 9.12: Configuration de target_handlers dans config.yaml
+
+```bash
+# Éditer config.yaml pour ajouter target_handlers
+cat >> .prompt-manager/config.yaml << 'EOF'
+target_handlers:
+  - continue
+EOF
+
+# Deploy sans option --handlers (utilise config)
+poetry run prompt-manager deploy code-review
+
+# Vérifier
+ls ~/.continue/prompts/code-review.md
+```
+
+**Résultat attendu:**
+- Déploiement vers "continue" uniquement (depuis config)
+- Pas besoin de spécifier --handlers
+- Code de sortie: 0
+
+### Test 9.13: Override de config avec options CLI
+
+```bash
+# Config contient deploy_tags: ["python"] et target_handlers: ["continue"]
+cat > .prompt-manager/config.yaml << 'EOF'
+repo_url: https://github.com/example/prompts.git
+storage_path: ~/.prompt-manager/storage
+deploy_tags:
+  - python
+target_handlers:
+  - continue
+EOF
+
+# Override avec --tags pour déployer tous les items (tag différent)
+poetry run prompt-manager deploy --tags review --handlers continue
+```
+
+**Résultat attendu:**
+- Les options CLI `--tags review` et `--handlers continue` ont priorité
+- Les valeurs de config.yaml sont ignorées
+- Seuls items avec tag "review" déployés
+- Code de sortie: 0
+
+### Test 9.14: Deploy sans nom (tous les items filtrés)
+
+```bash
+# Config avec deploy_tags
+cat > .prompt-manager/config.yaml << 'EOF'
+repo_url: https://github.com/example/prompts.git
+storage_path: ~/.prompt-manager/storage
+deploy_tags:
+  - python
+target_handlers:
+  - continue
+EOF
+
+# Deploy TOUS les items qui matchent les filtres (pas de nom spécifié)
+poetry run prompt-manager deploy
+
+# Vérifier
+ls ~/.continue/prompts/
+ls ~/.continue/rules/
+```
+
+**Résultat attendu:**
+- Tous les prompts ET rules avec tag "python" sont déployés
+- Pas seulement un item spécifique
+- Messages de déploiement pour chaque item
+- Résumé: "X items deployed to continue"
+- Code de sortie: 0
+
+### Test 9.15: Deploy sans filtres (tous items, tous handlers)
+
+```bash
+# Config SANS deploy_tags ni target_handlers
+cat > .prompt-manager/config.yaml << 'EOF'
+repo_url: https://github.com/example/prompts.git
+storage_path: ~/.prompt-manager/storage
+EOF
+
+# Deploy sans options
+poetry run prompt-manager deploy
+```
+
+**Résultat attendu:**
+- TOUS les prompts et rules dans le storage sont déployés
+- Déploiement vers TOUS les handlers enregistrés (actuellement continue)
+- Pas de filtrage appliqué
+- Code de sortie: 0
+
+### Test 9.16: Deploy avec tags vides (désactiver filtrage config)
+
+```bash
+# Config avec deploy_tags
+cat > .prompt-manager/config.yaml << 'EOF'
+storage_path: ~/.prompt-manager/storage
+deploy_tags:
+  - python
+EOF
+
+# Override pour désactiver le filtrage par tags
+poetry run prompt-manager deploy --tags ""
+```
+
+**Résultat attendu:**
+- Le filtrage par tags est désactivé
+- TOUS les items sont déployés (ignore deploy_tags de config)
+- Code de sortie: 0
+
+### Test 9.17: Vérification du message "No content files match"
+
+```bash
+# Deploy avec un tag qui n'existe sur aucun item
+poetry run prompt-manager deploy --tags nonexistent-tag --handlers continue
+```
+
+**Résultat attendu:**
+- Message: "No content files match the specified criteria."
+- Aucun déploiement effectué
+- Code de sortie: 0 (pas une erreur, juste aucun match)
+
+---
+
 ## Contact et Support
 
 Pour signaler des bugs ou demander de l'aide :

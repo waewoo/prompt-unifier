@@ -12,4 +12,4 @@
 
 ## Scenarios
 - Lint stage fails on style violations.  
-- Tests must reach ≥ 85% coverage or fail.
+- Tests must reach ≥ 95% coverage or fail.

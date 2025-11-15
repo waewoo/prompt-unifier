@@ -230,7 +230,7 @@ ContentFile = Union[PromptFile, RuleFile]
 - ✅ Filtrage par type/catégorie fonctionne
 - ✅ Temps de validation < 2 secondes pour 50 files
 - ✅ Documentation complète du format rules
-- ✅ Tests couvrent validation des rules (>85%)
+- ✅ Tests couvrent validation des rules (>95%)
 
 ## Prochaines étapes
 

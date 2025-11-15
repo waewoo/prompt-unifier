@@ -25,7 +25,7 @@ Establish a complete, production-ready Python project structure for the Prompt M
 - Include dev dependencies: pytest, pytest-cov, pytest-mock, ruff, mypy, pre-commit
 - Configure Ruff with PEP 8 compliance, import sorting, and code complexity limits
 - Configure mypy in strict mode with no implicit Any types
-- Define pytest configuration with minimum 85% coverage requirement
+- Define pytest configuration with minimum 95% coverage requirement
 - Set project metadata: name, version, description, authors, license
 
 **Makefile Development Targets**

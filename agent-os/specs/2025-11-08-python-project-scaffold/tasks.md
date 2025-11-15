@@ -80,7 +80,7 @@ This tasks list creates a complete, production-ready Python project structure fo
     - Warn on redundant casts
   - [x] 3.6 Configure pytest settings in pyproject.toml
     - Test paths: tests/
-    - Minimum coverage: 85%
+    - Minimum coverage: 95%
     - Coverage report format: term-missing
     - Coverage fail under: 85
   - [x] 3.7 Create .gitignore for Python projects
@@ -98,7 +98,7 @@ This tasks list creates a complete, production-ready Python project structure fo
 - All 5 core dependencies and 6 dev dependencies specified with compatible versions
 - Ruff configured with line-length=100, target-version="py312"
 - mypy configured with strict=true
-- pytest configured with testpaths=["tests"], coverage minimum 85%
+- pytest configured with testpaths=["tests"], coverage minimum 95%
 - .gitignore contains all standard Python ignores (12+ patterns)
 - `poetry install` completes successfully without errors
 - poetry.lock file generated

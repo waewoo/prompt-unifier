@@ -84,7 +84,7 @@ Documentation des améliorations apportées après l'implémentation initiale :
 | **Spécification** | ✅ Complète et à jour |
 | **Implémentation** | ✅ Terminée + Améliorations |
 | **Tests** | ✅ 182/182 passent |
-| **Coverage** | ✅ 87.51% (seuil: 85%) |
+| **Coverage** | ✅ 87.51% (seuil: 95%) |
 | **Lint** | ✅ Tous les checks passent |
 | **Type Checking** | ✅ Aucun problème (26 fichiers) |
 | **Documentation** | ✅ À jour |
@@ -162,7 +162,7 @@ make check       # Tout (lint + typecheck + test)
 3. **Storage Centralisé:** Les prompts et rules sont stockés dans `~/.prompt-manager/storage` par défaut
 4. **Rules Directory:** Le répertoire rules/ est optionnel dans les repositories - prompts/ reste obligatoire
 5. **Tests:** Toujours exécuter `make check` avant de commiter
-6. **Coverage:** Maintenir au-dessus de 85%
+6. **Coverage:** Maintenir au-dessus de 95%
 
 ## Historique
 

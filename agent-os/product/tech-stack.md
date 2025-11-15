@@ -53,7 +53,7 @@ This is a pure command-line interface tool with no graphical user interface, no 
 **pytest**
 - **Purpose**: Test framework following TDD methodology
 - **Rationale**: Comprehensive test discovery, fixture system, parametrized testing, plugin ecosystem
-- **Coverage Target**: >85% code coverage
+- **Coverage Target**: >95% code coverage
 
 **pytest-cov**
 - **Purpose**: Coverage reporting integrated with pytest
@@ -221,7 +221,7 @@ This is a pure command-line interface tool with no graphical user interface, no 
 **Test-Driven Development**
 - Write tests before implementation
 - Red-Green-Refactor cycle
-- High coverage (>85%) requirement
+- High coverage (>95%) requirement
 
 **Error Handling**
 - Explicit exception types, not bare `except:`

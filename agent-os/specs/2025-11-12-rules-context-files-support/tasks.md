@@ -19,7 +19,7 @@ Instead of implementing all 29 tasks below, we took a **pragmatic, simplified ap
 ### Results
 
 - ✅ All tests passing (231/231)
-- ✅ Code coverage: 86.04% (above 85% threshold)
+- ✅ Code coverage: 86.04% (above 95% threshold)
 - ✅ Zero breaking changes
 - ✅ Full backward compatibility
 - ✅ Performance: < 0.5s for typical repositories
@@ -1129,7 +1129,7 @@ prompt-manager validate --type rules
 - ✅ `list` command displays both file types
 - ✅ All filters work (type, category, tags, search)
 - ✅ Rich UI displays clearly
-- ✅ Test coverage > 85%
+- ✅ Test coverage > 95%
 - ✅ Documentation complete
 - ✅ Performance targets met (< 2s for 100 files)
 - ✅ Backward compatible
