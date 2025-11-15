@@ -13,7 +13,9 @@ from rich.console import Console
 from prompt_manager.config.manager import ConfigManager
 from prompt_manager.core.batch_validator import BatchValidator
 from prompt_manager.git.service import GitService
+from prompt_manager.handlers.registry import ToolHandlerRegistry
 from prompt_manager.models.git_config import GitConfig
+from prompt_manager.models.prompt import PromptFrontmatter
 from prompt_manager.output.json_formatter import JSONFormatter
 from prompt_manager.output.rich_formatter import RichFormatter
 from prompt_manager.utils.formatting import format_timestamp
@@ -259,7 +261,7 @@ wheels/
 *.egg
 
 # Virtual environments
-venv/
+virtualenv/
 ENV/
 env/
 
@@ -560,3 +562,56 @@ def status() -> None:
         typer.echo(f"Error: {e}", err=True)
         # Status is informational - don't exit with error code
         console.print()
+
+
+class MockToolHandler:
+    def __init__(self, name: str, should_fail: bool = False):
+        self._name = name
+        self._should_fail = should_fail
+        self.deployed_prompts: list[PromptFrontmatter] = []
+        self.rolled_back = False
+
+    def deploy(self, prompt: PromptFrontmatter) -> None:
+        if self._should_fail:
+            raise ValueError("Deployment failed as requested for testing.")
+        self.deployed_prompts.append(prompt)
+
+    def rollback(self) -> None:
+        self.rolled_back = True
+
+    def get_status(self) -> str:
+        return "active"
+
+    def get_name(self) -> str:
+        return self._name
+
+
+def deploy(prompt_name: str, handlers: list[str] | None = None) -> None:
+    """
+    Deploys a prompt to the specified tool handlers.
+    """
+    registry: ToolHandlerRegistry = ToolHandlerRegistry()
+    # For testing purposes, we'll register some mock handlers
+    registry.register(MockToolHandler("handler1"))
+    registry.register(MockToolHandler("handler2", should_fail=True))
+    registry.register(MockToolHandler("handler3"))
+
+    all_handlers = registry.get_all_handlers()
+
+    if handlers:
+        all_handlers = [h for h in all_handlers if h.get_name() in handlers]
+
+    # For now, we'll just use a dummy prompt
+    prompt = PromptFrontmatter(title="Test Prompt", description="A test prompt")
+
+    for handler in all_handlers:
+        try:
+            console.print(f"Deploying to {handler.get_name()}...")
+            handler.deploy(prompt)
+            console.print(f"[green]✓ Deployment to {handler.get_name()} successful.[/green]")
+        except Exception as e:
+            console.print(f"[red]✗ Deployment to {handler.get_name()} failed: {e}[/red]")
+            if hasattr(handler, "rollback"):
+                console.print(f"Rolling back {handler.get_name()}...")
+                handler.rollback()
+                console.print(f"[yellow]✓ Rollback for {handler.get_name()} complete.[/yellow]")

@@ -1,16 +1,14 @@
-"""Configuration file management for Git repository sync.
-
-This module provides the ConfigManager class for creating, loading, saving,
-and updating Git configuration files (.prompt-manager/config.yaml).
-"""
-
 from datetime import UTC, datetime
 from pathlib import Path
 from typing import Any
 
 import yaml
+from pydantic import ValidationError
+from rich.console import Console
 
 from prompt_manager.models.git_config import GitConfig
+
+console = Console()
 
 
 class ConfigManager:
@@ -53,27 +51,26 @@ class ConfigManager:
             return None
 
         try:
-            # Read and parse YAML file using safe_load (security best practice)
             with open(config_path, encoding="utf-8") as f:
                 data = yaml.safe_load(f)
-
-            # Validate that data is a dictionary
-            if not isinstance(data, dict):
-                return None
-
-            # Create GitConfig from parsed data
-            # Pydantic will validate field types
-            config = GitConfig(**data)
-            return config
-
-        except yaml.YAMLError:
-            # Corrupted YAML file - return None
+                if data is None:  # Handle empty YAML file
+                    return GitConfig()  # Return default config if file is empty
+                return GitConfig(**data)
+        except FileNotFoundError:
             return None
-        except (ValueError, TypeError):
-            # Invalid data structure or validation error
+        except yaml.YAMLError as e:
+            console.print(f"[red]Error: Invalid YAML format in {config_path}: {e}[/red]")
             return None
-        except Exception:
-            # Catch-all for other errors (e.g., encoding issues)
+        except ValidationError as e:
+            console.print(
+                f"[red]Error: Configuration validation failed for {config_path}: {e}[/red]"
+            )
+            return None
+        except Exception as e:
+            console.print(
+                f"[red]An unexpected error occurred while loading config from "
+                f"{config_path}: {e}[/red]"
+            )
             return None
 
     def save_config(self, config_path: Path, config: GitConfig) -> None:

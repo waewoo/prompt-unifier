@@ -8,6 +8,9 @@ from pathlib import Path
 import typer
 
 from prompt_manager.cli.commands import (
+    deploy as deploy_command,
+)
+from prompt_manager.cli.commands import (
     init as init_command,
 )
 from prompt_manager.cli.commands import (
@@ -118,6 +121,18 @@ def status() -> None:
     updates are available from the remote repository.
     """
     status_command()
+
+
+@app.command(name="deploy", help="Deploy a prompt to the specified tool handlers")
+def deploy(
+    prompt_name: str = typer.Argument(..., help="The name of the prompt to deploy"),
+    handlers: str | None = typer.Option(
+        None, "--handlers", "-h", help="Comma-separated list of handlers to use"
+    ),
+) -> None:
+    """Deploy a prompt to the specified tool handlers."""
+    handler_list = handlers.split(",") if handlers else None
+    deploy_command(prompt_name, handlers=handler_list)
 
 
 def main() -> None:

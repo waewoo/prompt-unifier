@@ -64,6 +64,11 @@ class GitConfig(BaseModel):
         ),
     )
 
+    enabled_handlers: list[str] = Field(
+        default_factory=list,
+        description="List of enabled tool handlers",
+    )
+
     model_config = {
         "json_schema_extra": {
             "examples": [
