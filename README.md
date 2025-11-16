@@ -716,6 +716,48 @@ make check
 
 # Format code
 make format
+
+# Generate changelog
+make changelog
+
+# Create a new release (e.g., make release VERSION_BUMP=patch)
+make release VERSION_BUMP=<type>
+```
+
+### CI/CD Local Testing
+
+To run GitLab CI/CD jobs locally, you can use `gitlab-ci-local`. This is useful for debugging your `.gitlab-ci.yml` pipeline without pushing to a remote repository.
+
+#### Prerequisites
+
+You need Node.js and npm installed to install `gitlab-ci-local`.
+
+```bash
+# Install Node.js and npm (example for Ubuntu/Debian)
+sudo apt update
+sudo apt install nodejs npm
+
+# Install gitlab-ci-local globally
+npm install -g gitlab-ci-local
+```
+
+#### Usage
+
+```bash
+# Run tests in GitLab CI environment (with Docker and cache)
+make test-ci
+
+# Run tests with shell executor (faster, less accurate)
+make test-ci-shell
+
+# Run a specific CI job (e.g., make test-ci-job JOB=lint)
+make test-ci-job JOB=<name>
+
+# List all available GitLab CI jobs
+make test-ci-list
+
+# Clean GitLab CI local cache and volumes
+make clean-ci
 ```
 
 ### Running Tests

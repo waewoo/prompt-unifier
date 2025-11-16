@@ -172,6 +172,20 @@ poetry run prompt-manager <command>
 | `make format` | Format code |
 | `make typecheck` | Run mypy |
 | `make check` | All checks (lint + types + tests) |
+| `make changelog` | Generate changelog |
+| `make release` | Create a new release |
+
+### GitLab CI Local Testing
+
+To run GitLab CI/CD jobs locally, you can use `gitlab-ci-local`. This requires Node.js and npm.
+Install `gitlab-ci-local` globally: `npm install -g gitlab-ci-local`
+
+Then use the following `make` targets:
+- `make test-ci` | Run tests in GitLab CI environment (Docker, with cache)
+- `make test-ci-shell` | Run tests with shell executor (faster, less accurate)
+- `make test-ci-job JOB=<name>` | Run specific GitLab CI job
+- `make test-ci-list` | List all available GitLab CI jobs
+- `make clean-ci` | Clean GitLab CI local cache and volumes
 
 ---
 
