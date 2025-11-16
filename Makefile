@@ -27,6 +27,8 @@ test:
 	@# Clean test artifacts from storage
 	@rm -f ~/.prompt-manager/storage/prompts/test-prompt.md 2>/dev/null || true
 	@rm -f ~/.prompt-manager/storage/rules/test-rule.md 2>/dev/null || true
+	@rm -f ~/.prompt-manager/storage/prompts/main-prompt.md 2>/dev/null || true
+	@rm -f ~/.prompt-manager/storage/rules/main-rule.md 2>/dev/null || true
 
 # Run Ruff linter checks
 lint:
