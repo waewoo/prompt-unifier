@@ -1,0 +1,1 @@
+Implement recursive file discovery for `prompts/` and `rules/` directories when using the `deploy` command. The current functionality only processes files at the root of these directories. The new feature should traverse all subdirectories within `prompts/` and `rules/` to include all nested prompt and rule files in the deployment process.
