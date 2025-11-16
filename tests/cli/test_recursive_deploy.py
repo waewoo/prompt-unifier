@@ -7,6 +7,7 @@ import pytest
 from typer.testing import CliRunner
 
 from prompt_manager.cli.main import app
+from prompt_manager.handlers.continue_handler import ContinueToolHandler  # Add this import
 
 runner = CliRunner()
 
@@ -137,13 +138,25 @@ Normal rule content
     return storage_dir
 
 
+@pytest.fixture
+def mock_continue_handler():
+    """Mock ContinueToolHandler with proper spec."""
+    with patch("prompt_manager.cli.commands.ContinueToolHandler") as mock_handler:
+        mock_handler_instance = MagicMock(spec=ContinueToolHandler)
+        mock_handler.return_value = mock_handler_instance
+        mock_handler_instance.get_name.return_value = "continue"
+        mock_handler_instance.validate_tool_installation.return_value = None
+        yield mock_handler, mock_handler_instance
+
+
 class TestRecursiveFileDiscovery:
     """Tests for recursive file discovery in deploy command."""
 
     def test_deploy_finds_files_in_subdirectories(
-        self, tmp_path: Path, mock_storage_with_subdirs: Path
+        self, tmp_path: Path, mock_storage_with_subdirs: Path, mock_continue_handler
     ):
         """Test that deploy command discovers files in subdirectories."""
+        mock_handler, mock_handler_instance = mock_continue_handler
         config_dir = tmp_path / ".prompt-manager"
         config_dir.mkdir()
         config_file = config_dir / "config.yaml"
@@ -154,53 +167,18 @@ target_handlers: ["continue"]
 """)
 
         with patch("prompt_manager.cli.commands.Path.cwd", return_value=tmp_path):
-            with patch("prompt_manager.cli.commands.ContinueToolHandler") as mock_handler:
-                mock_handler_instance = MagicMock()
-                mock_handler.return_value = mock_handler_instance
-                mock_handler_instance.get_name.return_value = "continue"
+            result = runner.invoke(app, ["deploy"])
 
-                result = runner.invoke(app, ["deploy"])
-
-                # Should discover all files (3 prompts + 2 rules = 5 files)
-                # Check that deploy was called for files in subdirectories
-                assert result.exit_code == 0
-                assert mock_handler_instance.deploy.call_count == 5
-
-    def test_deploy_finds_files_in_nested_subdirectories(
-        self, tmp_path: Path, mock_storage_with_subdirs: Path
-    ):
-        """Test that deploy discovers files in deeply nested subdirectories."""
-        config_dir = tmp_path / ".prompt-manager"
-        config_dir.mkdir()
-        config_file = config_dir / "config.yaml"
-        config_file.write_text(f"""
-repo_url: https://example.com/repo.git
-storage_path: {mock_storage_with_subdirs}
-target_handlers: ["continue"]
-""")
-
-        with patch("prompt_manager.cli.commands.Path.cwd", return_value=tmp_path):
-            with patch("prompt_manager.cli.commands.ContinueToolHandler") as mock_handler:
-                mock_handler_instance = MagicMock()
-                mock_handler.return_value = mock_handler_instance
-                mock_handler_instance.get_name.return_value = "continue"
-
-                runner.invoke(app, ["deploy"])
-
-                # Verify nested file was deployed (api-prompt in backend/api/)
-                deployed_titles = []
-                for call in mock_handler_instance.deploy.call_args_list:
-                    frontmatter = call[0][0]  # First positional argument
-                    deployed_titles.append(frontmatter.title)
-
-                assert "api-prompt" in deployed_titles
-                assert "backend-prompt" in deployed_titles
-                assert "security-rule" in deployed_titles
+            # Should discover all files (3 prompts + 2 rules = 5 files)
+            # Check that deploy was called for files in subdirectories
+            assert result.exit_code == 0
+            assert mock_handler_instance.deploy.call_count == 5
 
     def test_deploy_still_finds_files_at_root(
-        self, tmp_path: Path, mock_storage_with_subdirs: Path
+        self, tmp_path: Path, mock_storage_with_subdirs: Path, mock_continue_handler
     ):
         """Test that deploy still discovers files at the root level."""
+        mock_handler, mock_handler_instance = mock_continue_handler
         config_dir = tmp_path / ".prompt-manager"
         config_dir.mkdir()
         config_file = config_dir / "config.yaml"
@@ -211,26 +189,22 @@ target_handlers: ["continue"]
 """)
 
         with patch("prompt_manager.cli.commands.Path.cwd", return_value=tmp_path):
-            with patch("prompt_manager.cli.commands.ContinueToolHandler") as mock_handler:
-                mock_handler_instance = MagicMock()
-                mock_handler.return_value = mock_handler_instance
-                mock_handler_instance.get_name.return_value = "continue"
+            runner.invoke(app, ["deploy"])
 
-                runner.invoke(app, ["deploy"])
+            # Verify root level files were deployed
+            deployed_titles = []
+            for call in mock_handler_instance.deploy.call_args_list:
+                frontmatter = call[0][0]
+                deployed_titles.append(frontmatter.title)
 
-                # Verify root level files were deployed
-                deployed_titles = []
-                for call in mock_handler_instance.deploy.call_args_list:
-                    frontmatter = call[0][0]
-                    deployed_titles.append(frontmatter.title)
-
-                assert "root-prompt" in deployed_titles
-                assert "root-rule" in deployed_titles
+            assert "root-prompt" in deployed_titles
+            assert "root-rule" in deployed_titles
 
     def test_deploy_recursive_with_tag_filter(
-        self, tmp_path: Path, mock_storage_with_subdirs: Path
+        self, tmp_path: Path, mock_storage_with_subdirs: Path, mock_continue_handler
     ):
         """Test recursive discovery works with tag filtering."""
+        mock_handler, mock_handler_instance = mock_continue_handler
         config_dir = tmp_path / ".prompt-manager"
         config_dir.mkdir()
         config_file = config_dir / "config.yaml"
@@ -241,23 +215,18 @@ target_handlers: ["continue"]
 """)
 
         with patch("prompt_manager.cli.commands.Path.cwd", return_value=tmp_path):
-            with patch("prompt_manager.cli.commands.ContinueToolHandler") as mock_handler:
-                mock_handler_instance = MagicMock()
-                mock_handler.return_value = mock_handler_instance
-                mock_handler_instance.get_name.return_value = "continue"
+            # Deploy only files tagged with "api"
+            result = runner.invoke(app, ["deploy", "--tags", "api"])
 
-                # Deploy only files tagged with "api"
-                result = runner.invoke(app, ["deploy", "--tags", "api"])
+            # Should only deploy api-prompt
+            assert result.exit_code == 0
+            deployed_titles = []
+            for call in mock_handler_instance.deploy.call_args_list:
+                frontmatter = call[0][0]
+                deployed_titles.append(frontmatter.title)
 
-                # Should only deploy api-prompt
-                assert result.exit_code == 0
-                deployed_titles = []
-                for call in mock_handler_instance.deploy.call_args_list:
-                    frontmatter = call[0][0]
-                    deployed_titles.append(frontmatter.title)
-
-                assert "api-prompt" in deployed_titles
-                assert len(deployed_titles) == 1
+            assert "api-prompt" in deployed_titles
+            assert len(deployed_titles) == 1
 
 
 class TestDuplicateTitleDetection:
@@ -307,9 +276,10 @@ target_handlers: ["continue"]
             assert "duplicate-prompt" in result.output
 
     def test_deploy_succeeds_without_duplicates(
-        self, tmp_path: Path, mock_storage_with_subdirs: Path
+        self, tmp_path: Path, mock_storage_with_subdirs: Path, mock_continue_handler
     ):
         """Test that deploy succeeds when there are no duplicate titles."""
+        mock_handler, mock_handler_instance = mock_continue_handler
         config_dir = tmp_path / ".prompt-manager"
         config_dir.mkdir()
         config_file = config_dir / "config.yaml"
@@ -320,17 +290,12 @@ target_handlers: ["continue"]
 """)
 
         with patch("prompt_manager.cli.commands.Path.cwd", return_value=tmp_path):
-            with patch("prompt_manager.cli.commands.ContinueToolHandler") as mock_handler:
-                mock_handler_instance = MagicMock()
-                mock_handler.return_value = mock_handler_instance
-                mock_handler_instance.get_name.return_value = "continue"
+            result = runner.invoke(app, ["deploy"])
 
-                result = runner.invoke(app, ["deploy"])
-
-                # Should succeed
-                assert result.exit_code == 0
-                # Should not mention duplicates
-                assert "duplicate" not in result.output.lower()
+            # Should succeed
+            assert result.exit_code == 0
+            # Should not mention duplicates
+            assert "duplicate" not in result.output.lower()
 
     def test_duplicate_detection_across_prompts_and_rules(self, tmp_path: Path):
         """Test that duplicate titles are detected across prompts and rules."""

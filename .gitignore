@@ -42,6 +42,7 @@ wheels/
 .project
 .pydevproject
 .settings/
+.gitlab-ci-local/
 
 # OS-specific files
 .DS_Store
