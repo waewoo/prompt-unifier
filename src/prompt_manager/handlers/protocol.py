@@ -1,3 +1,4 @@
+from pathlib import Path
 from typing import Any, Protocol, runtime_checkable
 
 
@@ -15,6 +16,7 @@ class ToolHandler(Protocol):
         content_type: str,
         body: str = "",
         source_filename: str | None = None,
+        relative_path: Path | None = None,
     ) -> None:
         """
         Deploys a given content (prompt or rule) to the specific AI tool.
@@ -25,6 +27,8 @@ class ToolHandler(Protocol):
             body: The body content as a string.
             source_filename: Original filename (without path) to preserve in destination.
                            If None, uses content.title as filename.
+            relative_path: Relative path from prompts/ or rules/ directory to preserve
+                          subdirectory structure in deployment. If None, deploys to root.
         """
         ...
 

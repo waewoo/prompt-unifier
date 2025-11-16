@@ -148,53 +148,75 @@ def validate(
         if not target_dir.exists():
             typer.echo(f"Error: Prompts directory '{target_dir}' does not exist", err=True)
             raise typer.Exit(code=1)
-        directory = target_dir
+        directories = [target_dir]
     elif content_type == "rules":
         target_dir = directory / "rules"
         if not target_dir.exists():
             typer.echo(f"Error: Rules directory '{target_dir}' does not exist", err=True)
             raise typer.Exit(code=1)
-        directory = target_dir
-
-    # Check if directory exists and is valid
-    if not directory.exists():
-        typer.echo(f"Error: Directory '{directory}' does not exist", err=True)
-        raise typer.Exit(code=1)
-
-    if not directory.is_dir():
-        typer.echo(f"Error: '{directory}' is not a directory", err=True)
-        raise typer.Exit(code=1)
-
-    # Validate the directory
-    validator = BatchValidator()
-    summary = validator.validate_directory(directory)
-
-    # Format and display results
-    if json_output:
-        json_formatter = JSONFormatter()
-        json_str = json_formatter.format_summary(summary, directory)
-        typer.echo(json_str)
+        directories = [target_dir]
     else:
+        # Validate both prompts and rules
+        directories = []
+        prompts_dir = directory / "prompts"
+        rules_dir = directory / "rules"
+        if prompts_dir.exists():
+            directories.append(prompts_dir)
+        if rules_dir.exists():
+            directories.append(rules_dir)
+
+        if not directories:
+            typer.echo(
+                f"Error: Neither prompts/ nor rules/ directory exists in '{directory}'",
+                err=True,
+            )
+            raise typer.Exit(code=1)
+
+    # Run validation
+    validator = BatchValidator()
+
+    if json_output:
+        # JSON output mode - validate first directory and combine results
+        json_formatter = JSONFormatter()
+        all_success = True
+
+        for dir_path in directories:
+            summary = validator.validate_directory(dir_path)
+            json_output_str = json_formatter.format_summary(summary, dir_path)
+            typer.echo(json_output_str)
+
+            if not summary.success:
+                all_success = False
+
+        # Exit with error code if any validation failed
+        if not all_success:
+            raise typer.Exit(code=1)
+    else:
+        # Rich formatted output
         rich_formatter = RichFormatter()
-        rich_formatter.format_summary(summary, directory, verbose=verbose)
+        all_success = True
 
-    # Exit with appropriate code
-    if not summary.success:
-        raise typer.Exit(code=1)
+        for dir_path in directories:
+            summary = validator.validate_directory(dir_path)
+            rich_formatter.format_summary(summary, directory=dir_path, verbose=verbose)
+
+            if not summary.success:
+                all_success = False
+
+        if not all_success:
+            raise typer.Exit(code=1)
 
 
-def init(storage_path: str | None = typer.Option(None, "--storage-path")) -> None:
-    """Initialize prompt-manager configuration in current directory.
+def init(storage_path: str | None = None) -> None:
+    """Initialize Prompt Manager in the current directory.
 
-    Creates the .prompt-manager/ directory with config.yaml for storing
-    repository sync settings. Also creates the centralized storage directory
-    (default: ~/.prompt-manager/storage) with prompts/ and rules/ subdirectories.
-
-    This command is idempotent: running it multiple times will create only
-    what's missing without failing if already initialized.
+    Creates the .prompt-manager/ directory and config.yaml in the
+    current working directory. This must be run before using other
+    commands.
 
     Args:
-        storage_path: Custom path for centralized storage (default: ~/.prompt-manager/storage)
+        storage_path: Optional custom storage directory path. If not provided,
+                     uses ~/.prompt-manager/storage or existing config value.
 
     Exit codes:
         0: Initialization successful (including when already initialized)
@@ -347,10 +369,6 @@ Thumbs.db
         console.print()
         console.print(f"Storage: {storage_dir}")
         console.print()
-        console.print("[dim]Next steps:[/dim]")
-        console.print("  1. Run 'prompt-manager sync --repo <git-url>' to sync prompts")
-        console.print("  2. Run 'prompt-manager status' to check sync status")
-        console.print()
 
     except PermissionError:
         typer.echo(
@@ -359,14 +377,12 @@ Thumbs.db
         )
         raise typer.Exit(code=1) from None
     except Exception as e:
+        # Unexpected errors
         typer.echo(f"Error during initialization: {e}", err=True)
         raise typer.Exit(code=1) from e
 
 
-def sync(
-    repo: str | None = typer.Option(None, "--repo"),
-    storage_path: str | None = typer.Option(None, "--storage-path"),
-) -> None:
+def sync(repo: str | None = None, storage_path: str | None = None) -> None:
     """Sync prompts from Git repository to centralized storage.
 
     Clones the remote repository to a temporary directory, extracts the
@@ -572,33 +588,36 @@ def status() -> None:
             console.print("Last sync: [yellow]Never[/yellow]")
 
         if config.last_sync_commit:
-            console.print(f"Commit: {config.last_sync_commit}")
+            console.print(f"Last synced commit: {config.last_sync_commit}")
         else:
-            console.print("Commit: [yellow]None[/yellow]")
+            console.print("Last synced commit: [yellow]Unknown[/yellow]")
 
-        # Check for remote updates
-        if config.last_sync_commit and config.repo_url:
-            console.print()
-            console.print("[dim]Checking for updates...[/dim]")
+        # Check for updates
+        console.print()
+        console.print("[dim]Checking for updates...[/dim]")
 
-            try:
-                git_service = GitService()
-                has_updates, commits_behind = git_service.check_remote_updates(
+        try:
+            git_service = GitService()
+            # Only check for updates if we have both repo_url and last_sync_commit
+            if config.repo_url and config.last_sync_commit:
+                has_updates, commit_count = git_service.check_remote_updates(
                     config.repo_url, config.last_sync_commit
                 )
+            else:
+                has_updates = False
+                commit_count = 0
 
-                if has_updates:
-                    console.print(
-                        f"[yellow]⚠ Updates available[/yellow] ({commits_behind} commits behind)"
-                    )
-                    console.print()
-                    console.print("[dim]Run 'prompt-manager sync' to update[/dim]")
-                else:
-                    console.print("[green]✓ Up to date[/green]")
-            except Exception:
-                # If update check fails, just show cached info
-                console.print("[yellow]⚠ Could not check for updates[/yellow]")
-                console.print("[dim]Check network connection or repository access[/dim]")
+            if has_updates:
+                console.print("[yellow]⚠ Updates available[/yellow]")
+                if commit_count:
+                    console.print(f"[dim]{commit_count} new commit(s) available[/dim]")
+                console.print("[dim]Run 'prompt-manager sync' to update[/dim]")
+            else:
+                console.print("[green]✓ Up to date[/green]")
+        except Exception:
+            # Check failed - network issue or invalid repo
+            console.print("[yellow]⚠ Could not check for updates[/yellow]")
+            console.print("[dim]Check network connection or repository access[/dim]")
 
         console.print()
 
@@ -719,13 +738,13 @@ def deploy(
                 typer.echo(f"Error: No matching handlers found for {target_handlers}.", err=True)
                 raise typer.Exit(code=1)
 
-        # Scan for content files
+        # Scan for content files (recursive discovery using glob("**/*.md"))
         parser = ContentFileParser()
         content_files = []
 
         prompts_dir = storage_dir / "prompts"
         if prompts_dir.exists():
-            for md_file in prompts_dir.glob("*.md"):
+            for md_file in prompts_dir.glob("**/*.md"):
                 try:
                     parsed_content = parser.parse_file(md_file)
                     content_files.append((parsed_content, "prompt", md_file))
@@ -734,12 +753,38 @@ def deploy(
 
         rules_dir = storage_dir / "rules"
         if rules_dir.exists():
-            for md_file in rules_dir.glob("*.md"):
+            for md_file in rules_dir.glob("**/*.md"):
                 try:
                     parsed_content = parser.parse_file(md_file)
                     content_files.append((parsed_content, "rule", md_file))
                 except Exception as e:
                     console.print(f"[yellow]Warning: Failed to parse {md_file}: {e}[/yellow]")
+
+        # Check for duplicate titles before filtering
+        title_to_files: dict[str, list[Path]] = {}
+        for parsed_content, _, file_path in content_files:
+            title = parsed_content.title
+            if title not in title_to_files:
+                title_to_files[title] = []
+            title_to_files[title].append(file_path)
+
+        # Detect duplicates
+        duplicates = {title: files for title, files in title_to_files.items() if len(files) > 1}
+        if duplicates:
+            console.print("[red]Error: Duplicate titles detected![/red]")
+            console.print()
+            console.print("The following titles are used in multiple files:")
+            console.print()
+            for title, files in duplicates.items():
+                console.print(f"  Title: [yellow]{title}[/yellow]")
+                for file_path in files:
+                    console.print(f"    - {file_path}")
+                console.print()
+            console.print(
+                "[yellow]Please ensure each prompt/rule has a unique title "
+                "before deploying.[/yellow]"
+            )
+            raise typer.Exit(code=1)
 
         # Filter by tags and name
         filtered_files = []
@@ -772,14 +817,34 @@ def deploy(
                     body = str(parsed_content.content) if hasattr(parsed_content, "content") else ""
                     # Extract original filename to preserve it in deployment
                     source_filename = file_path.name if file_path else None
+
+                    # Calculate relative path from prompts/ or rules/ directory
+                    relative_path = None
+                    if content_type == "prompt" and prompts_dir:
+                        try:
+                            relative_path = file_path.parent.relative_to(prompts_dir)
+                        except ValueError:
+                            # File is not under prompts_dir, use None (root)
+                            relative_path = None
+                    elif content_type == "rule" and rules_dir:
+                        try:
+                            relative_path = file_path.parent.relative_to(rules_dir)
+                        except ValueError:
+                            # File is not under rules_dir, use None (root)
+                            relative_path = None
+
                     if content_type == "prompt":
                         frontmatter_dict = parsed_content.model_dump(exclude={"content"})
                         prompt_content = PromptFrontmatter(**frontmatter_dict)
-                        handler.deploy(prompt_content, content_type, body, source_filename)
+                        handler.deploy(
+                            prompt_content, content_type, body, source_filename, relative_path
+                        )
                     elif content_type == "rule":
                         frontmatter_dict = parsed_content.model_dump(exclude={"content"})
                         rule_content = RuleFrontmatter(**frontmatter_dict)
-                        handler.deploy(rule_content, content_type, body, source_filename)
+                        handler.deploy(
+                            rule_content, content_type, body, source_filename, relative_path
+                        )
                     handler_deployed += 1
                     total_deployed += 1
                     # Track deployed filename for cleanup

@@ -229,6 +229,7 @@ class ContinueToolHandler(ToolHandler):
         content_type: str,
         body: str = "",
         source_filename: str | None = None,
+        relative_path: Path | None = None,
     ) -> None:
         """
         Deploys a prompt or rule to the Continue directories.
@@ -238,6 +239,8 @@ class ContinueToolHandler(ToolHandler):
             content_type: Type of content ("prompt" or "rule").
             body: The body content as a string.
             source_filename: Original filename to preserve. If None, uses content.title.
+            relative_path: Relative path from prompts/ or rules/ directory to preserve
+                          subdirectory structure. If None, deploys to root directory.
         """
         # Determine target filename: use source_filename if provided, else content.title
         if source_filename:
@@ -253,14 +256,24 @@ class ContinueToolHandler(ToolHandler):
             if not isinstance(content, PromptFrontmatter):
                 raise ValueError("Content must be a PromptFrontmatter instance for type 'prompt'")
             processed_content = self._process_prompt_content(content, body)
-            target_file_path = self.prompts_dir / filename
+            base_dir = self.prompts_dir
         elif content_type == "rule":
             if not isinstance(content, RuleFrontmatter):
                 raise ValueError("Content must be a RuleFrontmatter instance for type 'rule'")
             processed_content = self._process_rule_content(content, body)
-            target_file_path = self.rules_dir / filename
+            base_dir = self.rules_dir
         else:
             raise ValueError(f"Unsupported content type: {content_type}")
+
+        # Construct target path with subdirectory structure if relative_path is provided
+        if relative_path and str(relative_path) != ".":
+            # Create subdirectory structure
+            target_dir = base_dir / relative_path
+            target_dir.mkdir(parents=True, exist_ok=True)
+            target_file_path = target_dir / filename
+        else:
+            # Deploy to root directory
+            target_file_path = base_dir / filename
 
         self._backup_file(target_file_path)
         target_file_path.write_text(processed_content, encoding="utf-8")
