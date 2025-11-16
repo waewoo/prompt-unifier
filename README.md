@@ -232,13 +232,23 @@ prompt-manager deploy [NAME] [OPTIONS]
 **Options:**
 - `--tags TEXT`: Comma-separated list of tags to filter prompts/rules (e.g., "python,review"). Overrides `deploy_tags` from config.yaml.
 - `--handlers TEXT`: Comma-separated list of handlers to deploy to (e.g., "continue,cursor"). Overrides `target_handlers` from config.yaml.
+- `--base-path PATH`: Custom base path for handler deployment. Overrides configured handler base paths for this deployment. Works with `--handlers` to specify which handler receives the custom path.
+- `--clean`: Remove orphaned prompts/rules in destination that don't exist in source. Also removes .bak backup files. **Warning: Files are permanently deleted.**
 - `--help`: Show command help
 
 **Behavior:**
 - **Without options**: Deploys all prompts/rules matching `deploy_tags` from config.yaml to handlers in `target_handlers`
 - **With --tags**: Filters prompts/rules by specified tags (overrides config)
 - **With --handlers**: Deploys to specified handlers only (overrides config)
+- **With --base-path**: Deploys to custom location (overrides handler base_path from config.yaml)
 - **If no config values set**: Deploys ALL prompts/rules to ALL registered handlers
+
+**Deployment Path Resolution:**
+
+The deployment location for each handler is determined by the following precedence order (highest to lowest):
+1. CLI `--base-path` flag (temporary override for this deployment only)
+2. Handler-specific `base_path` in config.yaml `handlers` section
+3. Current working directory (default: `Path.cwd()`)
 
 **Examples:**
 ```bash
@@ -254,22 +264,41 @@ prompt-manager deploy --tags python --handlers continue
 # Deploy items with multiple tags to multiple handlers
 prompt-manager deploy --tags python,review --handlers continue,cursor
 
+# Deploy to custom location (overrides config)
+prompt-manager deploy --base-path /custom/path/.continue
+
+# Deploy to specific handler with custom path
+prompt-manager deploy --handlers continue --base-path $HOME/my-project/.continue
+
 # Deploy all items (ignore config filters) to all handlers
 prompt-manager deploy --tags "" --handlers ""
+
+# Clean orphaned files during deployment
+prompt-manager deploy --clean
+
+# Deploy with tags and clean orphaned files
+prompt-manager deploy --tags python --clean
 ```
 
 **What it does:**
 - Loads the specified prompt or rule from centralized storage
 - Processes the content for the target handler (e.g., adds `invokable: true` for Continue prompts)
 - Backs up existing files in the target directory
-- Copies the processed file to the handler's directory (e.g., `~/.continue/prompts/`)
+- Copies the processed file to the handler's directory (e.g., `.continue/prompts/`)
 - Verifies the deployment (file exists, content correct)
 - Supports rollback on failure (if implemented by handler)
+- **With --clean flag**: Permanently removes orphaned files in destination that weren't just deployed, plus any .bak backup files
+
+**Deployment Locations:**
+- **Continue**: `{base_path}/.continue/prompts/` and `{base_path}/.continue/rules/`
+- **Default base_path**: Current working directory (the directory where you run the command)
+- **Custom base_path**: Configured in config.yaml or via `--base-path` flag
 
 **Error Scenarios:**
 - "Prompt/Rule 'name' not found in storage" if the item doesn't exist
 - "ToolHandler with name 'handler' not found" for invalid handlers
 - Permission errors for target directories
+- Missing environment variables in configured paths
 
 ## Git Integration Commands
 
@@ -472,6 +501,246 @@ Run 'prompt-manager sync' to update
 **Network Errors:**
 If the status command cannot reach the remote repository (network issues), it will still display cached information from the last successful sync. The update check will show an error, but the command exits successfully (status is informational only).
 
+## Configurable Handler Base Paths
+
+The prompt-manager supports flexible deployment locations for AI coding assistant handlers through per-handler base path configuration. This enables project-local tool installations and custom deployment workflows.
+
+### Overview
+
+**Default Behavior:**
+- Handlers deploy to the current working directory by default
+- Example: Running `prompt-manager deploy` in `/home/user/my-project` deploys to `/home/user/my-project/.continue/prompts/`
+
+**Custom Base Paths:**
+You can configure custom base paths in three ways:
+1. Per-handler configuration in `config.yaml` (persistent)
+2. CLI `--base-path` flag (temporary override)
+3. Environment variables in configured paths
+
+### Configuration in config.yaml
+
+Add a `handlers` section to your `.prompt-manager/config.yaml` to configure per-handler base paths:
+
+```yaml
+repo_url: https://github.com/example/prompts.git
+storage_path: ~/.prompt-manager/storage
+deploy_tags:
+  - python
+  - review
+target_handlers:
+  - continue
+handlers:
+  continue:
+    base_path: $PWD/.continue
+  cursor:
+    base_path: $PWD/.cursor
+  windsurf:
+    base_path: $PWD/.windsurf
+  aider:
+    base_path: $PWD/.aider
+```
+
+**Supported Handlers:**
+- `continue` - Continue AI assistant
+- `cursor` - Cursor AI editor
+- `windsurf` - Windsurf AI assistant
+- `aider` - Aider AI coding assistant
+
+### Environment Variable Expansion
+
+Base paths support environment variable expansion for flexibility across different environments:
+
+**Supported Variables:**
+- `$HOME` or `${HOME}` - User's home directory
+- `$USER` or `${USER}` - Current username
+- `$PWD` or `${PWD}` - Current working directory
+
+**Examples:**
+```yaml
+handlers:
+  continue:
+    # Project-local installation
+    base_path: $PWD/.continue
+
+  cursor:
+    # User-global installation
+    base_path: $HOME/.cursor
+
+  windsurf:
+    # User-specific path
+    base_path: /opt/ai-tools/$USER/windsurf
+```
+
+**Environment variables are expanded when:**
+- Loading configuration during deployment
+- Processing the deploy command
+- Before creating handler instances
+
+**Error Handling:**
+- Missing environment variables result in a clear error message and deployment stops
+- Example: If `$CUSTOM_VAR` doesn't exist, you'll see: "Environment variable CUSTOM_VAR not found"
+
+### CLI --base-path Option
+
+Override the configured base path for a one-time deployment using the `--base-path` flag:
+
+```bash
+# Deploy to custom location (overrides config)
+prompt-manager deploy --base-path /tmp/test-deployment
+
+# Deploy specific handler to custom location
+prompt-manager deploy --handlers continue --base-path $HOME/experiments/.continue
+
+# Deploy with environment variable expansion
+prompt-manager deploy --base-path $PWD/custom-tools
+```
+
+**Use Cases:**
+- Testing deployments in temporary locations
+- One-time deployments to specific paths
+- Overriding project configuration for special cases
+- CI/CD deployments to isolated environments
+
+### Precedence Order
+
+When multiple base path sources are configured, the following precedence applies (highest to lowest):
+
+1. **CLI `--base-path` flag** - Temporary override for current deployment
+2. **`config.yaml` handlers section** - Project-specific configuration
+3. **Current working directory** - Default when no configuration exists
+
+**Example:**
+```yaml
+# In config.yaml
+handlers:
+  continue:
+    base_path: $PWD/.continue
+```
+
+```bash
+# This deployment uses /custom/path (CLI takes precedence)
+prompt-manager deploy --base-path /custom/path
+
+# This deployment uses $PWD/.continue (from config)
+prompt-manager deploy
+
+# This deployment uses current directory (no config, no flag)
+# (after removing handlers section from config)
+prompt-manager deploy
+```
+
+### Per-Project Configuration
+
+Different projects can configure different base paths independently:
+
+**Project A Configuration:**
+```yaml
+# /home/user/project-a/.prompt-manager/config.yaml
+handlers:
+  continue:
+    base_path: $PWD/tools/.continue
+```
+
+**Project B Configuration:**
+```yaml
+# /home/user/project-b/.prompt-manager/config.yaml
+handlers:
+  continue:
+    base_path: $HOME/.continue  # Shared across all projects
+```
+
+**Result:**
+- Project A deploys to: `/home/user/project-a/tools/.continue/prompts/`
+- Project B deploys to: `/home/user/.continue/prompts/`
+
+### Common Use Cases
+
+**1. Project-Local Continue Installation**
+```yaml
+handlers:
+  continue:
+    base_path: $PWD/.continue
+```
+```bash
+prompt-manager deploy
+# Deploys to: /current/project/.continue/prompts/
+```
+
+**2. Shared Handler Across Projects**
+```yaml
+handlers:
+  continue:
+    base_path: $HOME/.continue
+```
+```bash
+prompt-manager deploy
+# Deploys to: /home/user/.continue/prompts/ (same for all projects)
+```
+
+**3. Development vs Production**
+```yaml
+# Development
+handlers:
+  continue:
+    base_path: $PWD/.continue-dev
+
+# Production (separate config)
+handlers:
+  continue:
+    base_path: /opt/ai-tools/continue
+```
+
+**4. Testing Deployment**
+```bash
+# Test deployment without modifying config
+prompt-manager deploy --base-path /tmp/test-deployment --handlers continue
+```
+
+**5. Multi-Handler Setup**
+```yaml
+handlers:
+  continue:
+    base_path: $PWD/.continue
+  cursor:
+    base_path: $HOME/.cursor
+  windsurf:
+    base_path: $PWD/tools/windsurf
+```
+```bash
+# Deploy to all configured handlers
+prompt-manager deploy
+```
+
+### Validation and Error Handling
+
+The deployment process validates paths before deployment:
+
+**Automatic Directory Creation:**
+- Base path directories are created automatically if they don't exist
+- Handler-specific subdirectories (`.continue/prompts/`, `.continue/rules/`) are created
+- Informative console output shows directory creation
+
+**Validation Checks:**
+- Base path exists or can be created
+- Directories are writable
+- Handler installation structure is valid
+
+**Error Messages:**
+```bash
+# Missing environment variable
+Error: Environment variable NONEXISTENT_VAR not found
+Handler 'continue' configuration contains invalid environment variable in base_path
+
+# Permission denied
+Error: Continue installation at /restricted/path is not writable
+Details: [Errno 13] Permission denied: '/restricted/path/.continue'
+
+# Path creation failure
+Error: Failed to validate Continue installation
+Details: Cannot create base path: /invalid/path
+Suggestion: Check that the base path is accessible and writable
+```
+
 ## Configuration File Format
 
 The `.prompt-manager/config.yaml` file stores synchronization metadata and deployment preferences:
@@ -487,6 +756,11 @@ deploy_tags:
 target_handlers:
   - continue
   - cursor
+handlers:
+  continue:
+    base_path: $PWD/.continue
+  cursor:
+    base_path: $HOME/.cursor
 ```
 
 **Fields:**
@@ -500,6 +774,11 @@ target_handlers:
 **Deployment (optional):**
 - `deploy_tags` (list[string] | null): Tags to filter prompts/rules during deployment. Only items with at least one matching tag will be deployed. If null or empty, all items are deployed.
 - `target_handlers` (list[string] | null): Tool handlers to deploy to (e.g., "continue", "cursor"). If null or empty, deploys to all registered handlers.
+
+**Handler Configuration (optional):**
+- `handlers` (dict | null): Per-handler configuration with base paths
+  - `{handler_name}`: Handler configuration object
+    - `base_path` (string | null): Custom base path for this handler. Supports environment variables ($HOME, $USER, $PWD).
 
 **Examples:**
 
@@ -531,7 +810,24 @@ target_handlers:
   - windsurf
 ```
 
-**Note:** Sync-related fields are managed automatically by the CLI commands. You can manually edit `deploy_tags` and `target_handlers` to configure your deployment preferences, or override them using `--tags` and `--handlers` CLI options.
+```yaml
+# With custom handler base paths
+repo_url: https://github.com/example/prompts.git
+storage_path: /home/user/.prompt-manager/storage
+target_handlers:
+  - continue
+handlers:
+  continue:
+    base_path: $PWD/.continue
+  cursor:
+    base_path: $HOME/.cursor
+  windsurf:
+    base_path: $PWD/tools/windsurf
+  aider:
+    base_path: /opt/ai-tools/aider
+```
+
+**Note:** Sync-related fields are managed automatically by the CLI commands. You can manually edit `deploy_tags`, `target_handlers`, and `handlers` sections to configure your deployment preferences, or override them using CLI options.
 
 ## Validation
 
@@ -638,6 +934,46 @@ prompt-manager sync --repo https://github.com/team/new-prompts.git
 
 # Subsequent syncs will use the new URL
 prompt-manager sync
+```
+
+### Configuring Handler Base Paths
+
+**Configure project-local Continue installation:**
+```bash
+# Initialize project
+prompt-manager init
+
+# Edit .prompt-manager/config.yaml to add:
+# handlers:
+#   continue:
+#     base_path: $PWD/.continue
+
+# Deploy prompts to project-local Continue
+prompt-manager deploy
+```
+
+**Deploy to multiple locations:**
+```yaml
+# .prompt-manager/config.yaml
+handlers:
+  continue:
+    base_path: $PWD/.continue        # Project-local
+  cursor:
+    base_path: $HOME/.cursor         # User-global
+```
+
+```bash
+# Deploy to all configured handlers
+prompt-manager deploy
+```
+
+**Test deployment to temporary location:**
+```bash
+# Deploy to temporary location without modifying config
+prompt-manager deploy --base-path /tmp/test-continue --handlers continue
+
+# Verify deployment
+ls /tmp/test-continue/.continue/prompts/
 ```
 
 ## Security
@@ -788,6 +1124,50 @@ prompt-manager init
 2. Check that `.prompt-manager/`, `prompts/`, and `rules/` directories are writable
 3. Run with appropriate user permissions (avoid `sudo` unless necessary)
 
+### Environment Variable Errors
+
+**Problem:** "Environment variable CUSTOM_VAR not found"
+
+**Solution:**
+- Check that the environment variable is set: `echo $CUSTOM_VAR`
+- Use supported variables only: `$HOME`, `$USER`, `$PWD`
+- Fix the variable reference in `.prompt-manager/config.yaml`
+
+**Example:**
+```yaml
+# Incorrect - CUSTOM_VAR not supported
+handlers:
+  continue:
+    base_path: $CUSTOM_VAR/.continue
+
+# Correct - use supported variables
+handlers:
+  continue:
+    base_path: $PWD/.continue  # or $HOME/.continue
+```
+
+### Handler Deployment Path Issues
+
+**Problem:** Prompts deployed to wrong location
+
+**Solution:**
+1. Check the precedence order: CLI `--base-path` > config > default
+2. Verify `handlers` section in `.prompt-manager/config.yaml`
+3. Check environment variable expansion: `$PWD`, `$HOME`, etc.
+4. Use `--base-path` flag to test deployment to specific location
+
+**Debug deployment location:**
+```bash
+# Check where files would be deployed
+cat .prompt-manager/config.yaml | grep -A2 handlers
+
+# Deploy with explicit path to verify
+prompt-manager deploy --base-path /tmp/test-deploy --handlers continue
+
+# Check deployment
+ls -la /tmp/test-deploy/.continue/prompts/
+```
+
 ## Development
 
 ```bash
@@ -818,6 +1198,16 @@ poetry run pytest tests/config/ tests/git/ tests/cli/test_git_commands.py tests/
 
 # Run tests with coverage
 poetry run pytest tests/config/ tests/git/ tests/cli/test_git_commands.py tests/integration/test_git_integration.py tests/utils/test_formatting.py --cov=src/prompt_manager/config --cov=src/prompt_manager/git --cov-report=term-missing
+```
+
+### Running Configurable Base Paths Tests
+
+```bash
+# Run all feature-specific tests
+poetry run pytest tests/utils/test_path_helpers.py tests/models/test_git_config.py tests/config/test_manager.py tests/handlers/test_continue_handler_base_path.py tests/cli/test_deploy_base_path.py tests/integration/test_configurable_base_paths.py
+
+# Run with verbose output
+poetry run pytest tests/integration/test_configurable_base_paths.py -v
 ```
 
 ## Documentation

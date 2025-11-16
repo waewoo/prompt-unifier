@@ -22,6 +22,7 @@ from prompt_manager.models.rule import RuleFrontmatter
 from prompt_manager.output.json_formatter import JSONFormatter
 from prompt_manager.output.rich_formatter import RichFormatter
 from prompt_manager.utils.formatting import format_timestamp
+from prompt_manager.utils.path_helpers import expand_env_vars
 
 # Initialize Rich Console for formatted output
 console = Console()
@@ -30,6 +31,7 @@ console = Console()
 DEFAULT_PROMPT_NAME = None
 DEFAULT_TAGS = None
 DEFAULT_HANDLERS = None
+DEFAULT_BASE_PATH = None
 
 DEFAULT_PROMPT_NAME_OPTION = typer.Option(
     DEFAULT_PROMPT_NAME,
@@ -45,6 +47,23 @@ DEFAULT_HANDLERS_OPTION = typer.Option(
     None,
     "--handlers",
     help="Target handlers to deploy to (optional, deploys to all registered if not specified)",
+)
+DEFAULT_BASE_PATH_OPTION = typer.Option(
+    DEFAULT_BASE_PATH,
+    "--base-path",
+    help=(
+        "Custom base path for handler deployment "
+        "(overrides config.yaml, works with --handlers flag)"
+    ),
+)
+DEFAULT_CLEAN = False
+DEFAULT_CLEAN_OPTION = typer.Option(
+    DEFAULT_CLEAN,
+    "--clean",
+    help=(
+        "Remove prompts/rules in destination that don't exist in source "
+        "(creates backups before removal)"
+    ),
 )
 
 
@@ -594,9 +613,18 @@ def deploy(
     prompt_name: str | None = DEFAULT_PROMPT_NAME_OPTION,
     tags: list[str] | None = DEFAULT_TAGS_OPTION,
     handlers: list[str] | None = DEFAULT_HANDLERS_OPTION,
+    base_path: Path | None = DEFAULT_BASE_PATH_OPTION,
+    clean: bool = DEFAULT_CLEAN_OPTION,
 ) -> None:
     """
     Deploys prompts and rules to the specified tool handlers based on configuration and CLI options.
+
+    The base path for deployment is resolved in the following precedence order:
+    1. CLI --base-path flag (highest priority)
+    2. config.yaml handlers.<handler_name>.base_path
+    3. Path.cwd() (default, handler will use this if no base_path specified)
+
+    Environment variables ($HOME, $USER, $PWD) in configured base_path are automatically expanded.
     """
     try:
         # Load configuration
@@ -623,9 +651,66 @@ def deploy(
         # Determine target handlers
         target_handlers = handlers if handlers is not None else config.target_handlers
 
-        # Register handlers
+        # Helper function to resolve base_path for a specific handler
+        def resolve_handler_base_path(handler_name: str) -> Path | None:
+            """
+            Resolve base_path for a handler following precedence order:
+            1. CLI --base-path flag (highest priority)
+            2. config.handlers[handler_name].base_path
+            3. None (handler will default to Path.cwd())
+
+            Returns:
+                Path object or None (None means handler should use default)
+            """
+            # Priority 1: CLI flag
+            if base_path is not None:
+                return base_path
+
+            # Priority 2: Config handlers section
+            if config.handlers and handler_name in config.handlers:
+                handler_config = config.handlers[handler_name]
+                if handler_config.base_path:
+                    try:
+                        # Expand environment variables
+                        expanded_path = expand_env_vars(handler_config.base_path)
+                        return Path(expanded_path).expanduser().resolve()
+                    except ValueError as e:
+                        # Missing environment variable
+                        console.print(f"[red]Error: {e}[/red]")
+                        console.print(
+                            f"[yellow]Handler '{handler_name}' configuration contains "
+                            f"invalid environment variable in base_path[/yellow]"
+                        )
+                        raise typer.Exit(code=1) from e
+
+            # Priority 3: None (handler defaults to Path.cwd())
+            return None
+
+        # Register handlers with resolved base paths
         registry: ToolHandlerRegistry = ToolHandlerRegistry()
-        registry.register(ContinueToolHandler())
+
+        # For each handler type, resolve and instantiate with appropriate base_path
+        # Currently only ContinueToolHandler is implemented
+        continue_base_path = resolve_handler_base_path("continue")
+
+        # Instantiate handler with base_path (or None to use default)
+        if continue_base_path is not None:
+            continue_handler = ContinueToolHandler(base_path=continue_base_path)
+        else:
+            continue_handler = ContinueToolHandler()
+
+        # Validate tool installation before deployment
+        try:
+            continue_handler.validate_tool_installation()
+        except (PermissionError, OSError) as e:
+            console.print("[red]Error: Failed to validate Continue installation[/red]")
+            console.print(f"[red]Details: {e}[/red]")
+            console.print(
+                "[yellow]Suggestion: Check that the base path is accessible and writable[/yellow]"
+            )
+            raise typer.Exit(code=1) from e
+
+        registry.register(continue_handler)
 
         all_handlers = registry.get_all_handlers()
         if target_handlers:
@@ -675,23 +760,31 @@ def deploy(
 
         # Deploy to handlers
         total_deployed = 0
+        total_cleaned = 0
         for handler in all_handlers:
             handler_name = handler.get_name()
             console.print(f"Deploying to {handler_name}...")
             handler_deployed = 0
-            for parsed_content, content_type, _file_path in filtered_files:
+            deployed_filenames: set[str] = set()
+
+            for parsed_content, content_type, file_path in filtered_files:
                 try:
                     body = str(parsed_content.content) if hasattr(parsed_content, "content") else ""
+                    # Extract original filename to preserve it in deployment
+                    source_filename = file_path.name if file_path else None
                     if content_type == "prompt":
                         frontmatter_dict = parsed_content.model_dump(exclude={"content"})
                         prompt_content = PromptFrontmatter(**frontmatter_dict)
-                        handler.deploy(prompt_content, content_type, body)
+                        handler.deploy(prompt_content, content_type, body, source_filename)
                     elif content_type == "rule":
                         frontmatter_dict = parsed_content.model_dump(exclude={"content"})
                         rule_content = RuleFrontmatter(**frontmatter_dict)
-                        handler.deploy(rule_content, content_type, body)
+                        handler.deploy(rule_content, content_type, body, source_filename)
                     handler_deployed += 1
                     total_deployed += 1
+                    # Track deployed filename for cleanup
+                    if source_filename:
+                        deployed_filenames.add(source_filename)
                     console.print(
                         f"  [green]✓[/green] Deployed {parsed_content.title} ({content_type})"
                     )
@@ -708,6 +801,17 @@ def deploy(
                         except Exception as rollback_e:
                             console.print(f"  [red]Rollback failed: {rollback_e}[/red]")
 
+            # Clean orphaned files if requested
+            if clean and hasattr(handler, "clean_orphaned_files"):
+                console.print(f"Cleaning orphaned files in {handler_name}...")
+                try:
+                    removed = handler.clean_orphaned_files(deployed_filenames)
+                    total_cleaned += removed
+                    if removed > 0:
+                        console.print(f"  [yellow]Cleaned {removed} orphaned file(s)[/yellow]")
+                except Exception as e:
+                    console.print(f"  [red]✗[/red] Failed to clean orphaned files: {e}")
+
             if handler_deployed > 0:
                 console.print(
                     f"[green]✓ Deployment to {handler_name} completed "
@@ -716,10 +820,11 @@ def deploy(
             else:
                 console.print(f"[yellow]⚠ No items deployed to {handler_name}.[/yellow]")
 
-        console.print(
-            f"\n[bold]Deployment summary:[/bold] {total_deployed} items deployed "
-            f"to {len(all_handlers)} handler(s)."
-        )
+        summary_parts = [f"{total_deployed} items deployed to {len(all_handlers)} handler(s)"]
+        if clean and total_cleaned > 0:
+            summary_parts.append(f"{total_cleaned} orphaned file(s) cleaned")
+
+        console.print(f"\n[bold]Deployment summary:[/bold] {', '.join(summary_parts)}.")
 
         # Don't exit with error code even if deployment fails partially
         return

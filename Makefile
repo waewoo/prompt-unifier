@@ -24,6 +24,9 @@ run:
 # Run pytest test suite with coverage reporting
 test:
 	poetry run pytest --cov=src/prompt_manager --cov-report=term-missing --cov-report=html
+	@# Clean test artifacts from storage
+	@rm -f ~/.prompt-manager/storage/prompts/test-prompt.md 2>/dev/null || true
+	@rm -f ~/.prompt-manager/storage/rules/test-rule.md 2>/dev/null || true
 
 # Run Ruff linter checks
 lint:

@@ -13,7 +13,13 @@ from prompt_manager.models.rule import RuleFrontmatter
 class MockValidHandler:
     """Mock handler that respects the ToolHandler protocol."""
 
-    def deploy(self, content: Any, content_type: str, body: str = "") -> None:
+    def deploy(
+        self,
+        content: Any,
+        content_type: str,
+        body: str = "",
+        source_filename: str | None = None,
+    ) -> None:
         """Implement the deploy method of the protocol."""
         pass
 
@@ -29,6 +35,9 @@ class MockValidHandler:
         """Implement the rollback method of the protocol."""
         pass
 
+    def clean_orphaned_files(self, deployed_filenames: set[str]) -> int:
+        return 0
+
 
 class MockHandlerMissingDeploy:
     """Mock handler missing the deploy method."""
@@ -41,6 +50,9 @@ class MockHandlerMissingDeploy:
 
     def rollback(self) -> None:
         pass
+
+    def clean_orphaned_files(self, deployed_filenames: set[str]) -> int:
+        return 0
 
 
 class CompleteHandler:
@@ -57,6 +69,9 @@ class CompleteHandler:
 
     def rollback(self) -> None:
         pass
+
+    def clean_orphaned_files(self, deployed_filenames: set[str]) -> int:
+        return 0
 
 
 class IncompleteHandler:
@@ -178,7 +193,13 @@ class TestProtocol:
         """Test that protocol can be used to check inheritance."""
 
         class CompleteHandler:
-            def deploy(self, content: Any, content_type: str, body: str = "") -> None:
+            def deploy(
+                self,
+                content: Any,
+                content_type: str,
+                body: str = "",
+                source_filename: str | None = None,
+            ) -> None:
                 pass
 
             def get_status(self) -> str:
@@ -189,6 +210,9 @@ class TestProtocol:
 
             def rollback(self) -> None:
                 pass
+
+            def clean_orphaned_files(self, deployed_filenames: set[str]) -> int:
+                return 0
 
         handler = CompleteHandler()
 
@@ -203,7 +227,13 @@ class TestProtocol:
         """Test detailed method signatures of the protocol."""
 
         class TestHandler:
-            def deploy(self, content: Any, content_type: str, body: str = "") -> None:
+            def deploy(
+                self,
+                content: Any,
+                content_type: str,
+                body: str = "",
+                source_filename: str | None = None,
+            ) -> None:
                 # Test that method can accept different content types
                 if content_type == "prompt" or content_type == "rule":
                     assert hasattr(content, "title")
@@ -216,6 +246,9 @@ class TestProtocol:
 
             def rollback(self) -> None:
                 pass
+
+            def clean_orphaned_files(self, deployed_filenames: set[str]) -> int:
+                return 0
 
         handler = TestHandler()
         assert isinstance(handler, ToolHandler)
@@ -236,7 +269,13 @@ class TestProtocol:
         """Test protocol with different possible return types."""
 
         class HandlerWithDifferentReturns:
-            def deploy(self, content: Any, content_type: str, body: str = "") -> None:
+            def deploy(
+                self,
+                content: Any,
+                content_type: str,
+                body: str = "",
+                source_filename: str | None = None,
+            ) -> None:
                 return None  # Must return None
 
             def get_status(self) -> str:
@@ -247,6 +286,9 @@ class TestProtocol:
 
             def rollback(self) -> None:
                 return None  # Must return None
+
+            def clean_orphaned_files(self, deployed_filenames: set[str]) -> int:
+                return 0
 
         handler = HandlerWithDifferentReturns()
         assert isinstance(handler, ToolHandler)
@@ -261,7 +303,13 @@ class TestProtocol:
         """Test that protocol can handle errors."""
 
         class HandlerWithErrors:
-            def deploy(self, content: Any, content_type: str, body: str = "") -> None:
+            def deploy(
+                self,
+                content: Any,
+                content_type: str,
+                body: str = "",
+                source_filename: str | None = None,
+            ) -> None:
                 if content_type not in ["prompt", "rule"]:
                     raise ValueError(f"Invalid content type: {content_type}")
 
@@ -273,6 +321,9 @@ class TestProtocol:
 
             def rollback(self) -> None:
                 self._error = False
+
+            def clean_orphaned_files(self, deployed_filenames: set[str]) -> int:
+                return 0
 
         handler = HandlerWithErrors()
         assert isinstance(handler, ToolHandler)
@@ -299,6 +350,9 @@ class TestProtocol:
             def deploy(self, content: Any, content_type: str, body: str = "") -> None:
                 pass
 
+            def clean_orphaned_files(self, deployed_filenames: set[str]) -> int:
+                return 0
+
             def rollback(self) -> None:
                 pass
 
@@ -313,7 +367,13 @@ class TestProtocol:
                 self._status = "initial"
                 self._name = "prop_handler"
 
-            def deploy(self, content: Any, content_type: str, body: str = "") -> None:
+            def deploy(
+                self,
+                content: Any,
+                content_type: str,
+                body: str = "",
+                source_filename: str | None = None,
+            ) -> None:
                 pass
 
             @property
@@ -327,6 +387,9 @@ class TestProtocol:
             def rollback(self) -> None:
                 pass
 
+            def clean_orphaned_files(self, deployed_filenames: set[str]) -> int:
+                return 0
+
         handler = HandlerWithProperties()
         # Note: Properties are considered as methods by isinstance
         # This is a limitation of Python's runtime checking
@@ -336,7 +399,13 @@ class TestProtocol:
         """Test protocol with static methods."""
 
         class HandlerWithStaticMethods:
-            def deploy(self, content: Any, content_type: str, body: str = "") -> None:
+            def deploy(
+                self,
+                content: Any,
+                content_type: str,
+                body: str = "",
+                source_filename: str | None = None,
+            ) -> None:
                 pass
 
             @staticmethod
@@ -349,6 +418,9 @@ class TestProtocol:
 
             def rollback(self) -> None:
                 pass
+
+            def clean_orphaned_files(self, deployed_filenames: set[str]) -> int:
+                return 0
 
         handler = HandlerWithStaticMethods()
         # This should respect the protocol because static methods
@@ -366,7 +438,13 @@ class TestProtocol:
             _status = "class_status"
             _name = "class_name"
 
-            def deploy(self, content: Any, content_type: str, body: str = "") -> None:
+            def deploy(
+                self,
+                content: Any,
+                content_type: str,
+                body: str = "",
+                source_filename: str | None = None,
+            ) -> None:
                 pass
 
             @classmethod
@@ -379,6 +457,9 @@ class TestProtocol:
 
             def rollback(self) -> None:
                 pass
+
+            def clean_orphaned_files(self, deployed_filenames: set[str]) -> int:
+                return 0
 
         handler = HandlerWithClassMethods()
         # This should respect the protocol
@@ -405,6 +486,9 @@ class TestProtocol:
             def rollback(self):
                 pass
 
+            def clean_orphaned_files(self):  # Missing parameters
+                return 0
+
         handler = WrongSignatureHandler()
         # This should not respect the protocol due to incorrect signature
         # But isinstance only checks method existence, not their signatures
@@ -415,7 +499,13 @@ class TestProtocol:
 
         class AbstractHandler(ABC):
             @abstractmethod
-            def deploy(self, content: Any, content_type: str, body: str = "") -> None:
+            def deploy(
+                self,
+                content: Any,
+                content_type: str,
+                body: str = "",
+                source_filename: str | None = None,
+            ) -> None:
                 pass
 
             @abstractmethod
@@ -430,12 +520,21 @@ class TestProtocol:
             def rollback(self) -> None:
                 pass
 
+            def clean_orphaned_files(self, deployed_filenames: set[str]) -> int:
+                return 0
+
         # An abstract class cannot be instantiated
         # But it can implement the protocol
         assert isinstance(AbstractHandler, type)
 
         class ConcreteHandler(AbstractHandler):
-            def deploy(self, content: Any, content_type: str, body: str = "") -> None:
+            def deploy(
+                self,
+                content: Any,
+                content_type: str,
+                body: str = "",
+                source_filename: str | None = None,
+            ) -> None:
                 pass
 
             def get_status(self) -> str:
@@ -446,6 +545,9 @@ class TestProtocol:
 
             def rollback(self) -> None:
                 pass
+
+            def clean_orphaned_files(self, deployed_filenames: set[str]) -> int:
+                return 0
 
         handler = ConcreteHandler()
         assert isinstance(handler, ToolHandler)
@@ -487,7 +589,13 @@ class TestProtocol:
         T = TypeVar("T")
 
         class GenericHandler(Generic[T]):
-            def deploy(self, content: T, content_type: str, body: str = "") -> None:
+            def deploy(
+                self,
+                content: T,
+                content_type: str,
+                body: str = "",
+                source_filename: str | None = None,
+            ) -> None:
                 pass
 
             def get_status(self) -> str:
@@ -498,6 +606,9 @@ class TestProtocol:
 
             def rollback(self) -> None:
                 pass
+
+            def clean_orphaned_files(self, deployed_filenames: set[str]) -> int:
+                return 0
 
         handler = GenericHandler[PromptFrontmatter]()
         assert isinstance(handler, ToolHandler)
@@ -514,7 +625,13 @@ class TestProtocol:
                 return "b"
 
         class MultiInheritanceHandler(MixinA, MixinB):
-            def deploy(self, content: Any, content_type: str, body: str = "") -> None:
+            def deploy(
+                self,
+                content: Any,
+                content_type: str,
+                body: str = "",
+                source_filename: str | None = None,
+            ) -> None:
                 pass
 
             def get_status(self) -> str:
@@ -525,6 +642,9 @@ class TestProtocol:
 
             def rollback(self) -> None:
                 pass
+
+            def clean_orphaned_files(self, deployed_filenames: set[str]) -> int:
+                return 0
 
         handler = MultiInheritanceHandler()
         assert isinstance(handler, ToolHandler)
@@ -538,7 +658,13 @@ class TestProtocol:
             def __init__(self, should_raise=False):
                 self.should_raise = should_raise
 
-            def deploy(self, content: Any, content_type: str, body: str = "") -> None:
+            def deploy(
+                self,
+                content: Any,
+                content_type: str,
+                body: str = "",
+                source_filename: str | None = None,
+            ) -> None:
                 if self.should_raise:
                     raise RuntimeError("Deployment failed")
 
@@ -555,6 +681,11 @@ class TestProtocol:
             def rollback(self) -> None:
                 if self.should_raise:
                     raise RuntimeError("Rollback failed")
+
+            def clean_orphaned_files(self, deployed_filenames: set[str]) -> int:
+                if self.should_raise:
+                    raise RuntimeError("Clean failed")
+                return 0
 
         handler = ExceptionHandler()
         assert isinstance(handler, ToolHandler)
@@ -597,12 +728,16 @@ class TestProtocol:
         def lambda_rollback():
             return None
 
+        def lambda_clean(filenames):
+            return 0
+
         # Create a class that uses lambdas
         class LambdaHandler:
             deploy = lambda_deploy
             get_status = lambda_get_status
             get_name = lambda_get_name
             rollback = lambda_rollback
+            clean_orphaned_files = lambda_clean
 
         handler = LambdaHandler()
         # This should still respect the protocol
@@ -613,7 +748,13 @@ class TestProtocol:
 
         class OuterClass:
             class NestedHandler:
-                def deploy(self, content: Any, content_type: str, body: str = "") -> None:
+                def deploy(
+                    self,
+                    content: Any,
+                    content_type: str,
+                    body: str = "",
+                    source_filename: str | None = None,
+                ) -> None:
                     pass
 
                 def get_status(self) -> str:
@@ -624,6 +765,9 @@ class TestProtocol:
 
                 def rollback(self) -> None:
                     pass
+
+                def clean_orphaned_files(self, deployed_filenames: set[str]) -> int:
+                    return 0
 
         handler = OuterClass.NestedHandler()
         assert isinstance(handler, ToolHandler)
@@ -639,7 +783,13 @@ class TestProtocol:
                 return super().__new__(cls, name, bases, namespace)
 
         class MetaHandler(metaclass=HandlerMeta):
-            def deploy(self, content: Any, content_type: str, body: str = "") -> None:
+            def deploy(
+                self,
+                content: Any,
+                content_type: str,
+                body: str = "",
+                source_filename: str | None = None,
+            ) -> None:
                 pass
 
             def get_status(self) -> str:
@@ -650,6 +800,9 @@ class TestProtocol:
 
             def rollback(self) -> None:
                 pass
+
+            def clean_orphaned_files(self, deployed_filenames: set[str]) -> int:
+                return 0
 
         handler = MetaHandler()
         assert isinstance(handler, ToolHandler)

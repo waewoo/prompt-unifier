@@ -1241,6 +1241,76 @@ poetry run prompt-manager deploy --tags nonexistent-tag --handlers continue
 - Aucun déploiement effectué
 - Code de sortie: 0 (pas une erreur, juste aucun match)
 
+### Test 9.18: Option --clean pour supprimer les fichiers orphelins
+
+```bash
+# Déployer quelques prompts/rules
+poetry run prompt-manager deploy --tags python --handlers continue
+
+# Vérifier les fichiers déployés
+ls -la ~/.continue/prompts/
+ls -la ~/.continue/rules/
+
+# Créer manuellement un fichier orphelin (simuler ancien fichier)
+echo "Old orphaned file" > ~/.continue/prompts/old-orphaned-prompt.md
+echo "Old orphaned rule" > ~/.continue/rules/old-orphaned-rule.md
+
+# Redéployer avec --clean
+poetry run prompt-manager deploy --tags python --handlers continue --clean
+
+# Vérifier que les fichiers orphelins ont été supprimés
+ls -la ~/.continue/prompts/
+ls -la ~/.continue/rules/
+```
+
+**Résultat attendu:**
+- Les fichiers orphelins (old-orphaned-prompt.md, old-orphaned-rule.md) sont supprimés définitivement
+- **Aucun** fichier .bak n'est créé
+- Message: "Cleaned X orphaned file(s)" dans le résumé
+- Les fichiers correspondant aux sources restent intacts
+- Code de sortie: 0
+
+### Test 9.19: Option --clean sans fichiers orphelins
+
+```bash
+# Deploy normal
+poetry run prompt-manager deploy --handlers continue
+
+# Redéployer avec --clean (aucun fichier orphelin)
+poetry run prompt-manager deploy --handlers continue --clean
+```
+
+**Résultat attendu:**
+- Aucun fichier supprimé (tous les fichiers correspondent aux sources)
+- Pas de message "Cleaned" dans le résumé (ou "Cleaned 0 orphaned file(s)")
+- Code de sortie: 0
+
+### Test 9.20: Vérification de la suppression des fichiers .bak avec --clean
+
+```bash
+# Déployer un prompt
+poetry run prompt-manager deploy code-review --handlers continue
+
+# Créer un fichier orphelin et des fichiers .bak
+echo "Test orphan" > ~/.continue/prompts/orphan.md
+echo "Old backup" > ~/.continue/prompts/old.md.bak
+echo "Another backup" > ~/.continue/rules/rule.md.bak
+
+# Deploy avec --clean
+poetry run prompt-manager deploy code-review --handlers continue --clean
+
+# Vérifier que tout est supprimé
+ls -la ~/.continue/prompts/
+ls -la ~/.continue/rules/
+```
+
+**Résultat attendu:**
+- Le fichier orphan.md est supprimé définitivement
+- Les fichiers .bak (old.md.bak, rule.md.bak) sont également supprimés
+- Aucun fichier .bak n'existe après le clean
+- Message indiquant le nettoyage (3 fichiers supprimés)
+- Code de sortie: 0
+
 ---
 
 ## Contact et Support

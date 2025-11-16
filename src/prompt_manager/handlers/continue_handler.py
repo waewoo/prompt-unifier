@@ -19,11 +19,104 @@ class ContinueToolHandler(ToolHandler):
 
     def __init__(self, base_path: Path | None = None):
         self.name = "continue"
-        self.base_path = base_path if base_path else Path.home()
+        # CRITICAL CHANGE: Default base_path is now Path.cwd() instead of Path.home()
+        self.base_path = base_path if base_path else Path.cwd()
         self.prompts_dir = self.base_path / ".continue" / "prompts"
         self.rules_dir = self.base_path / ".continue" / "rules"
-        self.prompts_dir.mkdir(parents=True, exist_ok=True)
-        self.rules_dir.mkdir(parents=True, exist_ok=True)
+
+        # Auto-create directories with informative output
+        if not self.prompts_dir.exists():
+            self.prompts_dir.mkdir(parents=True, exist_ok=True)
+            console.print(f"[cyan]Created Continue prompts directory: {self.prompts_dir}[/cyan]")
+        if not self.rules_dir.exists():
+            self.rules_dir.mkdir(parents=True, exist_ok=True)
+            console.print(f"[cyan]Created Continue rules directory: {self.rules_dir}[/cyan]")
+
+    def validate_tool_installation(self) -> bool:
+        """
+        Validates that the Continue tool installation is accessible.
+
+        Checks that:
+        1. base_path exists or can be created
+        2. .continue/ directory exists or can be created
+        3. Required subdirectories (prompts/, rules/) are accessible
+
+        Returns:
+            bool: True if validation succeeds
+
+        Raises:
+            PermissionError: If directories cannot be created due to permissions
+            OSError: If directories cannot be created for other reasons
+
+        Examples:
+            >>> handler = ContinueToolHandler()
+            >>> handler.validate_tool_installation()
+            True
+        """
+        try:
+            # Check if base_path exists and is accessible
+            if not self.base_path.exists():
+                console.print(
+                    f"[yellow]Base path does not exist, attempting to create: "
+                    f"{self.base_path}[/yellow]"
+                )
+                self.base_path.mkdir(parents=True, exist_ok=True)
+                console.print(f"[green]Created base path: {self.base_path}[/green]")
+
+            # Check if .continue directory exists
+            continue_dir = self.base_path / ".continue"
+            if not continue_dir.exists():
+                console.print(
+                    f"[yellow]Continue directory does not exist, "
+                    f"attempting to create: {continue_dir}[/yellow]"
+                )
+                continue_dir.mkdir(parents=True, exist_ok=True)
+                console.print(f"[green]Created Continue directory: {continue_dir}[/green]")
+
+            # Verify prompts and rules directories are accessible
+            if not self.prompts_dir.exists():
+                self.prompts_dir.mkdir(parents=True, exist_ok=True)
+                console.print(f"[green]Created prompts directory: {self.prompts_dir}[/green]")
+
+            if not self.rules_dir.exists():
+                self.rules_dir.mkdir(parents=True, exist_ok=True)
+                console.print(f"[green]Created rules directory: {self.rules_dir}[/green]")
+
+            # Verify directories are writable by attempting to create a test file
+            test_file = self.prompts_dir / ".write_test"
+            try:
+                test_file.touch()
+                test_file.unlink()
+            except (PermissionError, OSError) as e:
+                console.print(
+                    f"[red]Error: Continue installation at {self.base_path} is not writable[/red]"
+                )
+                console.print(f"[red]Details: {e}[/red]")
+                raise PermissionError(
+                    f"Continue installation at {self.base_path} is not writable: {e}"
+                ) from e
+
+            console.print(f"[green]Continue installation validated at: {self.base_path}[/green]")
+            return True
+
+        except PermissionError as e:
+            console.print(
+                f"[red]Permission error validating Continue installation at {self.base_path}[/red]"
+            )
+            console.print(f"[red]Details: {e}[/red]")
+            console.print(
+                f"[yellow]Suggestion: Check directory permissions for {self.base_path}[/yellow]"
+            )
+            raise
+
+        except OSError as e:
+            console.print(f"[red]Error validating Continue installation at {self.base_path}[/red]")
+            console.print(f"[red]Details: {e}[/red]")
+            console.print(
+                f"[yellow]Suggestion: Ensure {self.base_path} is a valid path "
+                f"and accessible[/yellow]"
+            )
+            raise
 
     def _backup_file(self, file_path: Path) -> None:
         """Creates a backup of the given file."""
@@ -55,7 +148,8 @@ class ContinueToolHandler(ToolHandler):
             continue_frontmatter["language"] = prompt.language
 
         frontmatter_str = yaml.safe_dump(continue_frontmatter, sort_keys=False)
-        return f"---\n{frontmatter_str}\n---\n{body}"
+        # Remove trailing newline from YAML dump to avoid blank line before closing ---
+        return f"---\n{frontmatter_str.rstrip()}\n---\n{body}"
 
     def _process_rule_content(self, rule: RuleFrontmatter, body: str) -> str:
         """
@@ -83,22 +177,88 @@ class ContinueToolHandler(ToolHandler):
             continue_frontmatter["language"] = rule.language
 
         frontmatter_str = yaml.safe_dump(continue_frontmatter, sort_keys=False)
-        return f"---\n{frontmatter_str}\n---\n{body}"
+        # Remove trailing newline from YAML dump to avoid blank line before closing ---
+        return f"---\n{frontmatter_str.rstrip()}\n---\n{body}"
 
-    def deploy(self, content: Any, content_type: str, body: str = "") -> None:
+    def clean_orphaned_files(self, deployed_filenames: set[str]) -> int:
+        """
+        Remove files in prompts/rules directories that are not in the deployed set.
+        Also removes any .bak backup files.
+
+        Args:
+            deployed_filenames: Set of filenames that were just deployed.
+
+        Returns:
+            Number of files removed.
+        """
+        removed_count = 0
+
+        # Clean prompts directory
+        for file_path in self.prompts_dir.glob("*"):
+            if file_path.is_file():
+                # Remove .bak backup files
+                if file_path.suffix == ".bak":
+                    file_path.unlink()
+                    console.print(f"  [dim]Removed backup file: {file_path.name}[/dim]")
+                    removed_count += 1
+                # Remove orphaned .md files (not in deployed set)
+                elif file_path.suffix == ".md" and file_path.name not in deployed_filenames:
+                    file_path.unlink()
+                    console.print(f"  [yellow]Removed orphaned prompt: {file_path.name}[/yellow]")
+                    removed_count += 1
+
+        # Clean rules directory
+        for file_path in self.rules_dir.glob("*"):
+            if file_path.is_file():
+                # Remove .bak backup files
+                if file_path.suffix == ".bak":
+                    file_path.unlink()
+                    console.print(f"  [dim]Removed backup file: {file_path.name}[/dim]")
+                    removed_count += 1
+                # Remove orphaned .md files (not in deployed set)
+                elif file_path.suffix == ".md" and file_path.name not in deployed_filenames:
+                    file_path.unlink()
+                    console.print(f"  [yellow]Removed orphaned rule: {file_path.name}[/yellow]")
+                    removed_count += 1
+
+        return removed_count
+
+    def deploy(
+        self,
+        content: Any,
+        content_type: str,
+        body: str = "",
+        source_filename: str | None = None,
+    ) -> None:
         """
         Deploys a prompt or rule to the Continue directories.
+
+        Args:
+            content: The content object (PromptFrontmatter or RuleFrontmatter).
+            content_type: Type of content ("prompt" or "rule").
+            body: The body content as a string.
+            source_filename: Original filename to preserve. If None, uses content.title.
         """
+        # Determine target filename: use source_filename if provided, else content.title
+        if source_filename:
+            # Ensure it has .md extension
+            filename = (
+                source_filename if source_filename.endswith(".md") else f"{source_filename}.md"
+            )
+        else:
+            # Fallback to title-based naming for backward compatibility
+            filename = f"{content.title}.md"
+
         if content_type == "prompt":
             if not isinstance(content, PromptFrontmatter):
                 raise ValueError("Content must be a PromptFrontmatter instance for type 'prompt'")
             processed_content = self._process_prompt_content(content, body)
-            target_file_path = self.prompts_dir / f"{content.title}.md"
+            target_file_path = self.prompts_dir / filename
         elif content_type == "rule":
             if not isinstance(content, RuleFrontmatter):
                 raise ValueError("Content must be a RuleFrontmatter instance for type 'rule'")
             processed_content = self._process_rule_content(content, body)
-            target_file_path = self.rules_dir / f"{content.title}.md"
+            target_file_path = self.rules_dir / filename
         else:
             raise ValueError(f"Unsupported content type: {content_type}")
 

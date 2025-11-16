@@ -64,9 +64,6 @@ poetry.lock
 .env
 .env.local
 
-# Prompt Manager local configuration (may contain secrets)
-.prompt-manager/
-
 # Security scanning outputs
 bandit-report.json
 safety-report.json

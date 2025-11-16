@@ -39,12 +39,14 @@ The goal of this specification is to implement a `ContinueToolHandler` that allo
 **Prompt Deployment**
 - Scan storage/prompts/ for .md files matching deploy_tags (via tags field in frontmatter).
 - For each matching prompt, map internal fields to Continue format: title -> name, ensure description and invokable: true.
-- Copy processed .md to `~/.continue/prompts/<name>.md`.
+- Copy processed .md to `~/.continue/prompts/<original-filename>.md`, preserving the original filename from the source repository.
+- **Filename Preservation:** The original filename is preserved during deployment (e.g., `Python Code Refactoring Expert.md` remains as `Python Code Refactoring Expert.md` in the destination, not converted to `Python-Code-Refactoring-Expert.md` or using the title field).
 
 **Rule Deployment**
 - Scan storage/rules/ for .md files matching deploy_tags.
 - For each matching rule, map title -> name, applies_to -> globs, set alwaysApply: false (default).
-- Copy processed .md to `~/.continue/rules/<name>.md`.
+- Copy processed .md to `~/.continue/rules/<original-filename>.md`, preserving the original filename from the source repository.
+- **Filename Preservation:** Same as prompts - original filenames are preserved (e.g., `backend-python-packages.md` stays as `backend-python-packages.md`).
 
 **Backup Mechanism**
 - Before deploying each item, back up existing file in target directory with .bak extension.
@@ -53,8 +55,8 @@ The goal of this specification is to implement a `ContinueToolHandler` that allo
 - For each deployed item, verify file exists in target location and frontmatter/content is correct (e.g., name, description, invokable for prompts; name, globs for rules).
 
 **File Formats**
-- **Input (prompt-manager storage):** MD with YAML frontmatter using title, description, tags, etc.
-- **Output (Continue):** MD with YAML frontmatter using name (from title), description, invokable: true for prompts; name (from title), globs (from applies_to), description, alwaysApply: false for rules.
+- **Input (prompt-manager storage):** MD with YAML frontmatter using title, description, tags, etc. Filenames can contain spaces and special characters (e.g., `Python Code Refactoring Expert.md`, `backend-python-packages.md`).
+- **Output (Continue):** MD with YAML frontmatter using name (from title), description, invokable: true for prompts; name (from title), globs (from applies_to), description, alwaysApply: false for rules. **Filenames are preserved from source** to maintain consistency and readability.
 
 
 ## Visual Design
@@ -65,6 +67,22 @@ No visual assets provided.
 **`src/prompt_manager/git/service.py`**
 - The `GitService` class provides a good example of how to structure a service class that interacts with the file system.
 - The `ContinueToolHandler` can follow a similar pattern for reading, writing, and copying files.
+
+**Orphaned Files Cleanup (--clean Option)**
+- The `deploy` command supports a `--clean` flag to remove orphaned files.
+- When `--clean` is used:
+  - After deploying all matching prompts/rules, the handler scans destination directories (e.g., `~/.continue/prompts/` and `~/.continue/rules/`)
+  - Files in the destination that were NOT just deployed (orphaned files) are permanently removed
+  - Any existing `.bak` backup files are also removed during cleanup
+  - This ensures the destination only contains files from the current source repository
+- Example: `prompt-manager deploy --clean`
+- The number of cleaned files is reported in the deployment summary
+- **Note:** Files are deleted permanently without creating backups - use with caution
+
+**YAML Frontmatter Formatting**
+- Generated YAML frontmatter must not contain extra blank lines before the closing `---` delimiter
+- Implementation uses `.rstrip()` on `yaml.safe_dump()` output to remove trailing newlines
+- This ensures clean, consistent YAML formatting in deployed files
 
 ## Out of Scope
 - Implementation of the "Kilo Code" tool handler.

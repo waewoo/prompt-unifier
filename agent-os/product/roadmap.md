@@ -18,19 +18,21 @@
 
 6. [x] Tool Handler Implementation: Continue — Build ToolHandler implementations for Continue (deploy to .continue/ directory), including file operations, path resolution, backup mechanisms, and deployment verification. Implemented ContinueToolHandler with comprehensive test coverage (97%), YAML frontmatter conversion, automatic backup/rollback, and full CLI integration. `M`
 
-7. [ ] Tool Handler Implementation: Windsurf, Cursor, Aider — Complete remaining tool handlers for Windsurf, Aider, Cursor following the established pattern, with full deployment logic, configuration file handling, and validation that prompts are correctly placed in each tool's expected location. `M`
+7. [x] Configurable Handler Base Paths — Add support for customizing tool handler base paths via config.yaml and CLI options. Allow users to specify custom deployment locations for each handler (e.g., deploy Continue to custom path instead of default ~/.continue/). Implement both config-based persistent configuration (handlers.continue.base_path in config.yaml) and CLI override option (--base-path flag). Support multiple configuration approaches: per-handler config in config.yaml, CLI override for one-time deployments, and maintain backward compatibility with default paths. Apply pattern to all existing and future handlers for consistency. Changed default base path from Path.home() to Path.cwd() for project-local tool installations. `S`
 
 8. [~] Deploy Command with Multi-Tool Support — Implement deploy command that orchestrates deployment across all configured tools, supports selective deployment (--tool flag), provides progress indicators and deployment summaries, handles rollback on failures, and validates successful deployment. **PARTIALLY IMPLEMENTED:** Core deploy command working with Continue handler, supports --tags and --handlers flags, includes backup/rollback, Rich console output. Remaining: Add other tool handlers (Windsurf, Cursor, Aider) to complete multi-tool support. `L`
 
 9. [ ] List & Status Commands with Rich UI — Create list command showing all available prompts with metadata (name, description, tools, last modified), implement status command displaying deployment state per tool, add filtering/sorting options, and format output using Rich tables and syntax highlighting. `S`
 
-10. [ ] Configuration Management System — Implement user configuration file (~/.prompt-manager/config.yaml or similar) to store repository paths, enabled tools, deployment preferences, and validation rules. Support init-time configuration, runtime overrides via CLI flags, and config validation. `S`
+10. [ ] Configuration Management System — Implement user configuration file (~/.prompt-manager/config.yaml) to store repository paths, enabled tools, deployment preferences, and validation rules. Support init-time configuration, runtime overrides via CLI flags, and config validation. `S`
 
-11. [ ] Comprehensive Testing Suite & CI/CD Pipeline — Build pytest test suite covering all commands, validators, and tool handlers with high coverage (>95%), set up GitHub Actions or equivalent CI/CD for automated testing, linting (Ruff), type checking (mypy), and validate that local dev environment matches CI environment exactly. `L`
+11. [ ] Error Handling, Logging & User Feedback — Implement comprehensive error handling with user-friendly messages, add logging system for debugging (optional --verbose flag), create helpful suggestions for common errors, and ensure graceful degradation when tools are not installed. `S`
 
-12. [ ] Error Handling, Logging & User Feedback — Implement comprehensive error handling with user-friendly messages, add logging system for debugging (optional --verbose flag), create helpful suggestions for common errors, and ensure graceful degradation when tools are not installed. `S`
+12. [ ] Documentation & Onboarding — Write comprehensive README with quickstart guide, create detailed CLI help text for all commands, document prompt format specification, provide examples of valid prompts, and create contributing guide for adding new tool handlers. `M`
 
-13. [ ] Documentation & Onboarding — Write comprehensive README with quickstart guide, create detailed CLI help text for all commands, document prompt format specification, provide examples of valid prompts, and create contributing guide for adding new tool handlers. `M`
+13. [ ] Tool Handler Implementation: Kilo Code — Complete remaining tool handlers for Kilo Code following the established pattern, with full deployment logic, configuration file handling, and validation that prompts are correctly placed in each tool's expected location. `M`
+
+14. [ ] Tool Handler Implementation: Windsurf, Cursor, Aider — Complete remaining tool handlers for Windsurf, Aider, Cursor following the established pattern, with full deployment logic, configuration file handling, and validation that prompts are correctly placed in each tool's expected location. `M`
 
 > Notes
 > - Order items by technical dependencies and product architecture

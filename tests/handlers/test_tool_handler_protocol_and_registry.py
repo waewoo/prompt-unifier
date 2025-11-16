@@ -22,7 +22,13 @@ class MockToolHandler:
         self._status = status
         self.deployed_prompts: list[Any] = []
 
-    def deploy(self, content: Any, content_type: str, body: str = "") -> None:
+    def deploy(
+        self,
+        content: Any,
+        content_type: str,
+        body: str = "",
+        source_filename: str | None = None,
+    ) -> None:
         """Mock deploy method that accepts the correct signature."""
         from prompt_manager.models.prompt import PromptFrontmatter
         from prompt_manager.models.rule import RuleFrontmatter
@@ -44,6 +50,10 @@ class MockToolHandler:
     def rollback(self) -> None:
         """Mock rollback method."""
         pass
+
+    def clean_orphaned_files(self, deployed_filenames: set[str]) -> int:
+        """Mock clean orphaned files method."""
+        return 0
 
 
 # Test cases for ToolHandler Protocol

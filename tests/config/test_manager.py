@@ -9,7 +9,7 @@ from pathlib import Path
 import yaml
 
 from prompt_manager.config.manager import ConfigManager
-from prompt_manager.models.git_config import GitConfig
+from prompt_manager.models.git_config import GitConfig, HandlerConfig
 
 
 class TestConfigManager:
@@ -244,3 +244,193 @@ class TestConfigManager:
         # YAML represents None as null
         assert data["deploy_tags"] is None
         assert data["target_handlers"] is None
+
+    # Task Group 2: ConfigManager Handlers Integration Tests
+
+    def test_save_config_with_handlers_section(self, tmp_path: Path) -> None:
+        """Test that save_config correctly serializes handlers configuration."""
+        manager = ConfigManager()
+        config_path = tmp_path / "config.yaml"
+
+        config = GitConfig(
+            repo_url="https://github.com/example/prompts.git",
+            handlers={
+                "continue": HandlerConfig(base_path="$PWD/.continue"),
+                "cursor": HandlerConfig(base_path="$HOME/.cursor"),
+                "windsurf": HandlerConfig(base_path="/custom/path/.windsurf"),
+            },
+        )
+
+        manager.save_config(config_path, config)
+
+        # Verify file was created
+        assert config_path.exists()
+
+        # Verify YAML contains handlers section with correct structure
+        with open(config_path, encoding="utf-8") as f:
+            data = yaml.safe_load(f)
+
+        assert "handlers" in data
+        assert data["handlers"]["continue"]["base_path"] == "$PWD/.continue"
+        assert data["handlers"]["cursor"]["base_path"] == "$HOME/.cursor"
+        assert data["handlers"]["windsurf"]["base_path"] == "/custom/path/.windsurf"
+
+    def test_load_config_with_handlers_section(self, tmp_path: Path) -> None:
+        """Test that load_config correctly deserializes handlers configuration."""
+        manager = ConfigManager()
+        config_path = tmp_path / "config.yaml"
+
+        # Create a config file with handlers section
+        config_data = {
+            "repo_url": "https://github.com/example/prompts.git",
+            "last_sync_timestamp": "2024-11-15T10:30:00Z",
+            "last_sync_commit": "abc1234",
+            "handlers": {
+                "continue": {"base_path": "$PWD/.continue"},
+                "cursor": {"base_path": "$PWD/.cursor"},
+                "windsurf": {"base_path": "$PWD/.windsurf"},
+                "aider": {"base_path": "$PWD/.aider"},
+            },
+        }
+        with open(config_path, "w", encoding="utf-8") as f:
+            yaml.safe_dump(config_data, f, default_flow_style=False)
+
+        # Load and verify
+        config = manager.load_config(config_path)
+
+        assert config is not None
+        assert config.handlers is not None
+        assert "continue" in config.handlers
+        assert config.handlers["continue"].base_path == "$PWD/.continue"
+        assert config.handlers["cursor"].base_path == "$PWD/.cursor"
+        assert config.handlers["windsurf"].base_path == "$PWD/.windsurf"
+        assert config.handlers["aider"].base_path == "$PWD/.aider"
+
+    def test_load_config_with_missing_handlers_defaults_to_none(self, tmp_path: Path) -> None:
+        """Test that load_config defaults handlers to None when section is missing."""
+        manager = ConfigManager()
+        config_path = tmp_path / "config.yaml"
+
+        # Create a config file without handlers section (backward compatibility)
+        config_data = {
+            "repo_url": "https://github.com/example/prompts.git",
+            "last_sync_timestamp": "2024-11-11T14:30:00Z",
+            "last_sync_commit": "abc1234",
+        }
+        with open(config_path, "w", encoding="utf-8") as f:
+            yaml.safe_dump(config_data, f, default_flow_style=False)
+
+        # Load and verify backward compatibility
+        config = manager.load_config(config_path)
+
+        assert config is not None
+        assert config.repo_url == "https://github.com/example/prompts.git"
+        assert config.handlers is None  # Should default to None
+
+    def test_save_config_preserves_handlers_section(self, tmp_path: Path) -> None:
+        """Test that save_config preserves handlers section on update."""
+        manager = ConfigManager()
+        config_path = tmp_path / "config.yaml"
+
+        # Create initial config with handlers
+        initial_config = GitConfig(
+            repo_url="https://github.com/example/prompts.git",
+            last_sync_timestamp="2024-11-15T10:30:00Z",
+            last_sync_commit="abc1234",
+            handlers={
+                "continue": HandlerConfig(base_path="$PWD/.continue"),
+                "cursor": HandlerConfig(base_path="$HOME/.cursor"),
+            },
+        )
+        manager.save_config(config_path, initial_config)
+
+        # Load, modify, and save again
+        loaded_config = manager.load_config(config_path)
+        assert loaded_config is not None
+        loaded_config.last_sync_commit = "def5678"
+        manager.save_config(config_path, loaded_config)
+
+        # Verify handlers section is still present
+        final_config = manager.load_config(config_path)
+        assert final_config is not None
+        assert final_config.handlers is not None
+        assert "continue" in final_config.handlers
+        assert final_config.handlers["continue"].base_path == "$PWD/.continue"
+
+    def test_load_config_with_handlers_none_base_path(self, tmp_path: Path) -> None:
+        """Test that load_config handles handlers with None base_path (use default)."""
+        manager = ConfigManager()
+        config_path = tmp_path / "config.yaml"
+
+        # Create config with handler that has no base_path specified
+        config_data = {
+            "repo_url": "https://github.com/example/prompts.git",
+            "handlers": {
+                "continue": {"base_path": None},  # Explicitly None (use default)
+                "cursor": {"base_path": "$PWD/.cursor"},
+            },
+        }
+        with open(config_path, "w", encoding="utf-8") as f:
+            yaml.safe_dump(config_data, f, default_flow_style=False)
+
+        # Load and verify
+        config = manager.load_config(config_path)
+
+        assert config is not None
+        assert config.handlers is not None
+        assert config.handlers["continue"].base_path is None  # Should be None
+        assert config.handlers["cursor"].base_path == "$PWD/.cursor"
+
+    def test_save_config_with_none_handlers(self, tmp_path: Path) -> None:
+        """Test that save_config properly handles None handlers field."""
+        manager = ConfigManager()
+        config_path = tmp_path / "config.yaml"
+
+        # Create config with None handlers (no per-handler configuration)
+        config = GitConfig(
+            repo_url="https://github.com/example/prompts.git",
+            handlers=None,
+        )
+
+        manager.save_config(config_path, config)
+
+        # Verify file was created and None value is properly saved
+        assert config_path.exists()
+
+        with open(config_path, encoding="utf-8") as f:
+            data = yaml.safe_load(f)
+
+        # YAML represents None as null
+        assert data["handlers"] is None
+
+    def test_update_sync_info_preserves_handlers_section(self, tmp_path: Path) -> None:
+        """Test that update_sync_info preserves handlers configuration."""
+        manager = ConfigManager()
+        config_path = tmp_path / "config.yaml"
+
+        # Create initial config with handlers
+        initial_config = GitConfig(
+            repo_url="https://github.com/example/prompts.git",
+            last_sync_timestamp="2024-11-15T10:30:00Z",
+            last_sync_commit="abc1234",
+            handlers={
+                "continue": HandlerConfig(base_path="$PWD/.continue"),
+                "cursor": HandlerConfig(base_path="$HOME/.cursor"),
+            },
+        )
+        manager.save_config(config_path, initial_config)
+
+        # Update sync info
+        manager.update_sync_info(
+            config_path,
+            "https://github.com/example/prompts.git",
+            "new5678",
+        )
+
+        # Verify handlers section is preserved
+        updated_config = manager.load_config(config_path)
+        assert updated_config is not None
+        assert updated_config.handlers is not None
+        assert "continue" in updated_config.handlers
+        assert updated_config.handlers["continue"].base_path == "$PWD/.continue"
+        assert updated_config.last_sync_commit == "new5678"

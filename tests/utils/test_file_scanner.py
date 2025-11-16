@@ -72,6 +72,17 @@ class TestFileScanner:
         with pytest.raises(FileNotFoundError, match="Directory not found"):
             scanner.scan_directory(non_existent)
 
+    def test_scan_directory_file_not_directory_raises_error(self, tmp_path: Path) -> None:
+        """Test that scanning a file path (not directory) raises FileNotFoundError."""
+        scanner = FileScanner()
+
+        # Create a file instead of a directory
+        file_path = tmp_path / "not_a_directory.txt"
+        file_path.write_text("I am a file, not a directory")
+
+        with pytest.raises(FileNotFoundError, match="Path is not a directory"):
+            scanner.scan_directory(file_path)
+
     def test_scan_directory_empty_returns_empty_list(self, tmp_path: Path) -> None:
         """Test that empty directory returns empty list."""
         scanner = FileScanner()

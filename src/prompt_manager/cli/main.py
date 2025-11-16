@@ -134,11 +134,39 @@ def deploy(
     handlers: str | None = typer.Option(
         None, "--handlers", help="Handlers to deploy to (comma-separated, optional)"
     ),
+    base_path: str | None = typer.Option(
+        None,
+        "--base-path",
+        help="Custom base path for handler deployment (overrides config.yaml)",
+    ),
+    clean: bool = typer.Option(
+        False,
+        "--clean",
+        help="Remove orphaned prompts/rules in destination (creates backups)",
+    ),
 ) -> None:
-    """Deploy prompts and rules to the specified tool handlers."""
+    """Deploy prompts and rules to the specified tool handlers.
+
+    The base path for deployment is resolved in the following precedence order:
+    1. CLI --base-path flag (highest priority)
+    2. config.yaml handlers.<handler_name>.base_path
+    3. Path.cwd() (default)
+
+    Environment variables ($HOME, $USER, $PWD) in configured base_path are expanded.
+
+    With --clean flag, files in the destination that don't exist in the source
+    will be removed (backups are created before removal).
+    """
     tag_list = tags.split(",") if tags else None
     handler_list = handlers.split(",") if handlers else None
-    deploy_command(prompt_name=prompt_name, tags=tag_list, handlers=handler_list)
+    base_path_obj = Path(base_path) if base_path else None
+    deploy_command(
+        prompt_name=prompt_name,
+        tags=tag_list,
+        handlers=handler_list,
+        base_path=base_path_obj,
+        clean=clean,
+    )
 
 
 def main() -> None:
