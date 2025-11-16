@@ -1,6 +1,6 @@
 repo_url: git@gitlab.com:waewoo/prompt-manager-data.git
-last_sync_timestamp: '2025-11-16T14:22:14.163420+00:00'
-last_sync_commit: 34183d0
+last_sync_timestamp: '2025-11-16T17:47:34.329907+00:00'
+last_sync_commit: c1e9fe8
 storage_path: /root/.prompt-manager/storage
 deploy_tags: null
 target_handlers: null
