@@ -1,13 +1,94 @@
 # Prompt Manager CLI
 
-A Python CLI tool for managing AI prompt templates and coding rules with YAML frontmatter, enabling version control, validation, and deployment workflows for both prompts and organizational standards.
+[![Python Version](https://img.shields.io/badge/python-3.11%2B-blue)](https://www.python.org/downloads/)
+[![Poetry](https://img.shields.io/badge/poetry-1.7%2B-blue)](https://python-poetry.org/)
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
+[![Code Coverage](https://img.shields.io/badge/coverage-95%25-brightgreen)](./coverage)
+
+A Python CLI tool for managing AI prompt templates and coding rules with YAML frontmatter, enabling version control, validation, and deployment workflows.
+
+---
+
+## Table of Contents
+
+- [Why Prompt Manager?](#why-prompt-manager)
+- [Quick Start](#quick-start)
+- [Installation](#installation)
+- [Core Concepts](#core-concepts)
+  - [Prompts and Rules](#prompts-and-rules)
+  - [Subdirectory Organization](#subdirectory-organization)
+- [Commands](#commands)
+  - [init](#init---initialize-configuration)
+  - [sync](#sync---synchronize-from-git)
+  - [status](#status---check-sync-status)
+  - [validate](#validate---validate-files)
+  - [deploy](#deploy---deploy-to-handlers)
+- [Configuration](#configuration)
+- [Handlers](#handlers)
+- [Security](#security)
+- [Architecture](#architecture)
+- [Real-World Examples](#real-world-examples)
+- [Development](#development)
+- [Troubleshooting](#troubleshooting)
+- [FAQ](#faq)
+
+---
+
+## Why Prompt Manager?
+
+**Problem:** Managing AI prompts across teams is chaotic:
+- ❌ Prompts scattered in Slack, Notion, local files
+- ❌ No version control or change tracking
+- ❌ Difficult to share and standardize
+
+**Solution:** Prompt Manager CLI provides:
+- ✅ **Git-based versioning** - Track every change, roll back easily
+- ✅ **Centralized storage** - Single source of truth for all prompts
+- ✅ **Easy deployment** - One command to deploy to AI tools (Continue, Cursor, etc.)
+- ✅ **Team collaboration** - Share prompts via Git repositories
+- ✅ **Validation** - Catch errors before deployment
+- ✅ **Recursive discovery** - Organize prompts in subdirectories
+
+---
+
+## Quick Start
+
+Get started in 60 seconds:
+
+```bash
+# 1. Install dependencies
+cd prompt-manager
+poetry install
+
+# 2. Initialize in your project
+poetry run prompt-manager init
+
+# 3. Sync prompts from Git repository
+poetry run prompt-manager sync --repo git@github.com:your-org/prompts.git
+
+# 4. Deploy to Continue (AI coding assistant)
+poetry run prompt-manager deploy
+
+# 5. Check status anytime
+poetry run prompt-manager status
+```
+
+---
 
 ## Installation
 
 ### Prerequisites
-- Python 3.12+ (Python 3.11+ supported for compatibility)
-- Poetry
-- Git (for repository synchronization features)
+
+| Requirement | Version | Check Installation |
+|-------------|---------|-------------------|
+| **Python** | 3.11+ (3.12+ recommended) | `python --version` |
+| **Poetry** | 1.7+ | `poetry --version` |
+| **Git** | 2.x+ | `git --version` |
+
+**Missing dependencies?** Follow the installation guides:
+- [Install Python](https://www.python.org/downloads/)
+- [Install Poetry](https://python-poetry.org/docs/#installation)
+- [Install Git](https://git-scm.com/downloads)
 
 ### Install Poetry
 
@@ -23,36 +104,26 @@ cd prompt-manager
 poetry install
 ```
 
-### Install CLI Globally (after build)
+### Install CLI Globally (Optional)
 
 ```bash
 pipx install .
 ```
 
-## Quick Start
+---
 
-```bash
-# Display help
-poetry run prompt-manager --help
+## Core Concepts
 
-# Initialize project with Git integration
-poetry run prompt-manager init
+### Prompts and Rules
 
-# Sync prompts from central repository
-poetry run prompt-manager sync --repo https://github.com/example/prompts.git
+The prompt-manager supports two types of content files using **YAML frontmatter** format (Jekyll/Hugo style):
 
-# Check sync status
-poetry run prompt-manager status
-```
+#### **Prompts**
 
-## File Types: Prompts and Rules
+AI prompt templates for use with language models. Stored in `prompts/` directory.
 
-The prompt-manager supports two types of content files using standard YAML frontmatter format (Jekyll/Hugo style):
+**Example:**
 
-### Prompts
-AI prompt templates for use with language models. Prompts are stored in the `prompts/` directory.
-
-**Example prompt file:**
 ```markdown
 ---
 title: code-review
@@ -63,16 +134,30 @@ tags: [python, review]
 
 # Code Review Prompt
 
-You are an expert code reviewer...
+You are an expert code reviewer. Analyze the provided code for:
+- Potential bugs and edge cases
+- Code quality and best practices
+- Performance optimizations
 ```
 
-### Rules
-Coding standards, best practices, and organizational guidelines. Rules are stored in the `rules/` directory and require a `category` field.
+**Required fields:**
+- `title` - Unique identifier
+- `description` - Brief description
 
-**Example rule file:**
+**Optional fields:**
+- `version` - Semantic version (e.g., `1.0.0`)
+- `tags` - List of tags for filtering
+- `author` - Author information
+
+#### **Rules**
+
+Coding standards, best practices, and organizational guidelines. Stored in `rules/` directory.
+
+**Example:**
+
 ```markdown
 ---
-title: Python Coding Standards
+title: python-style-guide
 description: Python coding standards and best practices
 category: coding-standards
 tags: [python, pep8]
@@ -83,113 +168,128 @@ applies_to: ["*.py", "*.pyi"]
 # Python Style Guide
 
 ## Naming Conventions
-- Use snake_case for functions and variables
-- Use PascalCase for classes...
+- Use `snake_case` for functions and variables
+- Use `PascalCase` for classes
+- Use `UPPER_CASE` for constants
 ```
 
-**Rule Categories:**
-- `coding-standards` - Code style and formatting rules
-- `architecture` - System design and architecture patterns
-- `security` - Security best practices and guidelines
-- `testing` - Testing strategies and requirements
-- `documentation` - Documentation standards
-- `performance` - Performance optimization guidelines
-- `deployment` - Deployment and CI/CD practices
-- `git` - Git workflow and commit conventions
+**Required fields:**
+- `title` - Unique identifier (kebab-case recommended)
+- `description` - Brief description
+- `category` - One of: `coding-standards`, `architecture`, `security`, `testing`, `documentation`, `performance`, `deployment`, `git`
 
-**Type Detection:**
-Files are automatically detected as prompts or rules based on their location:
-- Files in `prompts/` directory → Prompts
-- Files in `rules/` directory → Rules
+**Optional fields:**
+- `version` - Semantic version
+- `tags` - List of tags
+- `applies_to` - Glob patterns (must be quoted: `["*.py"]`)
 
-**Special Fields:**
-- `category` (required for rules): Categorizes the rule for organization
-- `applies_to` (optional): List of glob patterns (must be quoted: `["*.py"]`)
+### Subdirectory Organization
 
-Both prompts and rules use the same format: YAML frontmatter delimited by `---` markers, followed by markdown content.
+**Organize prompts and rules in subdirectories for better structure:**
 
-## Commands Reference
+```
+prompts/
+├── backend/
+│   ├── api/
+│   │   └── api-design.md
+│   └── database/
+│       └── query-optimization.md
+├── frontend/
+│   └── react-component.md
+└── general-coding.md
 
-### Global Options
-
-```bash
-prompt-manager --help      # Show help and exit
-prompt-manager --version   # Show version and exit
+rules/
+├── security/
+│   ├── auth/
+│   │   └── authentication.md
+│   └── encryption.md
+└── global-standards.md
 ```
 
-### validate
+**Features:**
+- **Recursive Discovery** - Files in any subdirectory depth are automatically discovered
+- **Structure Preservation** - Subdirectory structure is maintained during deployment
+- **Duplicate Detection** - Titles must be unique across all files (prevents conflicts)
 
-Validate prompt and rule files in a directory for syntax errors and required fields.
+**Example:**
+- `prompts/backend/api/api-design.md` → Deployed to `.continue/prompts/backend/api/api-design.md`
+- Backward compatible: files at root level continue to work
 
-```bash
-prompt-manager validate [DIRECTORY] [OPTIONS]
-```
+---
 
-**Arguments:**
-- `DIRECTORY` (optional): Path to directory containing .md files to validate. If not provided, validates files in the synchronized storage location (requires `init` to have been run).
+## Commands
 
-**Options:**
-- `--type` / `-t`: Content type to validate: `all` (default), `prompts`, or `rules`
-- `--json`: Output results in JSON format
-- `--verbose` / `-v`: Show detailed validation progress
-- `--help`: Show command help
+### init - Initialize Configuration
 
-**Examples:**
-```bash
-# Validate everything (prompts + rules) in synchronized storage
-prompt-manager validate
-
-# Validate only prompts
-prompt-manager validate --type prompts
-
-# Validate only rules
-prompt-manager validate --type rules
-
-# Validate specific directory
-prompt-manager validate ./prompts
-
-# Validate with JSON output
-prompt-manager validate ./prompts --json
-
-# Validate synchronized storage with verbose output
-prompt-manager validate --verbose
-```
-
-### init
-
-Initialize prompt-manager configuration in the current directory.
+Initialize prompt-manager in your project directory.
 
 ```bash
 prompt-manager init [OPTIONS]
 ```
 
 **Options:**
-- `--storage-path TEXT`: Custom storage location (default: `~/.prompt-manager/storage`)
-- `--help`: Show command help
+- `--storage-path TEXT` - Custom storage location (default: `~/.prompt-manager/storage`)
 
-**Examples:**
+**What it creates:**
+- `.prompt-manager/` - Configuration directory (tracked in version control)
+- `.prompt-manager/config.yaml` - Project configuration
+- `~/.prompt-manager/storage/` - Centralized storage for synced prompts/rules
+
+**Example:**
+
 ```bash
 # Initialize with default storage
 prompt-manager init
 
-# Initialize with custom storage location
+# Initialize with custom storage
 prompt-manager init --storage-path /custom/storage
 ```
 
-### sync
+---
 
-Synchronize prompts and rules from a Git repository.
+### sync - Synchronize from Git
+
+Synchronize prompts and rules from a Git repository to local storage.
 
 ```bash
 prompt-manager sync [OPTIONS]
 ```
 
 **Options:**
-- `--repo TEXT`: Git repository URL to sync from
-- `--storage-path TEXT`: Override storage location for this sync
-- `--help`: Show command help
+- `--repo TEXT` - Git repository URL (saved to config for future syncs)
+- `--storage-path TEXT` - Override storage location
+
+**How it works:**
+1. Clones repository to temporary directory
+2. Extracts `prompts/` (required) and `rules/` (optional) directories
+3. Copies to centralized storage (overwrites local files)
+4. Updates config with sync timestamp and commit hash
+
+**Common Use Cases:**
+- 🔄 **Daily updates**: `prompt-manager sync` (team gets latest prompts)
+- 🆕 **New team member**: Clone project → `prompt-manager sync` → instant setup
+- 🔀 **Switch projects**: Different repos per project, auto-configured
+
+**Authentication for Private Repositories:**
+
+**Option 1: SSH Keys (Recommended)**
+```bash
+prompt-manager sync --repo git@github.com:username/repo.git
+```
+
+**Option 2: Git Credential Helper**
+```bash
+git config --global credential.helper store
+prompt-manager sync --repo https://github.com/username/private-repo.git
+```
+
+**Option 3: Personal Access Token**
+```bash
+prompt-manager sync --repo https://username:TOKEN@github.com/username/repo.git
+```
 
 **Examples:**
+
 ```bash
 # First sync with repository URL
 prompt-manager sync --repo git@github.com:team/prompts.git
@@ -197,855 +297,269 @@ prompt-manager sync --repo git@github.com:team/prompts.git
 # Subsequent syncs (uses URL from config)
 prompt-manager sync
 
-# Sync with custom storage location
-prompt-manager sync --storage-path /custom/storage
-```
-
-### status
-
-Display current synchronization status and check for remote updates.
-
-```bash
-prompt-manager status
-```
-
-**Options:**
-- `--help`: Show command help
-
-**Examples:**
-```bash
-# Check sync status
-prompt-manager status
-```
-
-### deploy
-
-Deploy prompts and rules to one or more tool handlers (e.g., Continue, Cursor) based on tags and configuration.
-
-```bash
-prompt-manager deploy [NAME] [OPTIONS]
-```
-
-**Arguments:**
-- `NAME` (optional): The name of a specific prompt or rule to deploy (e.g., "code-review"). If not specified, deploys all prompts and rules matching the filter criteria.
-
-**Options:**
-- `--tags TEXT`: Comma-separated list of tags to filter prompts/rules (e.g., "python,review"). Overrides `deploy_tags` from config.yaml.
-- `--handlers TEXT`: Comma-separated list of handlers to deploy to (e.g., "continue,cursor"). Overrides `target_handlers` from config.yaml.
-- `--base-path PATH`: Custom base path for handler deployment. Overrides configured handler base paths for this deployment. Works with `--handlers` to specify which handler receives the custom path.
-- `--clean`: Remove orphaned prompts/rules in destination that don't exist in source. Also removes .bak backup files. **Warning: Files are permanently deleted.**
-- `--help`: Show command help
-
-**Behavior:**
-- **Without options**: Deploys all prompts/rules matching `deploy_tags` from config.yaml to handlers in `target_handlers`
-- **With --tags**: Filters prompts/rules by specified tags (overrides config)
-- **With --handlers**: Deploys to specified handlers only (overrides config)
-- **With --base-path**: Deploys to custom location (overrides handler base_path from config.yaml)
-- **If no config values set**: Deploys ALL prompts/rules to ALL registered handlers
-
-**Deployment Path Resolution:**
-
-The deployment location for each handler is determined by the following precedence order (highest to lowest):
-1. CLI `--base-path` flag (temporary override for this deployment only)
-2. Handler-specific `base_path` in config.yaml `handlers` section
-3. Current working directory (default: `Path.cwd()`)
-
-**Examples:**
-```bash
-# Deploy all prompts/rules with tags from config.yaml
-prompt-manager deploy
-
-# Deploy specific prompt
-prompt-manager deploy code-review
-
-# Deploy only items tagged "python" to Continue
-prompt-manager deploy --tags python --handlers continue
-
-# Deploy items with multiple tags to multiple handlers
-prompt-manager deploy --tags python,review --handlers continue,cursor
-
-# Deploy to custom location (overrides config)
-prompt-manager deploy --base-path /custom/path/.continue
-
-# Deploy to specific handler with custom path
-prompt-manager deploy --handlers continue --base-path $HOME/my-project/.continue
-
-# Deploy all items (ignore config filters) to all handlers
-prompt-manager deploy --tags "" --handlers ""
-
-# Clean orphaned files during deployment
-prompt-manager deploy --clean
-
-# Deploy with tags and clean orphaned files
-prompt-manager deploy --tags python --clean
-```
-
-**What it does:**
-- Loads the specified prompt or rule from centralized storage
-- Processes the content for the target handler (e.g., adds `invokable: true` for Continue prompts)
-- Backs up existing files in the target directory
-- Copies the processed file to the handler's directory (e.g., `.continue/prompts/`)
-- Verifies the deployment (file exists, content correct)
-- Supports rollback on failure (if implemented by handler)
-- **With --clean flag**: Permanently removes orphaned files in destination that weren't just deployed, plus any .bak backup files
-
-**Deployment Locations:**
-- **Continue**: `{base_path}/.continue/prompts/` and `{base_path}/.continue/rules/`
-- **Default base_path**: Current working directory (the directory where you run the command)
-- **Custom base_path**: Configured in config.yaml or via `--base-path` flag
-
-**Error Scenarios:**
-- "Prompt/Rule 'name' not found in storage" if the item doesn't exist
-- "ToolHandler with name 'handler' not found" for invalid handlers
-- Permission errors for target directories
-- Missing environment variables in configured paths
-
-## Git Integration Commands
-
-The prompt-manager CLI provides Git integration commands to sync prompts and rules from a central repository to your application project. This enables teams to maintain a single source of truth for prompts and coding standards while allowing individual projects to stay synchronized.
-
-### Initialize Project
-
-The `init` command sets up your project for prompt synchronization by creating the necessary directory structure and configuration files.
-
-```bash
-prompt-manager init
-```
-
-**What it creates:**
-- `.prompt-manager/` - Configuration directory (tracked in version control)
-- `.prompt-manager/config.yaml` - Stores repository URL, sync metadata, and storage path
-- `~/.prompt-manager/storage/prompts/` - Centralized directory where synced prompts are stored
-- `~/.prompt-manager/storage/rules/` - Centralized directory for prompt rules
-- `~/.prompt-manager/storage/.gitignore` - Template file (in storage directory)
-
-**Centralized Storage:** By default, prompts and rules are stored in `~/.prompt-manager/storage` to enable sharing across multiple projects. This means the `.prompt-manager/` directory in your project contains only configuration, not the actual prompts.
-
-**Custom Storage Location:** Use `--storage-path` to specify a custom location:
-```bash
-prompt-manager init --storage-path /custom/path/storage
-```
-
-**Example:**
-```bash
-cd my-app-project
-prompt-manager init
-```
-
-**Output:**
-```
-✓ Initialization complete
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-Created: /path/to/my-app-project/.prompt-manager
-Created: /path/to/my-app-project/.prompt-manager/config.yaml
-Storage: /home/user/.prompt-manager/storage
-Created: /home/user/.prompt-manager/storage/prompts
-Created: /home/user/.prompt-manager/storage/rules
-
-Next steps:
-  1. Run 'prompt-manager sync --repo <git-url>' to sync prompts
-  2. Run 'prompt-manager status' to check sync status
-```
-
-**Error Scenarios:**
-- Running `init` twice in the same directory will fail with an error message
-- Permission errors will display a clear message about directory permissions
-
-### Sync Prompts and Rules
-
-The `sync` command synchronizes prompts and rules from a Git repository to your local project. It clones the repository to a temporary location, extracts the `prompts/` and `rules/` directories, and copies them to your centralized storage.
-
-```bash
-# First sync - specify repository URL
-prompt-manager sync --repo https://github.com/example/prompts.git
-
-# Subsequent syncs - reads URL from config
-prompt-manager sync
-
 # Override repository URL
-prompt-manager sync --repo https://github.com/other/prompts.git
-
-# Override storage location for this sync
-prompt-manager sync --storage-path /custom/path/storage
+prompt-manager sync --repo git@github.com:other-team/prompts.git
 ```
 
-**How it works:**
-1. Validates that `init` has been run (checks for `.prompt-manager/config.yaml`)
-2. Uses `--repo` flag if provided, otherwise reads URL from config
-3. Determines storage path (--storage-path flag, config, or default)
-4. Clones repository to temporary directory
-5. Validates that repository contains a `prompts/` directory (required)
-6. Copies `prompts/` directory to centralized storage (overwrites local files)
-7. Copies `rules/` directory if present in repository (optional)
-8. Updates config with sync timestamp and commit hash
-9. Cleans up temporary directory
+---
 
-**Conflict Resolution:**
-The sync command always takes remote changes and overwrites local files. This is intentional - the central repository is the source of truth. If you need custom prompts, maintain them in the central repository.
+### status - Check Sync Status
 
-**Example:**
-```bash
-# First sync
-prompt-manager sync --repo https://github.com/example/prompts.git
-```
-
-**Output:**
-```
-Syncing prompts and rules...
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-Repository: https://github.com/example/prompts.git
-Storage: /home/user/.prompt-manager/storage
-
-Cloning repository...
-Extracting prompts and rules...
-
-✓ Sync complete
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-Repository: https://github.com/example/prompts.git
-Commit: abc1234
-Synced to: /home/user/.prompt-manager/storage
-```
-
-**Authentication for Private Repositories:**
-
-If your repository is private, you need to authenticate. You have **3 authentication options**:
-
-**Option 1: SSH Key (Recommended)**
-```bash
-# Set up SSH keys with your Git provider first
-# Then use SSH URL format:
-prompt-manager sync --repo git@gitlab.com:username/repo.git
-prompt-manager sync --repo git@github.com:username/repo.git
-```
-
-**Option 2: Git Credential Helper**
-```bash
-# Configure Git to store credentials persistently
-git config --global credential.helper store
-
-# Or use cache for temporary storage (credentials expire after 15 minutes)
-git config --global credential.helper cache
-
-# Git will prompt for username/password on first clone
-prompt-manager sync --repo https://github.com/username/private-repo.git
-```
-
-**Option 3: Personal Access Token in URL**
-```bash
-# Create a personal access token from your Git provider
-# Then include it in the URL:
-prompt-manager sync --repo https://username:TOKEN@github.com/username/repo.git
-prompt-manager sync --repo https://username:TOKEN@gitlab.com/username/repo.git
-
-# ⚠️ Warning: Token is visible in command history and process list
-```
-
-**Creating Access Tokens:**
-- **GitLab**: Settings → Access Tokens → Add new token (scopes: `read_repository`)
-- **GitHub**: Settings → Developer settings → Personal access tokens → Generate new token (scopes: `repo`)
-
-**Error Scenarios:**
-- **Init not run:** "Configuration not found. Run 'prompt-manager init' first."
-- **No repository URL:** "No repository URL configured. Use --repo flag to specify a repository."
-- **Invalid repository URL:** "Failed to clone repository. Check URL and network connection."
-- **Authentication failed:** Clear error message with all 3 authentication options explained
-- **Missing prompts/ directory:** "Repository does not contain a prompts/ directory."
-- **Network errors:** Automatically retries 3 times with exponential backoff before failing
-
-### Check Status
-
-The `status` command displays information about the current sync state, including the repository URL, last sync time, and whether updates are available.
+Display synchronization status and check for remote updates.
 
 ```bash
 prompt-manager status
 ```
 
 **What it shows:**
-- Storage path (where prompts are stored)
-- Repository URL currently configured
-- Last sync timestamp (human-readable format)
+- Storage path
+- Repository URL
+- Last sync timestamp (human-readable)
 - Last synced commit hash
 - Update availability (checks remote for new commits)
-- Number of commits behind (if updates available)
 
-**Example:**
-```bash
-prompt-manager status
-```
+**Example output:**
 
-**Output (up to date):**
 ```
 Prompt Manager Status
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 Storage: /home/user/.prompt-manager/storage
-Repository: https://github.com/example/prompts.git
-Last sync:  2 hours ago
-Commit:     abc1234
+Repository: https://github.com/team/prompts.git
+Last sync: 2 hours ago
+Last synced commit: abc1234
 
 ✓ Up to date
 ```
 
-**Output (updates available):**
-```
-Prompt Manager Status
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-Storage: /home/user/.prompt-manager/storage
-Repository: https://github.com/example/prompts.git
-Last sync:  3 days ago
-Commit:     abc1234
+---
 
-⚠ Updates available (5 commits behind)
-Run 'prompt-manager sync' to update
+### validate - Validate Files
+
+Validate prompt and rule files for syntax errors and required fields.
+
+```bash
+prompt-manager validate [DIRECTORY] [OPTIONS]
 ```
 
-**Network Errors:**
-If the status command cannot reach the remote repository (network issues), it will still display cached information from the last successful sync. The update check will show an error, but the command exits successfully (status is informational only).
+**Arguments:**
+- `DIRECTORY` (optional) - Path to validate. If not provided, validates synchronized storage.
 
-## Configurable Handler Base Paths
+**Options:**
+- `--type` / `-t` - Content type: `all` (default), `prompts`, or `rules`
+- `--json` - Output results in JSON format
+- `--verbose` / `-v` - Show detailed validation progress
 
-The prompt-manager supports flexible deployment locations for AI coding assistant handlers through per-handler base path configuration. This enables project-local tool installations and custom deployment workflows.
+**What gets validated:**
 
-### Overview
+**For all files:**
+- UTF-8 encoding
+- YAML frontmatter syntax
+- Required separator (`---`)
+- Non-empty content
 
-**Default Behavior:**
-- Handlers deploy to the current working directory by default
-- Example: Running `prompt-manager deploy` in `/home/user/my-project` deploys to `/home/user/my-project/.continue/prompts/`
+**For prompts:**
+- Required fields: `title`, `description`
+- Semantic versioning format (if specified)
 
-**Custom Base Paths:**
-You can configure custom base paths in three ways:
-1. Per-handler configuration in `config.yaml` (persistent)
-2. CLI `--base-path` flag (temporary override)
-3. Environment variables in configured paths
-
-### Configuration in config.yaml
-
-Add a `handlers` section to your `.prompt-manager/config.yaml` to configure per-handler base paths:
-
-```yaml
-repo_url: https://github.com/example/prompts.git
-storage_path: ~/.prompt-manager/storage
-deploy_tags:
-  - python
-  - review
-target_handlers:
-  - continue
-handlers:
-  continue:
-    base_path: $PWD/.continue
-  cursor:
-    base_path: $PWD/.cursor
-  windsurf:
-    base_path: $PWD/.windsurf
-  aider:
-    base_path: $PWD/.aider
-```
-
-**Supported Handlers:**
-- `continue` - Continue AI assistant
-- `cursor` - Cursor AI editor
-- `windsurf` - Windsurf AI assistant
-- `aider` - Aider AI coding assistant
-
-### Environment Variable Expansion
-
-Base paths support environment variable expansion for flexibility across different environments:
-
-**Supported Variables:**
-- `$HOME` or `${HOME}` - User's home directory
-- `$USER` or `${USER}` - Current username
-- `$PWD` or `${PWD}` - Current working directory
+**For rules:**
+- Required fields: `title`, `description`, `category`
+- Valid category (warns if non-standard)
+- Kebab-case title format
+- Semantic versioning format (if specified)
 
 **Examples:**
-```yaml
-handlers:
-  continue:
-    # Project-local installation
-    base_path: $PWD/.continue
-
-  cursor:
-    # User-global installation
-    base_path: $HOME/.cursor
-
-  windsurf:
-    # User-specific path
-    base_path: /opt/ai-tools/$USER/windsurf
-```
-
-**Environment variables are expanded when:**
-- Loading configuration during deployment
-- Processing the deploy command
-- Before creating handler instances
-
-**Error Handling:**
-- Missing environment variables result in a clear error message and deployment stops
-- Example: If `$CUSTOM_VAR` doesn't exist, you'll see: "Environment variable CUSTOM_VAR not found"
-
-### CLI --base-path Option
-
-Override the configured base path for a one-time deployment using the `--base-path` flag:
 
 ```bash
-# Deploy to custom location (overrides config)
-prompt-manager deploy --base-path /tmp/test-deployment
+# Validate synchronized storage
+prompt-manager validate
 
-# Deploy specific handler to custom location
-prompt-manager deploy --handlers continue --base-path $HOME/experiments/.continue
+# Validate specific directory
+prompt-manager validate ./my-prompts
 
-# Deploy with environment variable expansion
-prompt-manager deploy --base-path $PWD/custom-tools
+# Validate only prompts
+prompt-manager validate --type prompts
+
+# Validate with JSON output
+prompt-manager validate --json
 ```
 
-**Use Cases:**
-- Testing deployments in temporary locations
-- One-time deployments to specific paths
-- Overriding project configuration for special cases
-- CI/CD deployments to isolated environments
+---
 
-### Precedence Order
+### deploy - Deploy to Handlers
 
-When multiple base path sources are configured, the following precedence applies (highest to lowest):
-
-1. **CLI `--base-path` flag** - Temporary override for current deployment
-2. **`config.yaml` handlers section** - Project-specific configuration
-3. **Current working directory** - Default when no configuration exists
-
-**Example:**
-```yaml
-# In config.yaml
-handlers:
-  continue:
-    base_path: $PWD/.continue
-```
+Deploy prompts and rules to AI coding assistant handlers (currently: **Continue**).
 
 ```bash
-# This deployment uses /custom/path (CLI takes precedence)
+prompt-manager deploy [NAME] [OPTIONS]
+```
+
+**Arguments:**
+- `NAME` (optional) - Specific prompt/rule to deploy. If omitted, deploys all matching items.
+
+**Options:**
+- `--tags TEXT` - Comma-separated tags to filter (e.g., `python,review`)
+- `--handlers TEXT` - Comma-separated handlers (currently only `continue` supported)
+- `--base-path PATH` - Custom base path for deployment
+- `--clean` - Remove orphaned files in destination ⚠️ **Permanent deletion**
+
+**What it does:**
+- **Recursively discovers** all prompts and rules in subdirectories using `glob("**/*.md")`
+- **Detects duplicate titles** across all files before deployment
+- **Preserves subdirectory structure** during deployment
+  - Example: `prompts/backend/api/api-prompt.md` → `.continue/prompts/backend/api/api-prompt.md`
+- Processes content for target handler (e.g., adds `invokable: true` for Continue)
+- Backs up existing files
+- Verifies deployment success
+
+**Deployment Locations:**
+- **Continue**: `{base_path}/.continue/prompts/` and `{base_path}/.continue/rules/`
+- **Default base_path**: Current working directory
+- **Custom base_path**: Configure in `config.yaml` or via `--base-path` flag
+
+**Examples:**
+
+```bash
+# Deploy all prompts/rules to Continue
+prompt-manager deploy
+
+# Deploy specific prompt
+prompt-manager deploy code-review
+
+# Deploy only items tagged "python"
+prompt-manager deploy --tags python
+
+# Deploy with multiple tags
+prompt-manager deploy --tags python,review
+
+# Deploy to custom location
 prompt-manager deploy --base-path /custom/path
 
-# This deployment uses $PWD/.continue (from config)
-prompt-manager deploy
-
-# This deployment uses current directory (no config, no flag)
-# (after removing handlers section from config)
-prompt-manager deploy
+# Clean orphaned files during deployment
+prompt-manager deploy --clean
 ```
 
-### Per-Project Configuration
+**Tag Filtering:**
+Items are deployed if they contain **at least one** of the specified tags.
 
-Different projects can configure different base paths independently:
+**Clean Option:**
+- Removes files in destination that don't exist in source
+- Removes all `.bak` backup files
+- **Warning:** Deletion is permanent
 
-**Project A Configuration:**
-```yaml
-# /home/user/project-a/.prompt-manager/config.yaml
-handlers:
-  continue:
-    base_path: $PWD/tools/.continue
-```
+---
 
-**Project B Configuration:**
-```yaml
-# /home/user/project-b/.prompt-manager/config.yaml
-handlers:
-  continue:
-    base_path: $HOME/.continue  # Shared across all projects
-```
+## Configuration
 
-**Result:**
-- Project A deploys to: `/home/user/project-a/tools/.continue/prompts/`
-- Project B deploys to: `/home/user/.continue/prompts/`
-
-### Common Use Cases
-
-**1. Project-Local Continue Installation**
-```yaml
-handlers:
-  continue:
-    base_path: $PWD/.continue
-```
-```bash
-prompt-manager deploy
-# Deploys to: /current/project/.continue/prompts/
-```
-
-**2. Shared Handler Across Projects**
-```yaml
-handlers:
-  continue:
-    base_path: $HOME/.continue
-```
-```bash
-prompt-manager deploy
-# Deploys to: /home/user/.continue/prompts/ (same for all projects)
-```
-
-**3. Development vs Production**
-```yaml
-# Development
-handlers:
-  continue:
-    base_path: $PWD/.continue-dev
-
-# Production (separate config)
-handlers:
-  continue:
-    base_path: /opt/ai-tools/continue
-```
-
-**4. Testing Deployment**
-```bash
-# Test deployment without modifying config
-prompt-manager deploy --base-path /tmp/test-deployment --handlers continue
-```
-
-**5. Multi-Handler Setup**
-```yaml
-handlers:
-  continue:
-    base_path: $PWD/.continue
-  cursor:
-    base_path: $HOME/.cursor
-  windsurf:
-    base_path: $PWD/tools/windsurf
-```
-```bash
-# Deploy to all configured handlers
-prompt-manager deploy
-```
-
-### Validation and Error Handling
-
-The deployment process validates paths before deployment:
-
-**Automatic Directory Creation:**
-- Base path directories are created automatically if they don't exist
-- Handler-specific subdirectories (`.continue/prompts/`, `.continue/rules/`) are created
-- Informative console output shows directory creation
-
-**Validation Checks:**
-- Base path exists or can be created
-- Directories are writable
-- Handler installation structure is valid
-
-**Error Messages:**
-```bash
-# Missing environment variable
-Error: Environment variable NONEXISTENT_VAR not found
-Handler 'continue' configuration contains invalid environment variable in base_path
-
-# Permission denied
-Error: Continue installation at /restricted/path is not writable
-Details: [Errno 13] Permission denied: '/restricted/path/.continue'
-
-# Path creation failure
-Error: Failed to validate Continue installation
-Details: Cannot create base path: /invalid/path
-Suggestion: Check that the base path is accessible and writable
-```
-
-## Configuration File Format
-
-The `.prompt-manager/config.yaml` file stores synchronization metadata and deployment preferences:
+The `.prompt-manager/config.yaml` file stores project configuration:
 
 ```yaml
+# Git synchronization
 repo_url: https://github.com/example/prompts.git
 last_sync_timestamp: 2024-11-11T14:30:00+00:00
 last_sync_commit: abc1234
 storage_path: /home/user/.prompt-manager/storage
+
+# Deployment filters (optional)
 deploy_tags:
   - python
   - review
+
 target_handlers:
   - continue
-  - cursor
+
+# Handler configuration (optional)
 handlers:
   continue:
     base_path: $PWD/.continue
-  cursor:
-    base_path: $HOME/.cursor
 ```
 
-**Fields:**
+### Configuration Fields
 
-**Synchronization:**
-- `repo_url` (string | null): Git repository URL to sync from
-- `last_sync_timestamp` (string | null): ISO 8601 timestamp of last sync
-- `last_sync_commit` (string | null): Short SHA hash of last synced commit
-- `storage_path` (string | null): Path to centralized storage directory (defaults to ~/.prompt-manager/storage)
+**Synchronization (managed automatically):**
+- `repo_url` - Git repository URL
+- `last_sync_timestamp` - ISO 8601 timestamp
+- `last_sync_commit` - Short SHA hash
+- `storage_path` - Centralized storage path
 
-**Deployment (optional):**
-- `deploy_tags` (list[string] | null): Tags to filter prompts/rules during deployment. Only items with at least one matching tag will be deployed. If null or empty, all items are deployed.
-- `target_handlers` (list[string] | null): Tool handlers to deploy to (e.g., "continue", "cursor"). If null or empty, deploys to all registered handlers.
+**Deployment (user-configurable):**
+- `deploy_tags` - Tags to filter items during deployment
+- `target_handlers` - Handlers to deploy to (currently only `continue` supported)
+- `handlers` - Per-handler configuration
 
-**Handler Configuration (optional):**
-- `handlers` (dict | null): Per-handler configuration with base paths
-  - `{handler_name}`: Handler configuration object
-    - `base_path` (string | null): Custom base path for this handler. Supports environment variables ($HOME, $USER, $PWD).
+### Handler Base Paths
 
-**Examples:**
+Configure custom deployment locations:
 
 ```yaml
-# Minimal configuration (no deployment filters)
-repo_url: https://github.com/example/prompts.git
-storage_path: /home/user/.prompt-manager/storage
-```
-
-```yaml
-# With deployment filters - only deploy Python items to Continue
-repo_url: https://github.com/example/prompts.git
-storage_path: /home/user/.prompt-manager/storage
-deploy_tags:
-  - python
-target_handlers:
-  - continue
-```
-
-```yaml
-# Deploy multiple tags to multiple handlers
-deploy_tags:
-  - python
-  - typescript
-  - review
-target_handlers:
-  - continue
-  - cursor
-  - windsurf
-```
-
-```yaml
-# With custom handler base paths
-repo_url: https://github.com/example/prompts.git
-storage_path: /home/user/.prompt-manager/storage
-target_handlers:
-  - continue
 handlers:
   continue:
-    base_path: $PWD/.continue
-  cursor:
-    base_path: $HOME/.cursor
-  windsurf:
-    base_path: $PWD/tools/windsurf
-  aider:
-    base_path: /opt/ai-tools/aider
+    base_path: $PWD/.continue  # Project-local
+    # or
+    base_path: $HOME/.continue # User-global
 ```
 
-**Note:** Sync-related fields are managed automatically by the CLI commands. You can manually edit `deploy_tags`, `target_handlers`, and `handlers` sections to configure your deployment preferences, or override them using CLI options.
+**Supported environment variables:**
+- `$HOME` or `${HOME}` - User's home directory
+- `$USER` or `${USER}` - Current username
+- `$PWD` or `${PWD}` - Current working directory
 
-## Validation
+**Precedence order:**
+1. CLI `--base-path` flag (temporary override)
+2. `config.yaml` handlers section (persistent)
+3. Current working directory (default)
 
-The `validate` command checks prompts and rules for syntax errors, required fields, and adherence to standards.
+---
 
-```bash
-# Validate files in a directory
-poetry run prompt-manager validate /path/to/directory
+## Handlers
 
-# Validate with JSON output
-poetry run prompt-manager validate /path/to/directory --json
-```
+### Current Support
 
-**What gets validated:**
+| Handler | Status | Deploy Location | Notes |
+|---------|--------|-----------------|-------|
+| **Continue** | ✅ Supported | `~/.continue/` | Full support with subdirectories |
+| **Cursor** | 🚧 Coming Soon | `~/.cursor/` | Q1 2025 |
+| **Windsurf** | 🚧 Coming Soon | `~/.windsurf/` | Q1 2025 |
+| **Aider** | 📋 Planned | TBD | Q2 2025 |
+| **Kilo Code** | 📋 Planned | TBD | Q2 2025 |
 
-For all files:
-- UTF-8 encoding
-- YAML frontmatter syntax
-- Required `>>>` separator
-- Non-empty content
+Want another handler? [Open an issue](https://github.com/your-org/prompt-manager/issues/new?template=handler-request.md) 🚀
 
-For prompts:
-- Required fields: `name`, `description`
-- Optional fields: `version`, `tags`, `author`
-- Semantic versioning format (if specified)
-- No prohibited fields (e.g., `tools`)
-
-For rules:
-- Required fields: `name`, `description`, `type: rule`, `category`
-- Optional fields: `version`, `tags`, `author`, `applies_to`
-- Valid category (warns if non-standard)
-- Kebab-case name format (e.g., `python-style-guide`)
-- Semantic versioning format (if specified)
-
-**Example validation output:**
-```
-Validating directory: /tmp/test-rules
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-
-✓ python-style.md (rule)
-✓ code-review.md (prompt)
-✗ invalid-rule.md (rule)
-  Error: Field 'category' is required for rules
-
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-Summary: 2 passed, 1 failed
-```
-
-## Common Workflows
-
-### Team Setup
-
-**Initial setup for a new team member:**
-```bash
-# Clone application project
-git clone https://github.com/team/application.git
-cd application
-
-# The .prompt-manager/ directory is already in the repo
-# Just sync prompts from the configured repository
-prompt-manager sync
-```
-
-**Setting up a new application project:**
-```bash
-# Create or navigate to your application project
-cd my-new-app
-
-# Initialize Git integration
-prompt-manager init
-
-# Sync prompts from central repository
-prompt-manager sync --repo https://github.com/team/central-prompts.git
-
-# Commit the configuration (prompts/rules are in centralized storage, not in project)
-git add .prompt-manager/
-git commit -m "Initialize prompt-manager with central repository"
-git push
-```
-
-### Regular Updates
-
-**Check for updates daily:**
-```bash
-# Check if new prompts are available
-prompt-manager status
-
-# Sync latest changes
-prompt-manager sync
-```
-
-**Automated sync in CI/CD:**
-```bash
-# In your CI/CD pipeline (e.g., GitHub Actions, GitLab CI)
-prompt-manager sync
-```
-
-### Switching Repositories
-
-**Change to a different central repository:**
-```bash
-# Override with new repository URL
-prompt-manager sync --repo https://github.com/team/new-prompts.git
-
-# Subsequent syncs will use the new URL
-prompt-manager sync
-```
-
-### Configuring Handler Base Paths
-
-**Configure project-local Continue installation:**
-```bash
-# Initialize project
-prompt-manager init
-
-# Edit .prompt-manager/config.yaml to add:
-# handlers:
-#   continue:
-#     base_path: $PWD/.continue
-
-# Deploy prompts to project-local Continue
-prompt-manager deploy
-```
-
-**Deploy to multiple locations:**
-```yaml
-# .prompt-manager/config.yaml
-handlers:
-  continue:
-    base_path: $PWD/.continue        # Project-local
-  cursor:
-    base_path: $HOME/.cursor         # User-global
-```
-
-```bash
-# Deploy to all configured handlers
-prompt-manager deploy
-```
-
-**Test deployment to temporary location:**
-```bash
-# Deploy to temporary location without modifying config
-prompt-manager deploy --base-path /tmp/test-continue --handlers continue
-
-# Verify deployment
-ls /tmp/test-continue/.continue/prompts/
-```
+---
 
 ## Security
 
-This project uses automated security scanning to detect and prevent security issues before they reach production.
+This project uses automated security scanning to detect and prevent security issues.
 
-### Security Scanning Tools
+### Quick Security Reference
 
-The project implements multiple layers of security:
+| ✅ Safe Practices | ❌ Avoid |
+|------------------|----------|
+| SSH keys for Git | Tokens in URLs |
+| Environment variables | Hardcoded secrets |
+| `.gitignore` for `.env` | Committing `.env` |
+| Pre-commit hooks enabled | Bypassing with `--no-verify` |
 
-- **Secrets Detection** - Prevents committing API keys, tokens, and passwords
-- **SAST (Static Application Security Testing)** - Identifies code security vulnerabilities
+### Security Tools
+
+- **Secrets Detection** - Prevents committing API keys, tokens, passwords
+- **SAST** - Static Application Security Testing
 - **Dependency Scanning** - Detects vulnerable packages and CVEs
 
 ### For Developers
 
-Security checks run automatically at two levels:
-
-**1. Pre-commit Hooks (Local)**
-- Runs before each `git commit`
-- Blocks commits containing secrets or security issues
-- Fast feedback loop (~10-30 seconds)
-
-**2. CI/CD Pipeline (GitLab)**
-- Runs on every merge request
-- Comprehensive security scan of entire codebase
-- Generates security reports as artifacts
-
-### Getting Started with Security Tools
-
-Install pre-commit hooks after cloning:
-
+**Pre-commit Hooks (Local):**
 ```bash
-# Install dependencies
-poetry install
-
 # Install pre-commit hooks
 poetry run pre-commit install
 
-# Test hooks (optional)
+# Test hooks
 poetry run pre-commit run --all-files
 ```
 
-### What Gets Checked?
-
-**Local (Pre-commit):**
-- API keys, tokens, passwords (detect-secrets)
-- Python security vulnerabilities (bandit)
-- Code formatting and type safety (ruff, mypy)
-
-**CI/CD (GitLab):**
-- All pre-commit checks
-- Dependency vulnerabilities (safety, pip-audit)
-- CVE database scanning
-- Security report generation
-
-### Handling Security Findings
-
-**If a secret is detected:**
-```bash
-# Use environment variables instead
-import os
-api_key = os.getenv("API_KEY")  # Good
-
-# Don't hardcode secrets
-api_key = "sk-1234..."  # Bad - will be blocked
-```
-
-**If a security vulnerability is found:**
-- Review the finding in the commit output or CI logs
-- Follow the remediation guidance provided
-- See [docs/security.md](docs/security.md) for detailed fixes
+**Security Checks:**
+- Runs before each `git commit`
+- Blocks commits containing secrets or security issues
+- Fast feedback (~10-30 seconds)
 
 ### Best Practices
 
@@ -1054,121 +568,135 @@ api_key = "sk-1234..."  # Bad - will be blocked
 - Store secrets in environment variables
 - Never commit `.env` files with real credentials
 
-**Example: SSH vs Token**
 ```bash
 # ✅ Recommended: SSH authentication
-prompt-manager sync --repo git@gitlab.com:username/repo.git
+prompt-manager sync --repo git@github.com:username/repo.git
 
 # ❌ Avoid: Token in URL (security risk)
-prompt-manager sync --repo https://user:TOKEN@gitlab.com/user/repo.git
+prompt-manager sync --repo https://user:TOKEN@github.com/user/repo.git
 ```
 
-### Documentation
+**Reporting Security Issues:**
 
-- **[SECURITY.md](SECURITY.md)** - Security policy and vulnerability reporting
-- **[docs/security.md](docs/security.md)** - Developer security guide
-- **[docs/ci-security.md](docs/ci-security.md)** - CI/CD security pipeline documentation
-
-### Reporting Security Issues
-
-**Do not** open public issues for security vulnerabilities.
-
-Instead, email security issues to: [your-security-email@example.com]
+Do not open public issues for security vulnerabilities. Email security issues to: [your-security-email@example.com]
 
 See [SECURITY.md](SECURITY.md) for our responsible disclosure policy.
 
-## Troubleshooting
+---
 
-### "Configuration not found" Error
+## Architecture
 
-**Problem:** Running `sync` or `status` before `init`
+### Architecture Overview
 
-**Solution:**
+```
+┌─────────────────┐
+│  Git Repository │
+│   (prompts/)    │
+└────────┬────────┘
+         │ sync
+         ▼
+┌─────────────────┐
+│ Local Storage   │
+│ ~/.prompt-mgr/  │
+└────────┬────────┘
+         │ deploy
+         ▼
+┌─────────────────┐
+│   AI Handlers   │
+│ Continue/Cursor │
+└─────────────────┘
+```
+
+### Data Flow
+
+1. **Git Repository** - Team stores prompts in version-controlled repository
+2. **Sync** - Pull latest prompts to local centralized storage
+3. **Validate** - Check files for errors and inconsistencies
+4. **Deploy** - Push validated prompts to AI coding assistants
+5. **Use** - AI tools use deployed prompts for code assistance
+
+---
+
+## Real-World Examples
+
+### Example 1: Team Onboarding
+
 ```bash
+# New developer joins team
+git clone git@github.com:company/backend-service.git
+cd backend-service
+
+# One-time setup
 prompt-manager init
+prompt-manager sync  # Gets company's standard prompts
+prompt-manager deploy  # Ready to use Continue with team prompts
+
+# Done! Prompts available in Continue
 ```
 
-### Authentication Failures
+### Example 2: Multi-Project Workflow
 
-**Problem:** "Authentication failed. Ensure Git credentials are configured."
-
-**Solutions:**
-1. **SSH authentication:** Ensure your SSH key is added to your Git hosting service
-2. **HTTPS authentication:** Configure Git credentials or use a personal access token
-3. **Test Git access:** Try cloning the repository manually with `git clone`
-
-### Network Errors
-
-**Problem:** "Check URL and network connection."
-
-**Solutions:**
-1. Verify internet connectivity
-2. Check that the repository URL is correct
-3. The command automatically retries 3 times - if it still fails, check your network
-4. Use `prompt-manager status` to see cached information while offline
-
-### Repository Doesn't Contain prompts/ Directory
-
-**Problem:** "Repository does not contain a prompts/ directory."
-
-**Solution:** Ensure your central repository has a `prompts/` directory at the root level. The sync command requires this specific structure.
-
-**Note:** The `rules/` directory is optional. If your repository contains a `rules/` directory, it will be synced automatically. If not, only the `prompts/` directory will be synced.
-
-### Permission Errors
-
-**Problem:** "Permission denied. Check directory permissions."
-
-**Solutions:**
-1. Ensure you have write permissions in the current directory
-2. Check that `.prompt-manager/`, `prompts/`, and `rules/` directories are writable
-3. Run with appropriate user permissions (avoid `sudo` unless necessary)
-
-### Environment Variable Errors
-
-**Problem:** "Environment variable CUSTOM_VAR not found"
-
-**Solution:**
-- Check that the environment variable is set: `echo $CUSTOM_VAR`
-- Use supported variables only: `$HOME`, `$USER`, `$PWD`
-- Fix the variable reference in `.prompt-manager/config.yaml`
-
-**Example:**
-```yaml
-# Incorrect - CUSTOM_VAR not supported
-handlers:
-  continue:
-    base_path: $CUSTOM_VAR/.continue
-
-# Correct - use supported variables
-handlers:
-  continue:
-    base_path: $PWD/.continue  # or $HOME/.continue
-```
-
-### Handler Deployment Path Issues
-
-**Problem:** Prompts deployed to wrong location
-
-**Solution:**
-1. Check the precedence order: CLI `--base-path` > config > default
-2. Verify `handlers` section in `.prompt-manager/config.yaml`
-3. Check environment variable expansion: `$PWD`, `$HOME`, etc.
-4. Use `--base-path` flag to test deployment to specific location
-
-**Debug deployment location:**
 ```bash
-# Check where files would be deployed
-cat .prompt-manager/config.yaml | grep -A2 handlers
+# Each project has its own prompt config
+cd ~/projects/api-service
+prompt-manager sync  # Uses API-specific prompts
 
-# Deploy with explicit path to verify
-prompt-manager deploy --base-path /tmp/test-deploy --handlers continue
+cd ~/projects/frontend-app
+prompt-manager sync  # Uses frontend-specific prompts
 
-# Check deployment
-ls -la /tmp/test-deploy/.continue/prompts/
+# Each project's `.prompt-manager/config.yaml` stores its own repo_url
 ```
+
+### Example 3: Testing New Prompts
+
+```bash
+# Create test branch in prompts repo
+cd ~/prompts-repo
+git checkout -b test-new-prompt
+# Edit prompts/new-feature.md
+git commit && git push
+
+# In your project
+prompt-manager sync --repo git@github.com:you/prompts.git#test-new-prompt
+prompt-manager deploy
+# Test the new prompt in Continue
+```
+
+### Example 4: Tag-Based Deployment
+
+```bash
+# Deploy only Python-related prompts to Continue
+prompt-manager deploy --tags python --handlers continue
+
+# Deploy Python AND review prompts
+prompt-manager deploy --tags python,review
+
+# Deploy everything
+prompt-manager deploy
+```
+
+### Example 5: Custom Deployment Location
+
+```bash
+# Deploy to project-specific .continue directory
+prompt-manager deploy --base-path $PWD/.continue
+
+# Or configure permanently in config.yaml
+cat >> .prompt-manager/config.yaml << 'EOF'
+handlers:
+  continue:
+    base_path: $PWD/.continue
+EOF
+
+# Now deploy uses project location
+prompt-manager deploy
+```
+
+---
 
 ## Development
+
+### Setup
 
 ```bash
 # Install dependencies
@@ -1190,34 +718,213 @@ make check
 make format
 ```
 
-### Running Git Integration Tests
+### Running Tests
 
 ```bash
-# Run all Git integration tests
-poetry run pytest tests/config/ tests/git/ tests/cli/test_git_commands.py tests/integration/test_git_integration.py tests/utils/test_formatting.py
+# All tests
+make test
 
-# Run tests with coverage
-poetry run pytest tests/config/ tests/git/ tests/cli/test_git_commands.py tests/integration/test_git_integration.py tests/utils/test_formatting.py --cov=src/prompt_manager/config --cov=src/prompt_manager/git --cov-report=term-missing
+# Specific test suites
+poetry run pytest tests/cli/
+poetry run pytest tests/handlers/
+poetry run pytest tests/integration/
+
+# With coverage
+poetry run pytest --cov=src/prompt_manager --cov-report=html
 ```
 
-### Running Configurable Base Paths Tests
+### Quality Standards
+
+- **Test Coverage:** ≥95% required
+- **Linting:** Ruff (no errors)
+- **Type Checking:** mypy (strict mode)
+- **Security:** Pre-commit hooks must pass
+
+---
+
+## Troubleshooting
+
+### "Configuration not found" Error
+
+**Problem:** Running `sync` or `status` before `init`
+
+**Solution:**
+```bash
+prompt-manager init
+```
+
+### Authentication Failures
+
+**Problem:** "Authentication failed. Ensure Git credentials are configured."
+
+**Solutions:**
+1. Ensure SSH key is added to your Git hosting service
+2. Configure Git credentials: `git config --global credential.helper store`
+3. Test Git access manually: `git clone <repo-url>`
+
+### Network Errors
+
+**Problem:** "Check URL is valid and network connection is available."
+
+**Solutions:**
+1. Verify internet connectivity
+2. Check repository URL is correct
+3. Command automatically retries 3 times
+4. Use `prompt-manager status` to see cached information while offline
+
+### Repository Structure Issues
+
+**Problem:** "Repository does not contain a prompts/ directory."
+
+**Solution:** Ensure your repository has a `prompts/` directory at the root level. The `rules/` directory is optional.
+
+### Permission Errors
+
+**Problem:** "Permission denied. Check directory permissions."
+
+**Solutions:**
+1. Ensure write permissions in current directory
+2. Check `.prompt-manager/` directory is writable
+3. Avoid using `sudo` unless necessary
+
+### Environment Variable Errors
+
+**Problem:** "Environment variable CUSTOM_VAR not found"
+
+**Solution:**
+- Use supported variables only: `$HOME`, `$USER`, `$PWD`
+- Fix variable reference in `.prompt-manager/config.yaml`
+
+```yaml
+# ❌ Incorrect - CUSTOM_VAR not supported
+handlers:
+  continue:
+    base_path: $CUSTOM_VAR/.continue
+
+# ✅ Correct - use supported variables
+handlers:
+  continue:
+    base_path: $PWD/.continue
+```
+
+### Handler Deployment Issues
+
+**Problem:** Prompts deployed to wrong location
+
+**Solution:**
+1. Check precedence: CLI `--base-path` > config > default
+2. Verify `handlers` section in `.prompt-manager/config.yaml`
+3. Use `--base-path` flag to test deployment
 
 ```bash
-# Run all feature-specific tests
-poetry run pytest tests/utils/test_path_helpers.py tests/models/test_git_config.py tests/config/test_manager.py tests/handlers/test_continue_handler_base_path.py tests/cli/test_deploy_base_path.py tests/integration/test_configurable_base_paths.py
+# Debug deployment location
+cat .prompt-manager/config.yaml | grep -A2 handlers
 
-# Run with verbose output
-poetry run pytest tests/integration/test_configurable_base_paths.py -v
+# Deploy with explicit path to verify
+prompt-manager deploy --base-path /tmp/test-deploy
+
+# Check deployment
+ls -la /tmp/test-deploy/.continue/prompts/
 ```
+
+### Debug Mode
+
+Enable verbose logging for troubleshooting:
+
+```bash
+export PROMPT_MANAGER_DEBUG=1
+prompt-manager sync --verbose
+```
+
+This will show:
+- Detailed Git operations
+- File system operations
+- Handler deployment steps
+
+---
+
+## FAQ
+
+<details>
+<summary><b>Q: Can I use multiple Git repositories for prompts?</b></summary>
+
+A: Yes! Each project can have its own `.prompt-manager/config.yaml` pointing to different repositories. Switch between projects and run `prompt-manager sync` to load project-specific prompts.
+</details>
+
+<details>
+<summary><b>Q: What happens if I edit deployed prompts directly in `.continue/`?</b></summary>
+
+A: Your changes will be overwritten on the next `deploy`. Always edit prompts in your Git repository, then sync and deploy.
+</details>
+
+<details>
+<summary><b>Q: Can I use this without Git?</b></summary>
+
+A: Not recommended, but you can manually manage files in `~/.prompt-manager/storage/`. However, you'll lose versioning and team sync benefits.
+</details>
+
+<details>
+<summary><b>Q: How do I share prompts privately within my organization?</b></summary>
+
+A: Use a private Git repository (GitHub, GitLab, Bitbucket) with SSH authentication. Only team members with repository access can sync prompts.
+</details>
+
+<details>
+<summary><b>Q: Why do I get "Duplicate titles detected"?</b></summary>
+
+A: Each prompt and rule must have a unique `title` across the entire storage. Rename files in different subdirectories if they have the same title.
+</details>
+
+<details>
+<summary><b>Q: How often should I sync?</b></summary>
+
+A: Sync whenever you want the latest prompts. Common patterns:
+- Daily at start of work
+- Before starting a new feature
+- After team announces prompt updates
+- Manually whenever needed
+</details>
+
+<details>
+<summary><b>Q: Can I deploy to multiple handlers?</b></summary>
+
+A: Yes! Currently only Continue is supported, but Cursor and Windsurf handlers are coming in Q1 2025. You'll be able to do: `prompt-manager deploy --handlers continue,cursor,windsurf`
+</details>
+
+<details>
+<summary><b>Q: What's the difference between `--base-path` and `storage_path`?</b></summary>
+
+A: 
+- **storage_path** (`~/.prompt-manager/storage/`) - Where synced prompts are stored locally
+- **base_path** (`~/.continue/`) - Where deployed prompts are written for AI tools to use
+</details>
+
+---
 
 ## Documentation
 
-See `agent-os/product/` for full product documentation.
+- **[Manual Testing Guide](./TEST.md)** - Comprehensive testing procedures
+- **[Contributing Guide](./CONTRIBUTING.md)** - How to contribute to this project
+- **[Security Policy](./SECURITY.md)** - Security guidelines and reporting
+- **[License](./LICENSE)** - MIT License
+- **[Product Documentation](./docs/)** - Full technical documentation
+
+---
 
 ## Contributing
 
-Pull requests welcome. Please ensure `make check` passes before submitting.
+We welcome contributions! Please read our [**Contributing Guide (CONTRIBUTING.md)**](CONTRIBUTING.md) for detailed information on how to contribute to this project.
+
+---
+
+## Quick Links
+
+📖 [Full Documentation](./docs/) | 🐛 [Report Bug](./issues/new) | 💡 [Request Feature](./issues/new) | 💬 [Discussions](./discussions)
+
+---
 
 ## License
 
 MIT
+
+**Made with ❤️ by [Your Team/Name]**
