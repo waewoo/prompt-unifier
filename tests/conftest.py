@@ -24,19 +24,19 @@ def invalid_prompts_dir() -> Path:
 @pytest.fixture
 def minimal_valid_prompt(valid_prompts_dir: Path) -> Path:
     """Return path to minimal valid prompt file."""
-    return valid_prompts_dir / "minimal_valid.md"
+    return valid_prompts_dir / "prompts" / "minimal_valid.md"
 
 
 @pytest.fixture
 def full_valid_prompt(valid_prompts_dir: Path) -> Path:
     """Return path to full valid prompt file with all fields."""
-    return valid_prompts_dir / "full_valid.md"
+    return valid_prompts_dir / "prompts" / "full_valid.md"
 
 
 @pytest.fixture
 def prompt_with_warnings(valid_prompts_dir: Path) -> Path:
     """Return path to valid prompt that generates warnings."""
-    return valid_prompts_dir / "with_warnings.md"
+    return valid_prompts_dir / "prompts" / "with_warnings.md"
 
 
 @pytest.fixture

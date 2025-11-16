@@ -127,7 +127,7 @@ class TestValidateCommand:
         """Test validate with a directory that doesn't exist."""
         result = runner.invoke(app, ["validate", "/nonexistent/directory"])
         assert result.exit_code == 1
-        assert "does not exist" in result.output
+        assert "Neither prompts/ nor rules/ directory exists" in result.output
 
     def test_validate_directory_not_a_directory(self):
         """Test validate with a path that is not a directory."""
@@ -138,7 +138,7 @@ class TestValidateCommand:
 
             result = runner.invoke(app, ["validate", str(test_file)])
             assert result.exit_code == 1
-            assert "is not a directory" in result.output
+            assert "Neither prompts/ nor rules/ directory exists" in result.output
 
     @patch("prompt_manager.core.batch_validator.BatchValidator.validate_directory")
     def test_validate_failure_exit_code(self, mock_validate):
@@ -449,7 +449,7 @@ storage_path: /tmp/storage
             result = runner.invoke(app, ["status"])
             assert result.exit_code == 0
             assert "Never" in result.output
-            assert "None" in result.output
+            assert "Unknown" in result.output
 
     @patch("prompt_manager.git.service.GitService.check_remote_updates")
     def test_status_update_check_fails(self, mock_check_updates):
