@@ -64,6 +64,22 @@ class TestFileScanner:
         assert len(results) == 2
         assert all(p.suffix.lower() == ".md" for p in results)
 
+    def test_scan_directory_ignores_readme_files(self, tmp_path: Path) -> None:
+        """Test that scanner ignores README.md files."""
+        scanner = FileScanner()
+
+        # Create various file types
+        (tmp_path / "valid.md").write_text("valid content")
+        (tmp_path / "README.md").write_text("readme content")
+        (tmp_path / "readme.md").write_text("readme content lowercase")
+
+        results = scanner.scan_directory(tmp_path)
+
+        assert len(results) == 1
+        assert "valid.md" in str(results[0])
+        assert "README.md" not in str(results)
+        assert "readme.md" not in str(results)
+
     def test_scan_directory_not_found_raises_error(self) -> None:
         """Test that scanning non-existent directory raises FileNotFoundError."""
         scanner = FileScanner()

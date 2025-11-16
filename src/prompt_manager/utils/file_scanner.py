@@ -61,7 +61,11 @@ class FileScanner:
         md_files: list[Path] = []
         for file_path in directory.rglob("*"):
             # Check if it's a file (not directory) and has .md extension (case-insensitive)
-            if file_path.is_file() and file_path.suffix.lower() == ".md":
+            if (
+                file_path.is_file()
+                and file_path.suffix.lower() == ".md"
+                and file_path.name.lower() != "readme.md"
+            ):
                 md_files.append(file_path.resolve())
 
         # Sort for deterministic ordering
