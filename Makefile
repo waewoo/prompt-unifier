@@ -11,7 +11,7 @@
 #
 # Usage: make <target>
 
-.PHONY: install test lint typecheck format check clean run
+.PHONY: install test lint typecheck format check clean run release changelog
 
 # Install dependencies via Poetry
 install:
@@ -59,3 +59,27 @@ clean:
 	find . -type f -name "*.pyc" -delete 2>/dev/null || true
 	find . -type f -name "*.pyo" -delete 2>/dev/null || true
 	find . -type f -name "*.pyd" -delete 2>/dev/null || true
+
+# Generate changelog
+changelog:
+	@echo "Generating changelog..."
+	@poetry run cz changelog --incremental > CHANGELOG.md
+	@echo "Changelog generated in CHANGELOG.md"
+
+# Create a new release
+# Usage: make release VERSION_BUMP=patch
+release: check
+	@if [ -z "$(VERSION_BUMP)" ]; then \
+		echo "Error: VERSION_BUMP is required (e.g., patch, minor, major)"; \
+		exit 1; \
+	fi
+	@echo "Bumping version with poetry version $(VERSION_BUMP)..."
+	@NEW_VERSION=$$(poetry version $(VERSION_BUMP) --short)
+	@echo "New version: v$${NEW_VERSION}"
+	@git add pyproject.toml
+	@git commit -m "chore(release): Bump version to v$${NEW_VERSION}"
+	@git tag v$${NEW_VERSION}
+	@echo "Pushing commit and tag to main branch..."
+	@git push origin main
+	@git push origin v$${NEW_VERSION}
+	@echo "Release v$${NEW_VERSION} created and pushed."

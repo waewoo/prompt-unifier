@@ -22,17 +22,19 @@
 
 8. [~] Deploy Command with Multi-Tool Support — Implement deploy command that orchestrates deployment across all configured tools, supports selective deployment (--tool flag), provides progress indicators and deployment summaries, handles rollback on failures, and validates successful deployment. **PARTIALLY IMPLEMENTED:** Core deploy command working with Continue handler, supports --tags and --handlers flags, includes backup/rollback, Rich console output. **NEW:** Added recursive file discovery (glob("**/*.md")) for prompts and rules in subdirectories, subdirectory structure preservation during deployment, and duplicate title detection across all files. Remaining: Add other tool handlers (Windsurf, Cursor, Aider) to complete multi-tool support. `L`
 
-9. [ ] List & Status Commands with Rich UI — Create list command showing all available prompts with metadata (name, description, tools, last modified), implement status command displaying deployment state per tool, add filtering/sorting options, and format output using Rich tables and syntax highlighting. `S`
+9. [x] GitLab Release Automation — Implement automated Git tagging and GitLab Release creation in the CI/CD pipeline, including version bumping, changelog generation, and distribution package (sdist, wheel) publication. `High`
 
-10. [ ] Configuration Management System — Implement user configuration file (~/.prompt-manager/config.yaml) to store repository paths, enabled tools, deployment preferences, and validation rules. Support init-time configuration, runtime overrides via CLI flags, and config validation. `S`
+10. [ ] List & Status Commands with Rich UI — Create list command showing all available prompts with metadata (name, description, tools, last modified), implement status command displaying deployment state per tool, add filtering/sorting options, and format output using Rich tables and syntax highlighting. `S`
 
-11. [ ] Error Handling, Logging & User Feedback — Implement comprehensive error handling with user-friendly messages, add logging system for debugging (optional --verbose flag), create helpful suggestions for common errors, and ensure graceful degradation when tools are not installed. `S`
+11. [ ] Configuration Management System — Implement user configuration file (~/.prompt-manager/config.yaml) to store repository paths, enabled tools, deployment preferences, and validation rules. Support init-time configuration, runtime overrides via CLI flags, and config validation. `S`
 
-12. [ ] Documentation & Onboarding — Write comprehensive README with quickstart guide, create detailed CLI help text for all commands, document prompt format specification, provide examples of valid prompts, and create contributing guide for adding new tool handlers. `M`
+12. [ ] Error Handling, Logging & User Feedback — Implement comprehensive error handling with user-friendly messages, add logging system for debugging (optional --verbose flag), create helpful suggestions for common errors, and ensure graceful degradation when tools are not installed. `S`
 
-13. [ ] Tool Handler Implementation: Kilo Code — Complete remaining tool handlers for Kilo Code following the established pattern, with full deployment logic, configuration file handling, and validation that prompts are correctly placed in each tool's expected location. `M`
+13. [ ] Documentation & Onboarding — Write comprehensive README with quickstart guide, create detailed CLI help text for all commands, document prompt format specification, provide examples of valid prompts, and create contributing guide for adding new tool handlers. `M`
 
-14. [ ] Tool Handler Implementation: Windsurf, Cursor, Aider — Complete remaining tool handlers for Windsurf, Aider, Cursor following the established pattern, with full deployment logic, configuration file handling, and validation that prompts are correctly placed in each tool's expected location. `M`
+14. [ ] Tool Handler Implementation: Kilo Code — Complete remaining tool handlers for Kilo Code following the established pattern, with full deployment logic, configuration file handling, and validation that prompts are correctly placed in each tool's expected location. `M`
+
+15. [ ] Tool Handler Implementation: Windsurf, Cursor, Aider — Complete remaining tool handlers for Windsurf, Aider, Cursor following the established pattern, with full deployment logic, configuration file handling, and validation that prompts are correctly placed in each tool's expected location. `M`
 
 > Notes
 > - Order items by technical dependencies and product architecture

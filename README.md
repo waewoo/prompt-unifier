@@ -914,17 +914,3 @@ A:
 ## Contributing
 
 We welcome contributions! Please read our [**Contributing Guide (CONTRIBUTING.md)**](CONTRIBUTING.md) for detailed information on how to contribute to this project.
-
----
-
-## Quick Links
-
-📖 [Full Documentation](./docs/) | 🐛 [Report Bug](./issues/new) | 💡 [Request Feature](./issues/new) | 💬 [Discussions](./discussions)
-
----
-
-## License
-
-MIT
-
-**Made with ❤️ by [Your Team/Name]**

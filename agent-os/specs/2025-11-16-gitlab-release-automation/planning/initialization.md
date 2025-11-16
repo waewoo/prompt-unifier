@@ -1,0 +1,1 @@
+GitLab Release Automation — Implement automated Git tagging and GitLab Release creation in the CI/CD pipeline, including version bumping, changelog generation, and distribution package (sdist, wheel) publication.
