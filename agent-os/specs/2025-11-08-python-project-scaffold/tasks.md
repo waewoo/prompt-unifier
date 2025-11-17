@@ -11,18 +11,18 @@ This tasks list creates a complete, production-ready Python project structure fo
 **Dependencies:** None
 
 - [x] 1.0 Create complete project directory structure
-  - [x] 1.1 Create src/prompt_manager/ package directory
-  - [x] 1.2 Create src/prompt_manager/cli/ subdirectory for Typer CLI commands
-  - [x] 1.3 Create src/prompt_manager/core/ subdirectory for core business logic
-  - [x] 1.4 Create src/prompt_manager/handlers/ subdirectory for ToolHandler implementations
-  - [x] 1.5 Create src/prompt_manager/models/ subdirectory for Pydantic models
-  - [x] 1.6 Create src/prompt_manager/utils/ subdirectory for shared utilities
+  - [x] 1.1 Create src/prompt_unifier/ package directory
+  - [x] 1.2 Create src/prompt_unifier/cli/ subdirectory for Typer CLI commands
+  - [x] 1.3 Create src/prompt_unifier/core/ subdirectory for core business logic
+  - [x] 1.4 Create src/prompt_unifier/handlers/ subdirectory for ToolHandler implementations
+  - [x] 1.5 Create src/prompt_unifier/models/ subdirectory for Pydantic models
+  - [x] 1.6 Create src/prompt_unifier/utils/ subdirectory for shared utilities
   - [x] 1.7 Create tests/ directory at project root for TDD test suite
   - [x] 1.8 Create docs/ directory for project documentation
   - [x] 1.9 Verify all directories exist with correct paths
 
 **Acceptance Criteria:**
-- All 8 directories exist: src/prompt_manager/ (with 5 subdirectories), tests/, docs/
+- All 8 directories exist: src/prompt_unifier/ (with 5 subdirectories), tests/, docs/
 - Directory structure mirrors spec requirements exactly
 - All paths are accessible and correctly nested
 
@@ -30,26 +30,26 @@ This tasks list creates a complete, production-ready Python project structure fo
 **Dependencies:** Task Group 1
 
 - [x] 2.0 Configure Python package structure
-  - [x] 2.1 Create src/prompt_manager/__init__.py with package version (0.1.0)
-  - [x] 2.2 Create src/prompt_manager/cli/__init__.py (empty)
-  - [x] 2.3 Create src/prompt_manager/core/__init__.py (empty)
-  - [x] 2.4 Create src/prompt_manager/handlers/__init__.py (empty)
-  - [x] 2.5 Create src/prompt_manager/models/__init__.py (empty)
-  - [x] 2.6 Create src/prompt_manager/utils/__init__.py (empty)
+  - [x] 2.1 Create src/prompt_unifier/__init__.py with package version (0.1.0)
+  - [x] 2.2 Create src/prompt_unifier/cli/__init__.py (empty)
+  - [x] 2.3 Create src/prompt_unifier/core/__init__.py (empty)
+  - [x] 2.4 Create src/prompt_unifier/handlers/__init__.py (empty)
+  - [x] 2.5 Create src/prompt_unifier/models/__init__.py (empty)
+  - [x] 2.6 Create src/prompt_unifier/utils/__init__.py (empty)
   - [x] 2.7 Verify package can be imported successfully
 
 **Acceptance Criteria:**
 - All 6 __init__.py files created
 - Main __init__.py contains version: __version__ = "0.1.0"
-- Python recognizes src/prompt_manager as a valid package
-- No import errors when attempting: `python -c "import prompt_manager"`
+- Python recognizes src/prompt_unifier as a valid package
+- No import errors when attempting: `python -c "import prompt_unifier"`
 
 ### Task Group 3: Dependency Management and Configuration
 **Dependencies:** Task Group 2
 
 - [x] 3.0 Configure Poetry and project dependencies
   - [x] 3.1 Create pyproject.toml with project metadata
-    - name: "prompt-manager"
+    - name: "prompt-unifier"
     - version: "0.1.0"
     - description: "CLI tool for managing AI prompt templates with YAML frontmatter"
     - authors: ["Your Name <your.email@example.com>"]
@@ -110,7 +110,7 @@ This tasks list creates a complete, production-ready Python project structure fo
   - [x] 4.1 Add `install` target - Install dependencies via Poetry
     - Command: `poetry install`
   - [x] 4.2 Add `test` target - Run pytest with coverage
-    - Command: `poetry run pytest --cov=src/prompt_manager --cov-report=term-missing --cov-report=html`
+    - Command: `poetry run pytest --cov=src/prompt_unifier --cov-report=term-missing --cov-report=html`
   - [x] 4.3 Add `lint` target - Run Ruff linter
     - Command: `poetry run ruff check src/ tests/`
   - [x] 4.4 Add `typecheck` target - Run mypy type checker
@@ -155,7 +155,7 @@ This tasks list creates a complete, production-ready Python project structure fo
     - Jobs:
       - lint: Run `poetry run ruff check src/ tests/`
       - typecheck: Run `poetry run mypy src/`
-      - test: Run `poetry run pytest --cov=src/prompt_manager --cov-report=term-missing --cov-report=xml`
+      - test: Run `poetry run pytest --cov=src/prompt_unifier --cov-report=term-missing --cov-report=xml`
     - Artifacts: Upload coverage report (coverage.xml)
     - Cache: Poetry cache directory for faster builds
   - [x] 5.3 Install pre-commit hooks locally
@@ -183,11 +183,11 @@ This tasks list creates a complete, production-ready Python project structure fo
     - Installation section:
       - Prerequisites: Python 3.12+, Poetry
       - Install Poetry: `curl -sSL https://install.python-poetry.org | python3 -`
-      - Clone repository and install: `git clone <repo-url> && cd prompt-manager && poetry install`
+      - Clone repository and install: `git clone <repo-url> && cd prompt-unifier && poetry install`
       - Install CLI globally: `pipx install .` (after build)
     - Quick Start section:
-      - Example: `poetry run prompt-manager --help`
-      - Example: `poetry run prompt-manager validate prompts/`
+      - Example: `poetry run prompt-unifier --help`
+      - Example: `poetry run prompt-unifier validate prompts/`
     - Development section:
       - Setup: `make install`
       - Run tests: `make test`
@@ -231,7 +231,7 @@ After completing all task groups, verify the scaffold is production-ready:
 2. **Quality checks**: Run `make check` and ensure all checks pass (lint, typecheck, test)
 3. **Pre-commit test**: Make a trivial change and commit to verify hooks execute
 4. **CI simulation**: Manually run all CI commands locally to ensure they match workflow
-5. **Package import**: Run `python -c "import prompt_manager; print(prompt_manager.__version__)"` to verify package structure
+5. **Package import**: Run `python -c "import prompt_unifier; print(prompt_unifier.__version__)"` to verify package structure
 
 Expected results:
 - All Makefile targets execute without errors

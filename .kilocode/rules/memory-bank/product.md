@@ -1,1 +1,1 @@
-@/root/travail/prompt-manager/agent-os/product/mission.md
+@/root/travail/prompt-unifier/agent-os/product/mission.md

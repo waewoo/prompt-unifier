@@ -14,7 +14,7 @@ tags:
 - pep8
 - logging
 - type-hints
-author: prompt-manager
+author: prompt-unifier
 language: python
 ---
 # Python Code Quality Standards

@@ -6,9 +6,9 @@ from unittest.mock import patch
 import pytest
 from typer.testing import CliRunner
 
-from prompt_manager.cli.main import app
-from prompt_manager.core.content_parser import ContentFileParser
-from prompt_manager.models.validation import ValidationSummary
+from prompt_unifier.cli.main import app
+from prompt_unifier.core.content_parser import ContentFileParser
+from prompt_unifier.models.validation import ValidationSummary
 
 runner = CliRunner()
 
@@ -16,7 +16,7 @@ runner = CliRunner()
 @pytest.fixture
 def mock_config(tmp_path: Path) -> Path:
     """Create a mock config file."""
-    config_dir = tmp_path / ".prompt-manager"
+    config_dir = tmp_path / ".prompt-unifier"
     config_dir.mkdir()
     config_file = config_dir / "config.yaml"
     config_file.write_text(f"""
@@ -80,7 +80,7 @@ class TestValidateCommand:
         """Test validate with invalid content type."""
         with runner.isolated_filesystem():
             # Create a valid config
-            config_dir = Path.cwd() / ".prompt-manager"
+            config_dir = Path.cwd() / ".prompt-unifier"
             config_dir.mkdir()
             config_file = config_dir / "config.yaml"
             config_file.write_text("storage_path: /tmp/storage")
@@ -93,7 +93,7 @@ class TestValidateCommand:
         """Test validate when prompts directory doesn't exist."""
         with runner.isolated_filesystem():
             # Create config and storage but not prompts
-            config_dir = Path.cwd() / ".prompt-manager"
+            config_dir = Path.cwd() / ".prompt-unifier"
             config_dir.mkdir()
             config_file = config_dir / "config.yaml"
             storage_dir = Path.cwd() / "storage"
@@ -110,7 +110,7 @@ class TestValidateCommand:
         """Test validate when rules directory doesn't exist."""
         with runner.isolated_filesystem():
             # Create config and storage but not rules
-            config_dir = Path.cwd() / ".prompt-manager"
+            config_dir = Path.cwd() / ".prompt-unifier"
             config_dir.mkdir()
             config_file = config_dir / "config.yaml"
             storage_dir = Path.cwd() / "storage"
@@ -140,7 +140,7 @@ class TestValidateCommand:
             assert result.exit_code == 1
             assert "Neither prompts/ nor rules/ directory exists" in result.output
 
-    @patch("prompt_manager.core.batch_validator.BatchValidator.validate_directory")
+    @patch("prompt_unifier.core.batch_validator.BatchValidator.validate_directory")
     def test_validate_failure_exit_code(self, mock_validate):
         """Test that validate returns code 1 when validation fails."""
         mock_validate.return_value = ValidationSummary(
@@ -149,7 +149,7 @@ class TestValidateCommand:
 
         with runner.isolated_filesystem():
             # Create valid config and storage
-            config_dir = Path.cwd() / ".prompt-manager"
+            config_dir = Path.cwd() / ".prompt-unifier"
             config_dir.mkdir()
             config_file = config_dir / "config.yaml"
             storage_dir = Path.cwd() / "storage"
@@ -191,7 +191,7 @@ content""")
         """Test validate command without specified directory."""
         with runner.isolated_filesystem():
             # Create config structure
-            config_dir = Path.cwd() / ".prompt-manager"
+            config_dir = Path.cwd() / ".prompt-unifier"
             config_dir.mkdir()
             config_file = config_dir / "config.yaml"
             storage_dir = Path.cwd() / "storage"
@@ -246,7 +246,7 @@ class TestInitCommand:
 
             # Verify directory was created
             assert custom_storage.exists()
-            assert (Path.cwd() / ".prompt-manager" / "config.yaml").exists()
+            assert (Path.cwd() / ".prompt-unifier" / "config.yaml").exists()
 
 
 class TestSyncCommand:
@@ -256,7 +256,7 @@ class TestSyncCommand:
         """Test sync when config loading fails."""
         with runner.isolated_filesystem():
             # Create existing but invalid config
-            config_dir = Path.cwd() / ".prompt-manager"
+            config_dir = Path.cwd() / ".prompt-unifier"
             config_dir.mkdir()
             config_file = config_dir / "config.yaml"
             config_file.write_text("invalid: yaml: content")
@@ -269,7 +269,7 @@ class TestSyncCommand:
         """Test sync without configured repository URL."""
         with runner.isolated_filesystem():
             # Create config without repo_url
-            config_dir = Path.cwd() / ".prompt-manager"
+            config_dir = Path.cwd() / ".prompt-unifier"
             config_dir.mkdir()
             config_file = config_dir / "config.yaml"
             config_file.write_text("storage_path: /tmp/storage")
@@ -282,7 +282,7 @@ class TestSyncCommand:
         """Test that --storage-path flag updates the config."""
         with runner.isolated_filesystem():
             # Create valid config
-            config_dir = Path.cwd() / ".prompt-manager"
+            config_dir = Path.cwd() / ".prompt-unifier"
             config_dir.mkdir()
             config_file = config_dir / "config.yaml"
             original_storage = Path.cwd() / "original_storage"
@@ -294,13 +294,13 @@ storage_path: {original_storage}
 """)
 
             # Mock git service to avoid real clone
-            with patch("prompt_manager.git.service.GitService.clone_to_temp") as mock_clone:
+            with patch("prompt_unifier.git.service.GitService.clone_to_temp") as mock_clone:
                 mock_clone.return_value = (Path.cwd() / "temp_repo", None)
                 with patch(
-                    "prompt_manager.git.service.GitService.get_latest_commit"
+                    "prompt_unifier.git.service.GitService.get_latest_commit"
                 ) as mock_commit:
                     mock_commit.return_value = "abc123"
-                    with patch("prompt_manager.git.service.GitService.extract_prompts_dir"):
+                    with patch("prompt_unifier.git.service.GitService.extract_prompts_dir"):
                         # Create new storage directory
                         new_storage = Path.cwd() / "new_storage"
 
@@ -308,14 +308,14 @@ storage_path: {original_storage}
                         # Test mainly verifies command doesn't crash
                         # Exact behavior verification would require more mocking
 
-    @patch("prompt_manager.git.service.GitService.clone_to_temp")
+    @patch("prompt_unifier.git.service.GitService.clone_to_temp")
     def test_sync_permission_error(self, mock_clone):
         """Test sync with PermissionError."""
         mock_clone.side_effect = PermissionError("Permission denied")
 
         with runner.isolated_filesystem():
             # Create valid config
-            config_dir = Path.cwd() / ".prompt-manager"
+            config_dir = Path.cwd() / ".prompt-unifier"
             config_dir.mkdir()
             config_file = config_dir / "config.yaml"
             config_file.write_text("repo_url: https://example.com/repo.git")
@@ -328,19 +328,19 @@ storage_path: {original_storage}
         """Test sync command with --repo."""
         with runner.isolated_filesystem():
             # Create config
-            config_dir = Path.cwd() / ".prompt-manager"
+            config_dir = Path.cwd() / ".prompt-unifier"
             config_dir.mkdir()
             config_file = config_dir / "config.yaml"
             config_file.write_text("storage_path: /tmp/storage")
 
             # Mock git service
-            with patch("prompt_manager.git.service.GitService.clone_to_temp") as mock_clone:
+            with patch("prompt_unifier.git.service.GitService.clone_to_temp") as mock_clone:
                 mock_clone.return_value = (Path.cwd() / "temp_repo", None)
                 with patch(
-                    "prompt_manager.git.service.GitService.get_latest_commit"
+                    "prompt_unifier.git.service.GitService.get_latest_commit"
                 ) as mock_commit:
                     mock_commit.return_value = "abc123"
-                    with patch("prompt_manager.git.service.GitService.extract_prompts_dir"):
+                    with patch("prompt_unifier.git.service.GitService.extract_prompts_dir"):
                         result = runner.invoke(
                             app, ["sync", "--repo", "https://example.com/repo.git"]
                         )
@@ -351,7 +351,7 @@ storage_path: {original_storage}
         """Test sync command without --repo (uses config)."""
         with runner.isolated_filesystem():
             # Create config with repo_url
-            config_dir = Path.cwd() / ".prompt-manager"
+            config_dir = Path.cwd() / ".prompt-unifier"
             config_dir.mkdir()
             config_file = config_dir / "config.yaml"
             config_file.write_text("""
@@ -360,13 +360,13 @@ storage_path: /tmp/storage
 """)
 
             # Mock git service
-            with patch("prompt_manager.git.service.GitService.clone_to_temp") as mock_clone:
+            with patch("prompt_unifier.git.service.GitService.clone_to_temp") as mock_clone:
                 mock_clone.return_value = (Path.cwd() / "temp_repo", None)
                 with patch(
-                    "prompt_manager.git.service.GitService.get_latest_commit"
+                    "prompt_unifier.git.service.GitService.get_latest_commit"
                 ) as mock_commit:
                     mock_commit.return_value = "abc123"
-                    with patch("prompt_manager.git.service.GitService.extract_prompts_dir"):
+                    with patch("prompt_unifier.git.service.GitService.extract_prompts_dir"):
                         result = runner.invoke(app, ["sync"])
                         assert result.exit_code in [0, 1]
 
@@ -374,7 +374,7 @@ storage_path: /tmp/storage
         """Test sync command with --storage-path."""
         with runner.isolated_filesystem():
             # Create config
-            config_dir = Path.cwd() / ".prompt-manager"
+            config_dir = Path.cwd() / ".prompt-unifier"
             config_dir.mkdir()
             config_file = config_dir / "config.yaml"
             config_file.write_text("repo_url: https://example.com/repo.git")
@@ -382,13 +382,13 @@ storage_path: /tmp/storage
             custom_storage = Path.cwd() / "custom_storage"
 
             # Mock git service
-            with patch("prompt_manager.git.service.GitService.clone_to_temp") as mock_clone:
+            with patch("prompt_unifier.git.service.GitService.clone_to_temp") as mock_clone:
                 mock_clone.return_value = (Path.cwd() / "temp_repo", None)
                 with patch(
-                    "prompt_manager.git.service.GitService.get_latest_commit"
+                    "prompt_unifier.git.service.GitService.get_latest_commit"
                 ) as mock_commit:
                     mock_commit.return_value = "abc123"
-                    with patch("prompt_manager.git.service.GitService.extract_prompts_dir"):
+                    with patch("prompt_unifier.git.service.GitService.extract_prompts_dir"):
                         result = runner.invoke(app, ["sync", "--storage-path", str(custom_storage)])
                         assert result.exit_code in [0, 1]
 
@@ -409,7 +409,7 @@ class TestStatusCommand:
         """Test status with corrupted config."""
         with runner.isolated_filesystem():
             # Create corrupted config
-            config_dir = Path.cwd() / ".prompt-manager"
+            config_dir = Path.cwd() / ".prompt-unifier"
             config_dir.mkdir()
             config_file = config_dir / "config.yaml"
             config_file.write_text("invalid: yaml: content")
@@ -424,7 +424,7 @@ class TestStatusCommand:
         """Test status without configured repository."""
         with runner.isolated_filesystem():
             # Create config without repo_url
-            config_dir = Path.cwd() / ".prompt-manager"
+            config_dir = Path.cwd() / ".prompt-unifier"
             config_dir.mkdir()
             config_file = config_dir / "config.yaml"
             config_file.write_text("storage_path: /tmp/storage")
@@ -432,13 +432,13 @@ class TestStatusCommand:
             result = runner.invoke(app, ["status"])
             assert result.exit_code == 0  # Status is informational, no error
             assert "Not configured" in result.output
-            assert "Run 'prompt-manager sync --repo" in result.output
+            assert "Run 'prompt-unifier sync --repo" in result.output
 
     def test_status_never_synced(self):
         """Test status when never synchronized."""
         with runner.isolated_filesystem():
             # Create config with repo but without sync
-            config_dir = Path.cwd() / ".prompt-manager"
+            config_dir = Path.cwd() / ".prompt-unifier"
             config_dir.mkdir()
             config_file = config_dir / "config.yaml"
             config_file.write_text("""
@@ -451,14 +451,14 @@ storage_path: /tmp/storage
             assert "Never" in result.output
             assert "Unknown" in result.output
 
-    @patch("prompt_manager.git.service.GitService.check_remote_updates")
+    @patch("prompt_unifier.git.service.GitService.check_remote_updates")
     def test_status_update_check_fails(self, mock_check_updates):
         """Test status when update check fails."""
         mock_check_updates.side_effect = Exception("Network error")
 
         with runner.isolated_filesystem():
             # Create complete config
-            config_dir = Path.cwd() / ".prompt-manager"
+            config_dir = Path.cwd() / ".prompt-unifier"
             config_dir.mkdir()
             config_file = config_dir / "config.yaml"
             config_file.write_text("""
@@ -478,13 +478,13 @@ last_sync_commit: abc123
         """Test status with a generic error."""
         with runner.isolated_filesystem():
             # Create valid config
-            config_dir = Path.cwd() / ".prompt-manager"
+            config_dir = Path.cwd() / ".prompt-unifier"
             config_dir.mkdir()
             config_file = config_dir / "config.yaml"
             config_file.write_text("storage_path: /tmp/storage")
 
             # Mock ConfigManager to simulate an error
-            with patch("prompt_manager.config.manager.ConfigManager.load_config") as mock_load:
+            with patch("prompt_unifier.config.manager.ConfigManager.load_config") as mock_load:
                 mock_load.side_effect = Exception("Unexpected error")
 
                 result = runner.invoke(app, ["status"])
@@ -509,7 +509,7 @@ class TestDeployCommand:
             tmp_path = Path.cwd()
 
             # Setup config and storage
-            config_dir = tmp_path / ".prompt-manager"
+            config_dir = tmp_path / ".prompt-unifier"
             config_dir.mkdir()
             config_file = config_dir / "config.yaml"
             config_file.write_text(f"""
@@ -672,7 +672,7 @@ Other content
         """Test deploy command behavior with invalid configuration."""
         with runner.isolated_filesystem():
             # Create invalid config
-            config_dir = Path.cwd() / ".prompt-manager"
+            config_dir = Path.cwd() / ".prompt-unifier"
             config_dir.mkdir()
             config_file = config_dir / "config.yaml"
             config_file.write_text("invalid: yaml: content")
@@ -684,7 +684,7 @@ Other content
         """Test deploy command behavior with missing storage directory."""
         with runner.isolated_filesystem():
             # Create config without storage directory
-            config_dir = Path.cwd() / ".prompt-manager"
+            config_dir = Path.cwd() / ".prompt-unifier"
             config_dir.mkdir()
             config_file = config_dir / "config.yaml"
             config_file.write_text("""
@@ -702,7 +702,7 @@ target_handlers: ["continue"]
         """Test deploy command with --name."""
         with runner.isolated_filesystem():
             # Create complete structure
-            config_dir = Path.cwd() / ".prompt-manager"
+            config_dir = Path.cwd() / ".prompt-unifier"
             config_dir.mkdir()
             config_file = config_dir / "config.yaml"
             storage_dir = Path.cwd() / "storage"
@@ -726,7 +726,7 @@ content""")
         """Test deploy command with --tags."""
         with runner.isolated_filesystem():
             # Create complete structure
-            config_dir = Path.cwd() / ".prompt-manager"
+            config_dir = Path.cwd() / ".prompt-unifier"
             config_dir.mkdir()
             config_file = config_dir / "config.yaml"
             storage_dir = Path.cwd() / "storage"
@@ -751,7 +751,7 @@ content""")
         """Test deploy command with --handlers."""
         with runner.isolated_filesystem():
             # Create complete structure
-            config_dir = Path.cwd() / ".prompt-manager"
+            config_dir = Path.cwd() / ".prompt-unifier"
             config_dir.mkdir()
             config_file = config_dir / "config.yaml"
             storage_dir = Path.cwd() / "storage"
@@ -775,7 +775,7 @@ content""")
         """Test deploy command with multiple tags (comma-separated)."""
         with runner.isolated_filesystem():
             # Create complete structure
-            config_dir = Path.cwd() / ".prompt-manager"
+            config_dir = Path.cwd() / ".prompt-unifier"
             config_dir.mkdir()
             config_file = config_dir / "config.yaml"
             storage_dir = Path.cwd() / "storage"
@@ -800,7 +800,7 @@ content""")
         """Test deploy command with multiple handlers (comma-separated)."""
         with runner.isolated_filesystem():
             # Create complete structure
-            config_dir = Path.cwd() / ".prompt-manager"
+            config_dir = Path.cwd() / ".prompt-unifier"
             config_dir.mkdir()
             config_file = config_dir / "config.yaml"
             storage_dir = Path.cwd() / "storage"
@@ -820,8 +820,8 @@ content""")
             result = runner.invoke(app, ["deploy", "--handlers", "continue,other"])
             assert result.exit_code in [0, 1]
 
-    @patch("prompt_manager.handlers.continue_handler.ContinueToolHandler.deploy")
-    @patch("prompt_manager.handlers.continue_handler.ContinueToolHandler.rollback")
+    @patch("prompt_unifier.handlers.continue_handler.ContinueToolHandler.deploy")
+    @patch("prompt_unifier.handlers.continue_handler.ContinueToolHandler.rollback")
     def test_deploy_rollback_on_failure(self, mock_rollback, mock_deploy):
         """Test that rollback is called when deployment fails."""
         mock_deploy.side_effect = Exception("Deployment failed")
@@ -829,7 +829,7 @@ content""")
 
         with runner.isolated_filesystem():
             # Create valid config and files
-            config_dir = Path.cwd() / ".prompt-manager"
+            config_dir = Path.cwd() / ".prompt-unifier"
             config_dir.mkdir()
             config_file = config_dir / "config.yaml"
             storage_dir = Path.cwd() / "storage"
@@ -854,7 +854,7 @@ content""")
         """Test deploy with a generic error."""
         with runner.isolated_filesystem():
             # Create valid config
-            config_dir = Path.cwd() / ".prompt-manager"
+            config_dir = Path.cwd() / ".prompt-unifier"
             config_dir.mkdir()
             config_file = config_dir / "config.yaml"
             storage_dir = Path.cwd() / "storage"
@@ -863,7 +863,7 @@ content""")
             config_file.write_text(f"storage_path: {storage_dir}")
 
             # Mock to simulate an unexpected error
-            with patch("prompt_manager.config.manager.ConfigManager.load_config") as mock_load:
+            with patch("prompt_unifier.config.manager.ConfigManager.load_config") as mock_load:
                 mock_load.side_effect = Exception("Unexpected error")
 
                 result = runner.invoke(app, ["deploy"])
@@ -878,7 +878,7 @@ class TestMainModule:
         """Test version callback."""
         import typer
 
-        from prompt_manager.cli.main import version_callback
+        from prompt_unifier.cli.main import version_callback
 
         with pytest.raises(typer.Exit):
             version_callback(True)
@@ -887,30 +887,30 @@ class TestMainModule:
         """Test version output."""
         result = runner.invoke(app, ["--version"])
         assert result.exit_code == 0
-        from prompt_manager.cli.main import __version__
+        from prompt_unifier.cli.main import __version__
 
-        assert f"prompt-manager version {__version__}" in result.output
+        assert f"prompt-unifier version {__version__}" in result.output
 
     def test_version_short_flag(self):
         """Test short version flag."""
         result = runner.invoke(app, ["-v"])
         assert result.exit_code == 0
-        from prompt_manager.cli.main import __version__
+        from prompt_unifier.cli.main import __version__
 
-        assert f"prompt-manager version {__version__}" in result.output
+        assert f"prompt-unifier version {__version__}" in result.output
 
     def test_main_callback_version(self):
         """Test main callback with version."""
         result = runner.invoke(app, ["--version"])
         assert result.exit_code == 0
-        assert "prompt-manager version" in result.output
+        assert "prompt-unifier version" in result.output
 
     def test_main_callback_no_version(self):
         """Test main callback without version."""
         result = runner.invoke(app, ["--help"])
         assert result.exit_code == 0
         assert (
-            "prompt-manager" in result.output
+            "prompt-unifier" in result.output
             or "Prompt Manager" in result.output
             or "Usage:" in result.output
         )
@@ -918,7 +918,7 @@ class TestMainModule:
     def test_main_entry_point(self):
         """Test main entry point."""
         # Test that main function can be called
-        from prompt_manager.cli.main import main
+        from prompt_unifier.cli.main import main
 
         # Can't really test full execution without arguments
         # but can verify function exists and is callable
@@ -927,7 +927,7 @@ class TestMainModule:
     def test_main_name_guard(self):
         """Test the if __name__ == "__main__" guard."""
         # Can't test directly, but can verify code exists
-        import prompt_manager.cli.main as main_module
+        import prompt_unifier.cli.main as main_module
 
         assert hasattr(main_module, "main")
         assert hasattr(main_module, "__name__")

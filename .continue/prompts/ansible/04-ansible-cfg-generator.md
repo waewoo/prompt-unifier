@@ -10,7 +10,7 @@ tags:
 - cfg
 - generator
 - standards
-author: prompt-manager
+author: prompt-unifier
 language: ini
 ---
 You are an expert Ansible administrator. Your mission is to generate a well-structured `ansible.cfg` file that configures Ansible according to best practices for a typical project.

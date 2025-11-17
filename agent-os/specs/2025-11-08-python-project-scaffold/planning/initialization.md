@@ -17,6 +17,6 @@ Disposer du squelette prêt à l'emploi pour développer, tester et déployer le
 ## Context
 
 - **Project**: Prompt Manager CLI
-- **Working Directory**: /root/travail/prompt-manager
+- **Working Directory**: /root/travail/prompt-unifier
 - **Product Documentation**: agent-os/product/
 - **Initialization Date**: 2025-11-08

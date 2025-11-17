@@ -14,7 +14,7 @@ tags:
 - kustomize
 - standards
 - configuration-management
-author: prompt-manager
+author: prompt-unifier
 language: yaml
 ---
 # Kubernetes Configuration Management: Helm & Kustomize

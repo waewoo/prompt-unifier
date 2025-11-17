@@ -11,8 +11,8 @@
 - Both directories are automatically synchronized when present in the repository
 
 **Files Modified:**
-- `src/prompt_manager/git/service.py` - Updated `extract_prompts_dir()` method
-- `src/prompt_manager/cli/commands.py` - Updated sync command messages
+- `src/prompt_unifier/git/service.py` - Updated `extract_prompts_dir()` method
+- `src/prompt_unifier/cli/commands.py` - Updated sync command messages
 - `agent-os/specs/.../spec.md` - Updated specification
 
 **Tests Added:**
@@ -31,7 +31,7 @@ my-prompts-repo/
     └── rule2.md
 
 # After sync
-~/.prompt-manager/storage/
+~/.prompt-unifier/storage/
 ├── prompts/          # Always synced
 │   ├── prompt1.md
 │   └── prompt2.md
@@ -72,17 +72,17 @@ Synced to: /path/storage
 
 #### Option `--version`
 - Added `--version` and `-v` global option to CLI
-- Displays application version in format: "prompt-manager version X.Y.Z"
+- Displays application version in format: "prompt-unifier version X.Y.Z"
 - Eager callback (processed before commands)
 - Exit code: 0
 
 **Files Modified:**
-- `src/prompt_manager/cli/main.py`
+- `src/prompt_unifier/cli/main.py`
 
 **Usage:**
 ```bash
-poetry run prompt-manager --version
-# Output: prompt-manager version 0.1.0
+poetry run prompt-unifier --version
+# Output: prompt-unifier version 0.1.0
 ```
 
 ---
@@ -121,7 +121,7 @@ make run ARGS="sync --repo <url>"
 - Can be used for "repair" if config files are missing
 
 **Files Modified:**
-- `src/prompt_manager/cli/commands.py` (function `init()`)
+- `src/prompt_unifier/cli/commands.py` (function `init()`)
 
 **Tests Modified:**
 - `tests/cli/test_git_commands.py::test_init_is_idempotent_when_already_exists`
@@ -129,18 +129,18 @@ make run ARGS="sync --repo <url>"
 
 **Before:**
 ```bash
-poetry run prompt-manager init
+poetry run prompt-unifier init
 # (if already initialized)
-# Error: .prompt-manager/ directory already exists.
+# Error: .prompt-unifier/ directory already exists.
 # Exit code: 1
 ```
 
 **After:**
 ```bash
-poetry run prompt-manager init
+poetry run prompt-unifier init
 # ✓ Already initialized (all components exist)
-# Exists: /path/.prompt-manager
-# Exists: /path/.prompt-manager/config.yaml
+# Exists: /path/.prompt-unifier
+# Exists: /path/.prompt-unifier/config.yaml
 # Exit code: 0
 ```
 
@@ -154,8 +154,8 @@ poetry run prompt-manager init
 - **Fix:** Changed to `tempfile.mkdtemp()` with manual cleanup in try/finally blocks
 
 **Files Modified:**
-- `src/prompt_manager/git/service.py` (method `clone_to_temp()`)
-- `src/prompt_manager/cli/commands.py` (sync command cleanup)
+- `src/prompt_unifier/git/service.py` (method `clone_to_temp()`)
+- `src/prompt_unifier/cli/commands.py` (sync command cleanup)
 - `tests/git/test_service.py` (test updated)
 
 **Impact:**
@@ -286,12 +286,12 @@ Optional improvements:
 
 ```bash
 # Old script (will still work, but can be simplified)
-if [ ! -d ".prompt-manager" ]; then
-    prompt-manager init
+if [ ! -d ".prompt-unifier" ]; then
+    prompt-unifier init
 fi
 
 # New script (simpler)
-prompt-manager init  # Always succeeds if properly configured
+prompt-unifier init  # Always succeeds if properly configured
 ```
 
 #### For Developers
@@ -320,7 +320,7 @@ prompt-manager init  # Always succeeds if properly configured
 - ✅ Status command implementation
 - ✅ GitService with retry logic
 - ✅ ConfigManager for config.yaml handling
-- ✅ Centralized storage support (~/.prompt-manager/storage)
+- ✅ Centralized storage support (~/.prompt-unifier/storage)
 - ✅ Rich formatted output
 - ✅ Comprehensive error handling
 - ✅ 180 tests with 87% coverage

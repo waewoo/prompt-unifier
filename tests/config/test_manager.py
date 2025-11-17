@@ -8,8 +8,8 @@ from pathlib import Path
 
 import yaml
 
-from prompt_manager.config.manager import ConfigManager
-from prompt_manager.models.git_config import GitConfig, HandlerConfig
+from prompt_unifier.config.manager import ConfigManager
+from prompt_unifier.models.git_config import GitConfig, HandlerConfig
 
 
 class TestConfigManager:

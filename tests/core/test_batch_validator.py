@@ -2,7 +2,7 @@
 
 from pathlib import Path
 
-from prompt_manager.core.batch_validator import BatchValidator
+from prompt_unifier.core.batch_validator import BatchValidator
 
 
 class TestBatchValidator:

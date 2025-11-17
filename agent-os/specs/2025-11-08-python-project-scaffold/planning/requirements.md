@@ -8,7 +8,7 @@ Initialize complete Python project structure for Prompt Manager CLI, including a
 
 **Context**:
 - Project: Prompt Manager CLI
-- Working Directory: /root/travail/prompt-manager
+- Working Directory: /root/travail/prompt-unifier
 - Product Documentation: agent-os/product/
 - Initialization Date: 2025-11-08
 
@@ -18,7 +18,7 @@ Initialize complete Python project structure for Prompt Manager CLI, including a
 
 **Q1:** I assume you want the standard Python project structure following modern best practices:
 ```
-src/prompt_manager/
+src/prompt_unifier/
 ├── __init__.py
 ├── cli/          # CLI layers (Typer/Click commands)
 ├── core/         # Core business logic (validation, deployment orchestration)
@@ -90,7 +90,7 @@ No visual assets provided. This is expected for a project scaffold specification
 ### Functional Requirements
 
 **Project Structure:**
-- Create `src/prompt_manager/` package with modular subdirectories:
+- Create `src/prompt_unifier/` package with modular subdirectories:
   - `cli/` - Typer-based CLI command implementations
   - `core/` - Core business logic (validation, deployment orchestration)
   - `handlers/` - ToolHandler implementations following Strategy Pattern

@@ -5,8 +5,8 @@ from unittest.mock import patch
 
 import pytest
 
-from prompt_manager.core.encoding import EncodingValidator
-from prompt_manager.models.validation import ErrorCode, ValidationSeverity
+from prompt_unifier.core.encoding import EncodingValidator
+from prompt_unifier.models.validation import ErrorCode, ValidationSeverity
 
 
 class TestEncodingValidator:

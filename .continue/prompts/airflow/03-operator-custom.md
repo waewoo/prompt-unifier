@@ -11,7 +11,7 @@ tags:
 - custom
 - plugin
 - python
-author: prompt-manager
+author: prompt-unifier
 language: python
 ---
 You are an expert Airflow developer who builds robust, reusable pipeline components. Your mission is to create a custom Airflow Operator based on a user's requirements.

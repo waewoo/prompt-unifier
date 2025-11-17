@@ -11,9 +11,9 @@ from unittest.mock import patch
 import pytest
 from typer.testing import CliRunner
 
-from prompt_manager.cli.main import app
-from prompt_manager.config.manager import ConfigManager
-from prompt_manager.handlers.continue_handler import ContinueToolHandler
+from prompt_unifier.cli.main import app
+from prompt_unifier.config.manager import ConfigManager
+from prompt_unifier.handlers.continue_handler import ContinueToolHandler
 
 runner = CliRunner()
 
@@ -103,7 +103,7 @@ class TestEndToEndWorkflow:
         """Test end-to-end workflow with custom base path configuration.
 
         Workflow:
-        1. Initialize project with prompt-manager
+        1. Initialize project with prompt-unifier
         2. Sync from repository
         3. Configure custom base_path in handlers section
         4. Deploy prompts/rules to custom location
@@ -112,11 +112,11 @@ class TestEndToEndWorkflow:
         custom_base_path = project_a / "custom_tools"
 
         # Change to project directory
-        with patch("prompt_manager.cli.commands.Path.cwd", return_value=project_a):
+        with patch("prompt_unifier.cli.commands.Path.cwd", return_value=project_a):
             # Step 1: Initialize
             result = runner.invoke(app, ["init"], catch_exceptions=False)
             assert result.exit_code == 0
-            assert (project_a / ".prompt-manager" / "config.yaml").exists()
+            assert (project_a / ".prompt-unifier" / "config.yaml").exists()
 
             # Step 2: Sync from repository
             result = runner.invoke(
@@ -125,7 +125,7 @@ class TestEndToEndWorkflow:
             assert result.exit_code == 0
 
             # Step 3: Configure custom base_path
-            config_path = project_a / ".prompt-manager" / "config.yaml"
+            config_path = project_a / ".prompt-unifier" / "config.yaml"
             config_manager = ConfigManager()
             config = config_manager.load_config(config_path)
             assert config is not None
@@ -175,11 +175,11 @@ class TestMultiProjectConfiguration:
         - Both deploy same content to different locations
         """
         # Setup Project A
-        with patch("prompt_manager.cli.commands.Path.cwd", return_value=project_a):
+        with patch("prompt_unifier.cli.commands.Path.cwd", return_value=project_a):
             runner.invoke(app, ["init"], catch_exceptions=False)
             runner.invoke(app, ["sync", "--repo", str(mock_prompts_repo)], catch_exceptions=False)
 
-            config_path_a = project_a / ".prompt-manager" / "config.yaml"
+            config_path_a = project_a / ".prompt-unifier" / "config.yaml"
             config_content_a = config_path_a.read_text()
             config_content_a += f"""
 handlers:
@@ -189,11 +189,11 @@ handlers:
             config_path_a.write_text(config_content_a)
 
         # Setup Project B
-        with patch("prompt_manager.cli.commands.Path.cwd", return_value=project_b):
+        with patch("prompt_unifier.cli.commands.Path.cwd", return_value=project_b):
             runner.invoke(app, ["init"], catch_exceptions=False)
             runner.invoke(app, ["sync", "--repo", str(mock_prompts_repo)], catch_exceptions=False)
 
-            config_path_b = project_b / ".prompt-manager" / "config.yaml"
+            config_path_b = project_b / ".prompt-unifier" / "config.yaml"
             config_content_b = config_path_b.read_text()
             config_content_b += f"""
 handlers:
@@ -203,12 +203,12 @@ handlers:
             config_path_b.write_text(config_content_b)
 
         # Deploy from Project A
-        with patch("prompt_manager.cli.commands.Path.cwd", return_value=project_a):
+        with patch("prompt_unifier.cli.commands.Path.cwd", return_value=project_a):
             result = runner.invoke(app, ["deploy"], catch_exceptions=False)
             assert result.exit_code == 0
 
         # Deploy from Project B
-        with patch("prompt_manager.cli.commands.Path.cwd", return_value=project_b):
+        with patch("prompt_unifier.cli.commands.Path.cwd", return_value=project_b):
             result = runner.invoke(app, ["deploy"], catch_exceptions=False)
             assert result.exit_code == 0
 
@@ -228,13 +228,13 @@ class TestEnvironmentVariableExpansion:
         self, project_a: Path, mock_prompts_repo: Path
     ):
         """Test that $PWD expands correctly during actual deployment."""
-        with patch("prompt_manager.cli.commands.Path.cwd", return_value=project_a):
+        with patch("prompt_unifier.cli.commands.Path.cwd", return_value=project_a):
             # Initialize and sync
             runner.invoke(app, ["init"], catch_exceptions=False)
             runner.invoke(app, ["sync", "--repo", str(mock_prompts_repo)], catch_exceptions=False)
 
             # Configure with $PWD
-            config_path = project_a / ".prompt-manager" / "config.yaml"
+            config_path = project_a / ".prompt-unifier" / "config.yaml"
             config_content = config_path.read_text()
             config_content += """
 handlers:
@@ -256,13 +256,13 @@ handlers:
         self, project_a: Path, mock_prompts_repo: Path
     ):
         """Test that $HOME expands correctly during actual deployment."""
-        with patch("prompt_manager.cli.commands.Path.cwd", return_value=project_a):
+        with patch("prompt_unifier.cli.commands.Path.cwd", return_value=project_a):
             # Initialize and sync
             runner.invoke(app, ["init"], catch_exceptions=False)
             runner.invoke(app, ["sync", "--repo", str(mock_prompts_repo)], catch_exceptions=False)
 
             # Configure with $HOME
-            config_path = project_a / ".prompt-manager" / "config.yaml"
+            config_path = project_a / ".prompt-unifier" / "config.yaml"
             config_content = config_path.read_text()
             # Use a subdirectory in tmp to avoid conflicts
             test_home = project_a / "mock-home"
@@ -292,13 +292,13 @@ class TestCLIPrecedence:
         self, project_a: Path, mock_prompts_repo: Path
     ):
         """Test that CLI --base-path overrides config during actual deployment."""
-        with patch("prompt_manager.cli.commands.Path.cwd", return_value=project_a):
+        with patch("prompt_unifier.cli.commands.Path.cwd", return_value=project_a):
             # Initialize and sync
             runner.invoke(app, ["init"], catch_exceptions=False)
             runner.invoke(app, ["sync", "--repo", str(mock_prompts_repo)], catch_exceptions=False)
 
             # Configure with one base_path
-            config_path = project_a / ".prompt-manager" / "config.yaml"
+            config_path = project_a / ".prompt-unifier" / "config.yaml"
             config_content = config_path.read_text()
             configured_path = project_a / "configured-location"
             config_content += f"""
@@ -335,13 +335,13 @@ class TestActualFileDeployment:
         """Test that files are actually deployed with correct content to custom path."""
         custom_base = project_a / "my-tools"
 
-        with patch("prompt_manager.cli.commands.Path.cwd", return_value=project_a):
+        with patch("prompt_unifier.cli.commands.Path.cwd", return_value=project_a):
             # Initialize and sync
             runner.invoke(app, ["init"], catch_exceptions=False)
             runner.invoke(app, ["sync", "--repo", str(mock_prompts_repo)], catch_exceptions=False)
 
             # Configure custom base path
-            config_path = project_a / ".prompt-manager" / "config.yaml"
+            config_path = project_a / ".prompt-unifier" / "config.yaml"
             config_content = config_path.read_text()
             config_content += f"""
 handlers:
@@ -403,12 +403,12 @@ class TestConfigPersistence:
         """Test that handlers configuration survives multiple operations."""
         custom_base = project_a / "persistent-tools"
 
-        with patch("prompt_manager.cli.commands.Path.cwd", return_value=project_a):
+        with patch("prompt_unifier.cli.commands.Path.cwd", return_value=project_a):
             # Initialize
             runner.invoke(app, ["init"], catch_exceptions=False)
 
             # Add handlers configuration
-            config_path = project_a / ".prompt-manager" / "config.yaml"
+            config_path = project_a / ".prompt-unifier" / "config.yaml"
             config_content = config_path.read_text()
             config_content += f"""
 handlers:
@@ -443,13 +443,13 @@ class TestErrorScenarios:
         self, project_a: Path, mock_prompts_repo: Path
     ):
         """Test that deployment fails gracefully with clear error for missing env var."""
-        with patch("prompt_manager.cli.commands.Path.cwd", return_value=project_a):
+        with patch("prompt_unifier.cli.commands.Path.cwd", return_value=project_a):
             # Initialize and sync
             runner.invoke(app, ["init"], catch_exceptions=False)
             runner.invoke(app, ["sync", "--repo", str(mock_prompts_repo)], catch_exceptions=False)
 
             # Configure with non-existent environment variable
-            config_path = project_a / ".prompt-manager" / "config.yaml"
+            config_path = project_a / ".prompt-unifier" / "config.yaml"
             config_content = config_path.read_text()
             config_content += """
 handlers:
@@ -475,7 +475,7 @@ class TestBackwardCompatibility:
         self, project_a: Path, mock_prompts_repo: Path
     ):
         """Test that deployment works without handlers config (uses default cwd)."""
-        with patch("prompt_manager.cli.commands.Path.cwd", return_value=project_a):
+        with patch("prompt_unifier.cli.commands.Path.cwd", return_value=project_a):
             # Initialize and sync (no handlers configuration)
             runner.invoke(app, ["init"], catch_exceptions=False)
             runner.invoke(app, ["sync", "--repo", str(mock_prompts_repo)], catch_exceptions=False)

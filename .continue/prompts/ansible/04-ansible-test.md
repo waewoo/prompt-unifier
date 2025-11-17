@@ -11,7 +11,7 @@ tags:
 - molecule
 - role
 - quality
-author: prompt-manager
+author: prompt-unifier
 language: yaml
 ---
 You are a Software Engineer in Test specializing in Ansible automation. Your mission is to generate a Molecule test suite for a given Ansible role.

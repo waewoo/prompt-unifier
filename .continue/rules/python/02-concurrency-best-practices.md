@@ -14,7 +14,7 @@ tags:
 - threading
 - multiprocessing
 - standards
-author: prompt-manager
+author: prompt-unifier
 language: python
 ---
 # Python Concurrency Best Practices

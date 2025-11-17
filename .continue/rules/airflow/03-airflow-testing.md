@@ -12,7 +12,7 @@ tags:
 - pytest
 - standards
 - quality
-author: prompt-manager
+author: prompt-unifier
 language: python
 ---
 # Airflow Testing Standards

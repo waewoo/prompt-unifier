@@ -1,6 +1,6 @@
 # Manual Testing Guide - Prompt Manager
 
-This guide details all manual tests to be performed to validate all features of the **prompt-manager** application.
+This guide details all manual tests to be performed to validate all features of the **prompt-unifier** application.
 
 ---
 
@@ -27,7 +27,7 @@ This guide details all manual tests to be performed to validate all features of 
 ### Installation
 
 ```bash
-cd /root/travail/prompt-manager
+cd /root/travail/prompt-unifier
 poetry install
 ```
 
@@ -36,7 +36,7 @@ poetry install
 ### Verification
 
 ```bash
-poetry run prompt-manager --version
+poetry run prompt-unifier --version
 ```
 
 ✓ **Expected result:** Version display (ex: `0.1.0`)
@@ -48,7 +48,7 @@ poetry run prompt-manager --version
 ### Test 1.1: General help display
 
 ```bash
-poetry run prompt-manager --help
+poetry run prompt-unifier --help
 ```
 
 ✓ **Expected result:**
@@ -59,11 +59,11 @@ poetry run prompt-manager --help
 ### Test 1.2: Help for each command
 
 ```bash
-poetry run prompt-manager init --help
-poetry run prompt-manager sync --help
-poetry run prompt-manager status --help
-poetry run prompt-manager validate --help
-poetry run prompt-manager deploy --help
+poetry run prompt-unifier init --help
+poetry run prompt-unifier sync --help
+poetry run prompt-unifier status --help
+poetry run prompt-unifier validate --help
+poetry run prompt-unifier deploy --help
 ```
 
 ✓ **Expected result:** Each command displays its description, options and usage examples
@@ -76,13 +76,13 @@ poetry run prompt-manager deploy --help
 
 ```bash
 mkdir -p /tmp/test-pm-1 && cd /tmp/test-pm-1
-poetry run prompt-manager init
+poetry run prompt-unifier init
 ```
 
 ✓ **Expected result:**
 - ✓ Message "Initialization complete"
-- Creation of `.prompt-manager/config.yaml`
-- Creation of `~/.prompt-manager/storage/{prompts,rules}` with `.gitignore`
+- Creation of `.prompt-unifier/config.yaml`
+- Creation of `~/.prompt-unifier/storage/{prompts,rules}` with `.gitignore`
 
 **Created config.yaml file:**
 
@@ -90,14 +90,14 @@ poetry run prompt-manager init
 repo_url: null
 last_sync_timestamp: null
 last_sync_commit: null
-storage_path: /root/.prompt-manager/storage
+storage_path: /root/.prompt-unifier/storage
 ```
 
 ### Test 2.2: Initialization with custom storage
 
 ```bash
 mkdir -p /tmp/test-pm-2 && cd /tmp/test-pm-2
-poetry run prompt-manager init --storage-path /tmp/custom-storage
+poetry run prompt-unifier init --storage-path /tmp/custom-storage
 ```
 
 ✓ **Expected result:** Config with `storage_path: /tmp/custom-storage`
@@ -106,7 +106,7 @@ poetry run prompt-manager init --storage-path /tmp/custom-storage
 
 ```bash
 cd /tmp/test-pm-1
-poetry run prompt-manager init  # Fails - already initialized
+poetry run prompt-unifier init  # Fails - already initialized
 ```
 
 ✗ **Expected result:** Error "Project is already initialized" (Code: 1)
@@ -119,7 +119,7 @@ poetry run prompt-manager init  # Fails - already initialized
 
 ```bash
 mkdir -p /tmp/test-pm-3 && cd /tmp/test-pm-3
-poetry run prompt-manager sync --repo git@gitlab.com:waewoo/prompt-manager-data.git
+poetry run prompt-unifier sync --repo git@gitlab.com:waewoo/prompt-unifier-data.git
 ```
 
 ✗ **Expected result:** Error "Configuration not found" (Code: 1)
@@ -128,19 +128,19 @@ poetry run prompt-manager sync --repo git@gitlab.com:waewoo/prompt-manager-data.
 
 ```bash
 cd /tmp/test-pm-1
-poetry run prompt-manager sync --repo git@gitlab.com:waewoo/prompt-manager-data.git
+poetry run prompt-unifier sync --repo git@gitlab.com:waewoo/prompt-unifier-data.git
 ```
 
 ✓ **Expected result:**
 - Messages: "Syncing prompts..." → "Cloning repository..." → "Extracting prompts..." → "✓ Sync complete"
 - Config updated with `repo_url`, `last_sync_timestamp`, `last_sync_commit`
-- Files in `~/.prompt-manager/storage/prompts/`
+- Files in `~/.prompt-unifier/storage/prompts/`
 
 ### Test 3.3: Subsequent synchronization (without URL)
 
 ```bash
 cd /tmp/test-pm-1
-poetry run prompt-manager sync  # Read URL from config
+poetry run prompt-unifier sync  # Read URL from config
 ```
 
 ✓ **Expected result:** Successful sync using configured URL
@@ -148,7 +148,7 @@ poetry run prompt-manager sync  # Read URL from config
 ### Test 3.4: Sync with invalid URL (error)
 
 ```bash
-poetry run prompt-manager sync --repo https://invalid-url.com/repo.git
+poetry run prompt-unifier sync --repo https://invalid-url.com/repo.git
 ```
 
 ✗ **Expected result:** Network error (Code: 1)
@@ -161,7 +161,7 @@ poetry run prompt-manager sync --repo https://invalid-url.com/repo.git
 
 ```bash
 mkdir -p /tmp/test-pm-5 && cd /tmp/test-pm-5
-poetry run prompt-manager status
+poetry run prompt-unifier status
 ```
 
 ✗ **Expected result:** Error "Configuration not found" (Code: 1)
@@ -169,9 +169,9 @@ poetry run prompt-manager status
 ### Test 4.2: Status after init (before sync)
 
 ```bash
-cd /tmp/test-pm-1 && rm -rf .prompt-manager
-poetry run prompt-manager init
-poetry run prompt-manager status
+cd /tmp/test-pm-1 && rm -rf .prompt-unifier
+poetry run prompt-unifier init
+poetry run prompt-unifier status
 ```
 
 ✓ **Expected result:**
@@ -183,8 +183,8 @@ poetry run prompt-manager status
 
 ```bash
 cd /tmp/test-pm-1
-poetry run prompt-manager sync --repo git@gitlab.com:waewoo/prompt-manager-data.git
-poetry run prompt-manager status
+poetry run prompt-unifier sync --repo git@gitlab.com:waewoo/prompt-unifier-data.git
+poetry run prompt-unifier status
 ```
 
 ✓ **Expected result:**
@@ -218,7 +218,7 @@ Variables:
 - {{var2}}: Description 2
 EOF
 
-poetry run prompt-manager validate /tmp/test-prompts
+poetry run prompt-unifier validate /tmp/test-prompts
 ```
 
 ✓ **Expected result:** Success message, counted valid files (Code: 0)
@@ -226,7 +226,7 @@ poetry run prompt-manager validate /tmp/test-prompts
 ### Test 5.2: Validation in JSON
 
 ```bash
-poetry run prompt-manager validate /tmp/test-prompts --json
+poetry run prompt-unifier validate /tmp/test-prompts --json
 ```
 
 ✓ **Expected result:** JSON format output with results (Code: 0)
@@ -234,7 +234,7 @@ poetry run prompt-manager validate /tmp/test-prompts --json
 ### Test 5.3: Validation of non-existent directory (error)
 
 ```bash
-poetry run prompt-manager validate /tmp/does-not-exist
+poetry run prompt-unifier validate /tmp/does-not-exist
 ```
 
 ✗ **Expected result:** Error "Directory does not exist" (Code: 1)
@@ -257,7 +257,7 @@ version: 1.0.0
 - Use PascalCase for classes
 EOF
 
-poetry run prompt-manager validate /tmp/test-rules
+poetry run prompt-unifier validate /tmp/test-rules
 ```
 
 ✓ **Expected result:** Successful validation including rules (Code: 0)
@@ -274,7 +274,7 @@ unclosed frontmatter here
 Content without proper closing
 EOF
 
-poetry run prompt-manager validate /tmp/test-invalid
+poetry run prompt-unifier validate /tmp/test-invalid
 ```
 
 ✗ **Expected result:** Validation error with details (Code: 1)
@@ -287,8 +287,8 @@ poetry run prompt-manager validate /tmp/test-invalid
 
 ```bash
 cd /tmp/test-pm-1
-poetry run prompt-manager sync
-poetry run prompt-manager deploy "code-review" --handlers continue
+poetry run prompt-unifier sync
+poetry run prompt-unifier deploy "code-review" --handlers continue
 ```
 
 ✓ **Expected result:**
@@ -299,7 +299,7 @@ poetry run prompt-manager deploy "code-review" --handlers continue
 ### Test 9.2: Deployment of a rule
 
 ```bash
-poetry run prompt-manager deploy "python-style" --handlers continue
+poetry run prompt-unifier deploy "python-style" --handlers continue
 ```
 
 ✓ **Expected result:** File `~/.continue/rules/python-style.md` created (Code: 0)
@@ -307,7 +307,7 @@ poetry run prompt-manager deploy "python-style" --handlers continue
 ### Test 9.3: Deploy with tag filtering
 
 ```bash
-poetry run prompt-manager deploy --tags python --handlers continue
+poetry run prompt-unifier deploy --tags python --handlers continue
 ```
 
 ✓ **Expected result:**
@@ -317,7 +317,7 @@ poetry run prompt-manager deploy --tags python --handlers continue
 ### Test 9.4: Deploy all items
 
 ```bash
-poetry run prompt-manager deploy --handlers continue
+poetry run prompt-unifier deploy --handlers continue
 ```
 
 ✓ **Expected result:** All prompts AND rules from storage deployed (Code: 0)
@@ -325,7 +325,7 @@ poetry run prompt-manager deploy --handlers continue
 ### Test 9.5: Deploy non-existent prompt (error)
 
 ```bash
-poetry run prompt-manager deploy "non-existent" --handlers continue
+poetry run prompt-unifier deploy "non-existent" --handlers continue
 ```
 
 ✗ **Expected result:** Error "Prompt not found in storage" (Code: 1)
@@ -333,7 +333,7 @@ poetry run prompt-manager deploy "non-existent" --handlers continue
 ### Test 9.6: Deploy with invalid handler (error)
 
 ```bash
-poetry run prompt-manager deploy "code-review" --handlers invalid
+poetry run prompt-unifier deploy "code-review" --handlers invalid
 ```
 
 ✗ **Expected result:** Error "ToolHandler not found" (Code: 1)
@@ -342,7 +342,7 @@ poetry run prompt-manager deploy "code-review" --handlers invalid
 
 ```bash
 echo "old content" > ~/.continue/prompts/code-review.md
-poetry run prompt-manager deploy "code-review" --handlers continue
+poetry run prompt-unifier deploy "code-review" --handlers continue
 # Verify: old file in .bak, new one deployed
 ```
 
@@ -351,7 +351,7 @@ poetry run prompt-manager deploy "code-review" --handlers continue
 ### Test 9.8: Deploy with no matches
 
 ```bash
-poetry run prompt-manager deploy --tags nonexistent --handlers continue
+poetry run prompt-unifier deploy --tags nonexistent --handlers continue
 ```
 
 ✓ **Expected result:** Message "No content files match the specified criteria" (Code: 0)
@@ -359,16 +359,16 @@ poetry run prompt-manager deploy --tags nonexistent --handlers continue
 ### Test 9.9: Deploy with config.yaml configuration
 
 ```bash
-cat > .prompt-manager/config.yaml << 'EOF'
-repo_url: git@gitlab.com:waewoo/prompt-manager-data.git
-storage_path: ~/.prompt-manager/storage
+cat > .prompt-unifier/config.yaml << 'EOF'
+repo_url: git@gitlab.com:waewoo/prompt-unifier-data.git
+storage_path: ~/.prompt-unifier/storage
 deploy_tags:
   - python
 target_handlers:
   - continue
 EOF
 
-poetry run prompt-manager deploy  # Without options - reads config
+poetry run prompt-unifier deploy  # Without options - reads config
 ```
 
 ✓ **Expected result:** Only "python" tagged items deployed to continue (Code: 0)
@@ -377,13 +377,13 @@ poetry run prompt-manager deploy  # Without options - reads config
 
 ```bash
 # Deploy some files
-poetry run prompt-manager deploy --tags python --handlers continue
+poetry run prompt-unifier deploy --tags python --handlers continue
 
 # Create an orphan file
 echo "orphan" > ~/.continue/prompts/orphan.md
 
 # Redeploy with --clean
-poetry run prompt-manager deploy --tags python --handlers continue --clean
+poetry run prompt-unifier deploy --tags python --handlers continue --clean
 ```
 
 ✓ **Expected result:**
@@ -398,12 +398,12 @@ poetry run prompt-manager deploy --tags python --handlers continue --clean
 ### Test 10.1: Discovery with subdirectories
 
 ```bash
-mkdir -p ~/.prompt-manager/storage/prompts/backend/api
-mkdir -p ~/.prompt-manager/storage/prompts/frontend
-mkdir -p ~/.prompt-manager/storage/rules/security/auth
+mkdir -p ~/.prompt-unifier/storage/prompts/backend/api
+mkdir -p ~/.prompt-unifier/storage/prompts/frontend
+mkdir -p ~/.prompt-unifier/storage/rules/security/auth
 
 # Create files at different levels
-cat > ~/.prompt-manager/storage/prompts/backend/api/api-prompt.md << 'EOF'
+cat > ~/.prompt-unifier/storage/prompts/backend/api/api-prompt.md << 'EOF'
 ---
 title: api-prompt
 description: API development
@@ -412,7 +412,7 @@ version: 1.0.0
 ---
 EOF
 
-cat > ~/.prompt-manager/storage/prompts/root-prompt.md << 'EOF'
+cat > ~/.prompt-unifier/storage/prompts/root-prompt.md << 'EOF'
 ---
 title: root-prompt
 description: Root level
@@ -420,7 +420,7 @@ tags: [general]
 ---
 EOF
 
-poetry run prompt-manager deploy --handlers continue
+poetry run prompt-unifier deploy --handlers continue
 ```
 
 ✓ **Expected result:**
@@ -430,21 +430,21 @@ poetry run prompt-manager deploy --handlers continue
 ### Test 10.2: Duplicate title detection (error)
 
 ```bash
-cat > ~/.prompt-manager/storage/prompts/backend/dup.md << 'EOF'
+cat > ~/.prompt-unifier/storage/prompts/backend/dup.md << 'EOF'
 ---
 title: duplicate-prompt
 version: 1.0.0
 ---
 EOF
 
-cat > ~/.prompt-manager/storage/prompts/frontend/dup.md << 'EOF'
+cat > ~/.prompt-unifier/storage/prompts/frontend/dup.md << 'EOF'
 ---
 title: duplicate-prompt
 version: 1.0.0
 ---
 EOF
 
-poetry run prompt-manager deploy --handlers continue
+poetry run prompt-unifier deploy --handlers continue
 ```
 
 ✗ **Expected result:**
@@ -455,14 +455,14 @@ poetry run prompt-manager deploy --handlers continue
 
 ```bash
 # Deploy
-poetry run prompt-manager deploy --tags backend --handlers continue
+poetry run prompt-unifier deploy --tags backend --handlers continue
 
 # Create orphan in subdirectory
 mkdir -p ~/.continue/prompts/deprecated
 echo "old" > ~/.continue/prompts/deprecated/old.md
 
 # Redeploy with --clean
-poetry run prompt-manager deploy --tags backend --handlers continue --clean
+poetry run prompt-unifier deploy --tags backend --handlers continue --clean
 ```
 
 ✓ **Expected result:** Orphan file `deprecated/old.md` deleted (Code: 0)
@@ -470,15 +470,15 @@ poetry run prompt-manager deploy --tags backend --handlers continue --clean
 ### Test 10.4: Deep nesting (4+ levels)
 
 ```bash
-mkdir -p ~/.prompt-manager/storage/prompts/a/b/c/d/e
-cat > ~/.prompt-manager/storage/prompts/a/b/c/d/e/deep.md << 'EOF'
+mkdir -p ~/.prompt-unifier/storage/prompts/a/b/c/d/e
+cat > ~/.prompt-unifier/storage/prompts/a/b/c/d/e/deep.md << 'EOF'
 ---
 title: deep-prompt
 version: 1.0.0
 ---
 EOF
 
-poetry run prompt-manager deploy --handlers continue
+poetry run prompt-unifier deploy --handlers continue
 test -f ~/.continue/prompts/a/b/c/d/e/deep.md && echo "✓ Deep nesting works"
 ```
 
@@ -487,10 +487,10 @@ test -f ~/.continue/prompts/a/b/c/d/e/deep.md && echo "✓ Deep nesting works"
 ### Test 10.5: Empty directories
 
 ```bash
-mkdir -p ~/.prompt-manager/storage/prompts/empty-dir
-mkdir -p ~/.prompt-manager/storage/rules/empty-rules
+mkdir -p ~/.prompt-unifier/storage/prompts/empty-dir
+mkdir -p ~/.prompt-unifier/storage/rules/empty-rules
 
-poetry run prompt-manager deploy --handlers continue
+poetry run prompt-unifier deploy --handlers continue
 ```
 
 ✓ **Expected result:** No error, empty directories ignored (Code: 0)
@@ -498,14 +498,14 @@ poetry run prompt-manager deploy --handlers continue
 ### Test 10.6: Backward compatibility (root)
 
 ```bash
-cat > ~/.prompt-manager/storage/prompts/legacy.md << 'EOF'
+cat > ~/.prompt-unifier/storage/prompts/legacy.md << 'EOF'
 ---
 title: legacy-prompt
 version: 1.0.0
 ---
 EOF
 
-poetry run prompt-manager deploy legacy --handlers continue
+poetry run prompt-unifier deploy legacy --handlers continue
 test -f ~/.continue/prompts/legacy.md && echo "✓ Root files work"
 ```
 
@@ -520,7 +520,7 @@ test -f ~/.continue/prompts/legacy.md && echo "✓ Root files work"
 ```bash
 mkdir -p /tmp/no-write && chmod 555 /tmp/no-write
 cd /tmp/no-write
-poetry run prompt-manager init
+poetry run prompt-unifier init
 chmod 755 /tmp/no-write
 ```
 
@@ -546,15 +546,15 @@ chmod 755 /tmp/no-write
 mkdir -p /tmp/team-project && cd /tmp/team-project
 
 # Pre-existing configuration
-mkdir -p .prompt-manager
-cat > .prompt-manager/config.yaml << 'EOF'
-repo_url: git@gitlab.com:waewoo/prompt-manager-data.git
-storage_path: /root/.prompt-manager/storage
+mkdir -p .prompt-unifier
+cat > .prompt-unifier/config.yaml << 'EOF'
+repo_url: git@gitlab.com:waewoo/prompt-unifier-data.git
+storage_path: /root/.prompt-unifier/storage
 EOF
 
 # New member simply syncs
-poetry run prompt-manager sync
-poetry run prompt-manager status
+poetry run prompt-unifier sync
+poetry run prompt-unifier status
 ```
 
 ✓ **Expected result:** Successful sync, config used (Code: 0)
@@ -563,9 +563,9 @@ poetry run prompt-manager status
 
 ```bash
 cd /tmp/test-pm-1
-poetry run prompt-manager status  # Check state
-poetry run prompt-manager sync     # Update
-poetry run prompt-manager status   # Confirm
+poetry run prompt-unifier status  # Check state
+poetry run prompt-unifier sync     # Update
+poetry run prompt-unifier status   # Confirm
 ```
 
 ✓ **Expected result:** Each command completes (Code: 0)
@@ -585,7 +585,7 @@ echo "✓ Test directories cleaned"
 ### Centralized storage (optional)
 
 ```bash
-rm -rf ~/.prompt-manager/
+rm -rf ~/.prompt-unifier/
 rm -rf ~/.continue/
 echo "✓ Centralized storage cleaned"
 ```

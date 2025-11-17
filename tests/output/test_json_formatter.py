@@ -9,7 +9,7 @@ from pathlib import Path
 
 import pytest
 
-from prompt_manager.models.validation import (
+from prompt_unifier.models.validation import (
     ErrorCode,
     ValidationIssue,
     ValidationResult,
@@ -17,7 +17,7 @@ from prompt_manager.models.validation import (
     ValidationSummary,
     WarningCode,
 )
-from prompt_manager.output.json_formatter import JSONFormatter
+from prompt_unifier.output.json_formatter import JSONFormatter
 
 
 @pytest.fixture

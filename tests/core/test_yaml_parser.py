@@ -2,8 +2,8 @@
 
 import pytest
 
-from prompt_manager.core.yaml_parser import YAMLParser
-from prompt_manager.models.validation import ErrorCode, ValidationSeverity
+from prompt_unifier.core.yaml_parser import YAMLParser
+from prompt_unifier.models.validation import ErrorCode, ValidationSeverity
 
 
 class TestYAMLParser:

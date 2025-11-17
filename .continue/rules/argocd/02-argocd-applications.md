@@ -13,7 +13,7 @@ tags:
 - gitops
 - standards
 - deployment
-author: prompt-manager
+author: prompt-unifier
 language: yaml
 ---
 # ArgoCD Application Standards

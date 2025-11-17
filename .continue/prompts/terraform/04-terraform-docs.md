@@ -10,7 +10,7 @@ tags:
 - readme
 - module
 - hcl
-author: prompt-manager
+author: prompt-unifier
 language: markdown
 ---
 You are an expert in Terraform and technical documentation. Your mission is to generate a comprehensive `README.md` file for a given Terraform module or root configuration.

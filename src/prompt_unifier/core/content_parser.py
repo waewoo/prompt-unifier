@@ -4,9 +4,9 @@ from pathlib import Path
 import yaml
 from pydantic import ValidationError
 
-from prompt_manager.models.prompt import PromptFile, PromptFrontmatter
-from prompt_manager.models.rule import RuleFile, RuleFrontmatter
-from prompt_manager.models.validation import ValidationResult
+from prompt_unifier.models.prompt import PromptFile, PromptFrontmatter
+from prompt_unifier.models.rule import RuleFile, RuleFrontmatter
+from prompt_unifier.models.validation import ValidationResult
 
 
 class ContentFileParser:
@@ -63,7 +63,7 @@ class ContentFileParser:
             self.parse_file(file_path)
             return ValidationResult(file=file_path, status="passed")
         except (ValueError, ValidationError) as e:
-            from prompt_manager.models.validation import ValidationIssue, ValidationSeverity
+            from prompt_unifier.models.validation import ValidationIssue, ValidationSeverity
 
             error_issue = ValidationIssue(
                 line=None,

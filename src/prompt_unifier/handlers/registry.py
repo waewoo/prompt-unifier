@@ -1,4 +1,4 @@
-from prompt_manager.handlers.protocol import ToolHandler
+from prompt_unifier.handlers.protocol import ToolHandler
 
 
 class ToolHandlerRegistry:

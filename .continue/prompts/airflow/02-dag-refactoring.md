@@ -11,7 +11,7 @@ tags:
 - refactoring
 - python
 - optimization
-author: prompt-manager
+author: prompt-unifier
 language: python
 ---
 You are an expert Airflow developer specializing in refactoring and optimizing data pipelines. Your mission is to analyze an existing Airflow DAG and rewrite it to align with modern best practices.

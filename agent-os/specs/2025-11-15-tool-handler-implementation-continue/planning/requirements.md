@@ -33,9 +33,9 @@ This specification evolved to focus specifically on adding configurable base pat
 - Support both syntaxes: `$VAR` and `${VAR}`
 - Validate that base_path points to valid tool installation
 
-**Q6:** Since the config.yaml is per-project (in `.prompt-manager/config.yaml`), does this mean each project can have Continue in its own directory? Or should there be both global and per-project config support?
+**Q6:** Since the config.yaml is per-project (in `.prompt-unifier/config.yaml`), does this mean each project can have Continue in its own directory? Or should there be both global and per-project config support?
 
-**Answer:** YES - per-project configuration is supported and expected. Each project's `.prompt-manager/config.yaml` can specify different base paths. The same handler can deploy to different locations depending on the project.
+**Answer:** YES - per-project configuration is supported and expected. Each project's `.prompt-unifier/config.yaml` can specify different base paths. The same handler can deploy to different locations depending on the project.
 
 **Q7:** For the multi-handler schema in config.yaml, should we add stub/placeholder support for all future handlers (continue, cursor, windsurf, aider, kilo) even if not implemented yet? This would make the schema clear and prevent breaking changes.
 
@@ -53,7 +53,7 @@ This specification evolved to focus specifically on adding configurable base pat
 
 **Q10:** Are there existing features in the codebase with similar path configuration patterns we should follow for consistency?
 
-**Answer:** YES - Follow existing patterns from `src/prompt_manager/models/git_config.py` for storage_path field.
+**Answer:** YES - Follow existing patterns from `src/prompt_unifier/models/git_config.py` for storage_path field.
 
 ### Follow-up Questions
 
@@ -72,17 +72,17 @@ This specification evolved to focus specifically on adding configurable base pat
 **Similar Features Identified:**
 
 1. **GitConfig Model with storage_path field:**
-   - Path: `src/prompt_manager/models/git_config.py`
+   - Path: `src/prompt_unifier/models/git_config.py`
    - Purpose: Shows existing pattern for configurable path handling
    - Pattern: Field validation, default value handling, path expansion
 
 2. **ContinueToolHandler with base_path parameter:**
-   - Path: `src/prompt_manager/handlers/continue_handler.py` (Lines 20-26)
+   - Path: `src/prompt_unifier/handlers/continue_handler.py` (Lines 20-26)
    - Purpose: Shows that base_path parameter already exists but is unused
    - Pattern: Constructor accepts base_path, currently defaults to Path.home()
 
 3. **Handler registration without base_path:**
-   - Path: `src/prompt_manager/cli/commands.py` (Line 628)
+   - Path: `src/prompt_unifier/cli/commands.py` (Line 628)
    - Purpose: Shows where handler is instantiated without passing base_path
    - Pattern: Needs modification to read config and pass base_path
 
@@ -108,7 +108,7 @@ N/A - No visual files found in planning/visuals/ directory.
 ### Functional Requirements
 
 1. **Configuration Structure:**
-   - Use nested YAML structure: `handlers.{handler_name}.base_path` in `.prompt-manager/config.yaml`
+   - Use nested YAML structure: `handlers.{handler_name}.base_path` in `.prompt-unifier/config.yaml`
    - Example:
      ```yaml
      handlers:
@@ -128,17 +128,17 @@ N/A - No visual files found in planning/visuals/ directory.
 2. **Default Behavior:**
    - Change default base_path from `Path.home()` to `Path.cwd()` (current working directory)
    - Rationale: Allows plugins/tools to be installed in project/repo directory
-   - Affects: `src/prompt_manager/handlers/continue_handler.py` constructor default
+   - Affects: `src/prompt_unifier/handlers/continue_handler.py` constructor default
 
 3. **CLI Flag Support:**
    - Add `--base-path` flag to deploy command
    - Generic flag (not handler-specific like `--continue-base-path`)
    - Works with existing `--handlers` flag to specify which handler
-   - Example: `prompt-manager deploy --handlers continue --base-path ./tools/continue`
+   - Example: `prompt-unifier deploy --handlers continue --base-path ./tools/continue`
 
 4. **Configuration Precedence (highest to lowest):**
    - CLI flag (`--base-path`)
-   - Config file (`.prompt-manager/config.yaml` handlers section)
+   - Config file (`.prompt-unifier/config.yaml` handlers section)
    - Default value (`Path.cwd()`)
 
 5. **Path Handling:**
@@ -156,7 +156,7 @@ N/A - No visual files found in planning/visuals/ directory.
    - Example: For Continue, verify `.continue/` directory structure exists or can be created
 
 7. **Per-Project Configuration:**
-   - Each project's `.prompt-manager/config.yaml` can specify different base paths
+   - Each project's `.prompt-unifier/config.yaml` can specify different base paths
    - Same handler can deploy to different locations depending on project
    - Example: Project A deploys Continue to `./dev-tools/continue`, Project B deploys to `$HOME/.continue`
 
@@ -169,17 +169,17 @@ N/A - No visual files found in planning/visuals/ directory.
 ### Reusability Opportunities
 
 1. **GitConfig Pattern:**
-   - File: `src/prompt_manager/models/git_config.py`
+   - File: `src/prompt_unifier/models/git_config.py`
    - Reuse: Field validation, default value handling, path expansion
    - Apply: Create similar Pydantic model for handlers configuration
 
 2. **Existing base_path Parameter:**
-   - File: `src/prompt_manager/handlers/continue_handler.py` (Lines 20-26)
+   - File: `src/prompt_unifier/handlers/continue_handler.py` (Lines 20-26)
    - Status: Parameter exists but unused
    - Action: Wire up to config and CLI flag
 
 3. **Handler Registration:**
-   - File: `src/prompt_manager/cli/commands.py` (Line 628)
+   - File: `src/prompt_unifier/cli/commands.py` (Line 628)
    - Modify: Read base_path from config, pass to handler constructor
    - Pattern: Apply to all future handlers
 
@@ -233,9 +233,9 @@ N/A - No visual files found in planning/visuals/ directory.
 ### Implementation Notes
 
 1. **Key Files to Modify:**
-   - `src/prompt_manager/handlers/continue_handler.py`: Change default from Path.home() to Path.cwd()
-   - `src/prompt_manager/cli/commands.py`: Add --base-path flag, read config, pass to handler
-   - `src/prompt_manager/models/` (new or existing): Create handlers config Pydantic model
+   - `src/prompt_unifier/handlers/continue_handler.py`: Change default from Path.home() to Path.cwd()
+   - `src/prompt_unifier/cli/commands.py`: Add --base-path flag, read config, pass to handler
+   - `src/prompt_unifier/models/` (new or existing): Create handlers config Pydantic model
    - Config validation logic: Add handlers section validation
 
 2. **Environment Variable Expansion:**

@@ -6,7 +6,7 @@ around error locations in files for display in validation output.
 
 import pytest
 
-from prompt_manager.utils.excerpt import ExcerptFormatter
+from prompt_unifier.utils.excerpt import ExcerptFormatter
 
 
 @pytest.fixture

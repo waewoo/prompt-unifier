@@ -13,7 +13,7 @@ tags:
 - backend
 - security
 - remote
-author: prompt-manager
+author: prompt-unifier
 language: hcl
 ---
 # Terraform State Management

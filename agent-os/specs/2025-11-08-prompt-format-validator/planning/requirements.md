@@ -377,7 +377,7 @@ Content here
 
 #### Command Structure
 ```bash
-prompt-manager validate <directory> [OPTIONS]
+prompt-unifier validate <directory> [OPTIONS]
 ```
 
 #### Arguments
@@ -391,13 +391,13 @@ prompt-manager validate <directory> [OPTIONS]
 #### Example Usage
 ```bash
 # Validate prompts directory with human-readable output
-prompt-manager validate ./prompts
+prompt-unifier validate ./prompts
 
 # Validate with JSON output for CI/CD
-prompt-manager validate ./prompts --json
+prompt-unifier validate ./prompts --json
 
 # Verbose validation
-prompt-manager validate ./prompts --verbose
+prompt-unifier validate ./prompts --verbose
 ```
 
 ### Expected Validation Report Format

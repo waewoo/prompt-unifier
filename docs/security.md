@@ -243,20 +243,20 @@ password = "test_password_for_fixtures"  # nosec B105 - test fixture only
 
 ```bash
 # Generate SSH key (ed25519 - modern and secure)
-ssh-keygen -t ed25519 -C "prompt-manager-gitlab" -f ~/.ssh/id_ed25519
+ssh-keygen -t ed25519 -C "prompt-unifier-gitlab" -f ~/.ssh/id_ed25519
 
 # Add public key to GitLab/GitHub
 cat ~/.ssh/id_ed25519.pub
 
 # Use SSH URL
-poetry run prompt-manager sync --repo git@gitlab.com:username/repo.git
+poetry run prompt-unifier sync --repo git@gitlab.com:username/repo.git
 ```
 
 **Avoid: Tokens in URLs**
 
 ```bash
 # NEVER do this - token will be in logs and history
-poetry run prompt-manager sync --repo https://user:glpat-xyz@gitlab.com/user/repo.git
+poetry run prompt-unifier sync --repo https://user:glpat-xyz@gitlab.com/user/repo.git
 ```
 
 ### 3. Safe Git Usage

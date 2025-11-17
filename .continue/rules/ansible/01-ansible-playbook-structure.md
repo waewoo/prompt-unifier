@@ -13,7 +13,7 @@ tags:
 - playbook
 - standards
 - configuration-management
-author: prompt-manager
+author: prompt-unifier
 language: yaml
 ---
 # Ansible Playbook Structure

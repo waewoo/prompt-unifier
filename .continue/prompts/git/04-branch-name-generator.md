@@ -9,7 +9,7 @@ tags:
 - branch
 - generator
 - standards
-author: prompt-manager
+author: prompt-unifier
 language: en
 ---
 You are an expert in version control with Git and understand the importance of consistent naming conventions. Your mission is to generate a Git branch name that complies with the project's defined standards.

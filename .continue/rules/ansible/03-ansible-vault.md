@@ -14,7 +14,7 @@ tags:
 - security
 - secrets
 - standards
-author: prompt-manager
+author: prompt-unifier
 language: yaml
 ---
 # Ansible Vault Standards

@@ -11,7 +11,7 @@ tags:
 - python
 - pipeline
 - generator
-author: prompt-manager
+author: prompt-unifier
 language: yaml
 ---
 You are an expert DevOps engineer specializing in CI/CD and GitLab. Your mission is to generate a complete `.gitlab-ci.yml` file for a standard Python project.

@@ -9,16 +9,16 @@
 # Note: Python >=3.12 is recommended, but >=3.11 is supported for compatibility
 
 [tool.poetry]
-name = "prompt-manager"
+name = "prompt-unifier"
 version = "0.3.0"
 description = "CLI tool for managing AI prompt templates with YAML frontmatter"
 authors = ["Waewoo <waewoo@gmail.com>"]
 license = "MIT"
 readme = "README.md"
-packages = [{include = "prompt_manager", from = "src"}]
+packages = [{include = "prompt_unifier", from = "src"}]
 
 [tool.poetry.scripts]
-prompt-manager = "prompt_manager.cli.main:main"
+prompt-unifier = "prompt_unifier.cli.main:main"
 
 [tool.poetry.dependencies]
 python = ">=3.11,<4.0"
@@ -67,7 +67,7 @@ select = [
 ignore = []
 
 [tool.ruff.lint.isort]
-known-first-party = ["prompt_manager"]
+known-first-party = ["prompt_unifier"]
 
 [tool.ruff.lint.per-file-ignores]
 "tests/**/*.py" = ["SIM117"]  # Allow nested with statements in tests for clarity
@@ -141,7 +141,7 @@ name = "cz_conventional_commits"
 version = "0.3.0"
 version_files = [
     "pyproject.toml:version",
-    "src/prompt_manager/__init__.py:__version__"
+    "src/prompt_unifier/__init__.py:__version__"
 ]
 tag_format = "v$version"
 changelog_file = "CHANGELOG.md"

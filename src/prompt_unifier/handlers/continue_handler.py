@@ -4,9 +4,9 @@ from typing import Any
 import yaml
 from rich.console import Console
 
-from prompt_manager.handlers.protocol import ToolHandler
-from prompt_manager.models.prompt import PromptFrontmatter
-from prompt_manager.models.rule import RuleFrontmatter
+from prompt_unifier.handlers.protocol import ToolHandler
+from prompt_unifier.models.prompt import PromptFrontmatter
+from prompt_unifier.models.rule import RuleFrontmatter
 
 console = Console()
 

@@ -2,7 +2,7 @@
 
 **STOP. READ THIS FIRST.**
 
-You are working on the `prompt-manager` project. You MUST follow this protocol for ALL feature requests.
+You are working on the `prompt-unifier` project. You MUST follow this protocol for ALL feature requests.
 
 ## Mandatory Feature Addition Protocol
 
@@ -45,7 +45,7 @@ When the developer asks to add ANY new feature, execute this checklist IN ORDER:
 
 # Project Overview
 
-`prompt-manager` is a Python CLI tool for managing AI prompt templates and coding rules. It uses YAML frontmatter for prompts/rules, supporting version control, validation, and deployment workflows.
+`prompt-unifier` is a Python CLI tool for managing AI prompt templates and coding rules. It uses YAML frontmatter for prompts/rules, supporting version control, validation, and deployment workflows.
 
 ## Tech Stack
 
@@ -61,8 +61,8 @@ When the developer asks to add ANY new feature, execute this checklist IN ORDER:
 
 ## Project Structure
 
-prompt-manager/
-├── src/prompt_manager/ # Main source code
+prompt-unifier/
+├── src/prompt_unifier/ # Main source code
 │ ├── cli/ # CLI commands
 │ ├── models/ # Pydantic models
 │ ├── services/ # Business logic
@@ -159,8 +159,8 @@ make install
 
 ## CLI Usage
 
-poetry run prompt-manager --help
-poetry run prompt-manager <command>
+poetry run prompt-unifier --help
+poetry run prompt-unifier <command>
 
 
 ## Development Commands

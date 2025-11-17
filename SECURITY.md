@@ -113,15 +113,15 @@ When syncing with Git repositories, we recommend using SSH keys instead of HTTPS
 
 ```bash
 # Good: SSH authentication
-prompt-manager sync --repo git@gitlab.com:username/repo.git
+prompt-unifier sync --repo git@gitlab.com:username/repo.git
 
 # Avoid: Token in URL (risk of exposure)
-prompt-manager sync --repo https://username:TOKEN@gitlab.com/username/repo.git
+prompt-unifier sync --repo https://username:TOKEN@gitlab.com/username/repo.git
 ```
 
 ### Local Configuration
 
-The `.prompt-manager/config.yaml` file may contain repository URLs. Ensure this file:
+The `.prompt-unifier/config.yaml` file may contain repository URLs. Ensure this file:
 - Is excluded from version control (in `.gitignore`)
 - Uses SSH URLs or secure credential storage
 - Has appropriate file permissions (readable only by user)

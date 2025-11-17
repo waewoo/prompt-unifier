@@ -6,9 +6,9 @@ from unittest.mock import MagicMock, patch
 
 import pytest
 
-from prompt_manager.handlers.continue_handler import ContinueToolHandler
-from prompt_manager.models.prompt import PromptFrontmatter
-from prompt_manager.models.rule import RuleFrontmatter
+from prompt_unifier.handlers.continue_handler import ContinueToolHandler
+from prompt_unifier.models.prompt import PromptFrontmatter
+from prompt_unifier.models.rule import RuleFrontmatter
 
 
 @pytest.fixture
@@ -890,7 +890,7 @@ class TestRuleContentProcessingEdgeCases:
 
     def test_process_rule_with_applies_to_globs(self, tmp_path: Path):
         """Test processing rule with applies_to globs."""
-        from prompt_manager.models.rule import RuleFrontmatter
+        from prompt_unifier.models.rule import RuleFrontmatter
 
         handler = ContinueToolHandler(base_path=tmp_path)
 
@@ -915,7 +915,7 @@ class TestRuleContentProcessingEdgeCases:
 
     def test_process_rule_with_author_and_language(self, tmp_path: Path):
         """Test processing rule with author and language fields."""
-        from prompt_manager.models.rule import RuleFrontmatter
+        from prompt_unifier.models.rule import RuleFrontmatter
 
         handler = ContinueToolHandler(base_path=tmp_path)
 
@@ -942,7 +942,7 @@ class TestDeploymentErrorHandling:
 
     def test_deploy_with_wrong_content_type_for_prompt(self, tmp_path: Path):
         """Test deploy raises error when prompt content doesn't match content_type."""
-        from prompt_manager.models.rule import RuleFrontmatter
+        from prompt_unifier.models.rule import RuleFrontmatter
 
         handler = ContinueToolHandler(base_path=tmp_path)
 
@@ -958,7 +958,7 @@ class TestDeploymentErrorHandling:
 
     def test_deploy_with_wrong_content_type_for_rule(self, tmp_path: Path):
         """Test deploy raises error when rule content doesn't match content_type."""
-        from prompt_manager.models.prompt import PromptFrontmatter
+        from prompt_unifier.models.prompt import PromptFrontmatter
 
         handler = ContinueToolHandler(base_path=tmp_path)
 
@@ -973,7 +973,7 @@ class TestDeploymentErrorHandling:
 
     def test_deploy_with_unsupported_content_type(self, tmp_path: Path):
         """Test deploy raises error for unsupported content type."""
-        from prompt_manager.models.prompt import PromptFrontmatter
+        from prompt_unifier.models.prompt import PromptFrontmatter
 
         handler = ContinueToolHandler(base_path=tmp_path)
 

@@ -14,7 +14,7 @@ tags:
 - secrets
 - sast
 - global
-author: prompt-manager
+author: prompt-unifier
 language: en
 ---
 # Global Security Standards

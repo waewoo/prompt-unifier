@@ -11,7 +11,7 @@ A Python CLI tool for managing AI prompt templates and coding rules with YAML fr
 
 ## Table of Contents
 
-- [Why Prompt Manager?](#why-prompt-manager)
+- [Why Prompt Manager?](#why-prompt-unifier)
 - [Quick Start](#quick-start)
 - [Installation](#installation)
 - [Core Concepts](#core-concepts)
@@ -57,20 +57,20 @@ Get started in 60 seconds:
 
 ```bash
 # 1. Install dependencies
-cd prompt-manager
+cd prompt-unifier
 poetry install
 
 # 2. Initialize in your project
-poetry run prompt-manager init
+poetry run prompt-unifier init
 
 # 3. Sync prompts from Git repository
-poetry run prompt-manager sync --repo git@github.com:your-org/prompts.git
+poetry run prompt-unifier sync --repo git@github.com:your-org/prompts.git
 
 # 4. Deploy to Continue (AI coding assistant)
-poetry run prompt-manager deploy
+poetry run prompt-unifier deploy
 
 # 5. Check status anytime
-poetry run prompt-manager status
+poetry run prompt-unifier status
 ```
 
 ---
@@ -100,7 +100,7 @@ curl -sSL https://install.python-poetry.org | python3 -
 
 ```bash
 git clone <repo-url>
-cd prompt-manager
+cd prompt-unifier
 poetry install
 ```
 
@@ -116,7 +116,7 @@ pipx install .
 
 ### Prompts and Rules
 
-The prompt-manager supports two types of content files using **YAML frontmatter** format (Jekyll/Hugo style):
+The prompt-unifier supports two types of content files using **YAML frontmatter** format (Jekyll/Hugo style):
 
 #### **Prompts**
 
@@ -221,28 +221,28 @@ rules/
 
 ### init - Initialize Configuration
 
-Initialize prompt-manager in your project directory.
+Initialize prompt-unifier in your project directory.
 
 ```bash
-prompt-manager init [OPTIONS]
+prompt-unifier init [OPTIONS]
 ```
 
 **Options:**
-- `--storage-path TEXT` - Custom storage location (default: `~/.prompt-manager/storage`)
+- `--storage-path TEXT` - Custom storage location (default: `~/.prompt-unifier/storage`)
 
 **What it creates:**
-- `.prompt-manager/` - Configuration directory (tracked in version control)
-- `.prompt-manager/config.yaml` - Project configuration
-- `~/.prompt-manager/storage/` - Centralized storage for synced prompts/rules
+- `.prompt-unifier/` - Configuration directory (tracked in version control)
+- `.prompt-unifier/config.yaml` - Project configuration
+- `~/.prompt-unifier/storage/` - Centralized storage for synced prompts/rules
 
 **Example:**
 
 ```bash
 # Initialize with default storage
-prompt-manager init
+prompt-unifier init
 
 # Initialize with custom storage
-prompt-manager init --storage-path /custom/storage
+prompt-unifier init --storage-path /custom/storage
 ```
 
 ---
@@ -252,7 +252,7 @@ prompt-manager init --storage-path /custom/storage
 Synchronize prompts and rules from a Git repository to local storage.
 
 ```bash
-prompt-manager sync [OPTIONS]
+prompt-unifier sync [OPTIONS]
 ```
 
 **Options:**
@@ -266,39 +266,39 @@ prompt-manager sync [OPTIONS]
 4. Updates config with sync timestamp and commit hash
 
 **Common Use Cases:**
-- 🔄 **Daily updates**: `prompt-manager sync` (team gets latest prompts)
-- 🆕 **New team member**: Clone project → `prompt-manager sync` → instant setup
+- 🔄 **Daily updates**: `prompt-unifier sync` (team gets latest prompts)
+- 🆕 **New team member**: Clone project → `prompt-unifier sync` → instant setup
 - 🔀 **Switch projects**: Different repos per project, auto-configured
 
 **Authentication for Private Repositories:**
 
 **Option 1: SSH Keys (Recommended)**
 ```bash
-prompt-manager sync --repo git@github.com:username/repo.git
+prompt-unifier sync --repo git@github.com:username/repo.git
 ```
 
 **Option 2: Git Credential Helper**
 ```bash
 git config --global credential.helper store
-prompt-manager sync --repo https://github.com/username/private-repo.git
+prompt-unifier sync --repo https://github.com/username/private-repo.git
 ```
 
 **Option 3: Personal Access Token**
 ```bash
-prompt-manager sync --repo https://username:TOKEN@github.com/username/repo.git
+prompt-unifier sync --repo https://username:TOKEN@github.com/username/repo.git
 ```
 
 **Examples:**
 
 ```bash
 # First sync with repository URL
-prompt-manager sync --repo git@github.com:team/prompts.git
+prompt-unifier sync --repo git@github.com:team/prompts.git
 
 # Subsequent syncs (uses URL from config)
-prompt-manager sync
+prompt-unifier sync
 
 # Override repository URL
-prompt-manager sync --repo git@github.com:other-team/prompts.git
+prompt-unifier sync --repo git@github.com:other-team/prompts.git
 ```
 
 ---
@@ -308,7 +308,7 @@ prompt-manager sync --repo git@github.com:other-team/prompts.git
 Display synchronization status and check for remote updates.
 
 ```bash
-prompt-manager status
+prompt-unifier status
 ```
 
 **What it shows:**
@@ -323,7 +323,7 @@ prompt-manager status
 ```
 Prompt Manager Status
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-Storage: /home/user/.prompt-manager/storage
+Storage: /home/user/.prompt-unifier/storage
 Repository: https://github.com/team/prompts.git
 Last sync: 2 hours ago
 Last synced commit: abc1234
@@ -338,7 +338,7 @@ Last synced commit: abc1234
 Validate prompt and rule files for syntax errors and required fields.
 
 ```bash
-prompt-manager validate [DIRECTORY] [OPTIONS]
+prompt-unifier validate [DIRECTORY] [OPTIONS]
 ```
 
 **Arguments:**
@@ -371,16 +371,16 @@ prompt-manager validate [DIRECTORY] [OPTIONS]
 
 ```bash
 # Validate synchronized storage
-prompt-manager validate
+prompt-unifier validate
 
 # Validate specific directory
-prompt-manager validate ./my-prompts
+prompt-unifier validate ./my-prompts
 
 # Validate only prompts
-prompt-manager validate --type prompts
+prompt-unifier validate --type prompts
 
 # Validate with JSON output
-prompt-manager validate --json
+prompt-unifier validate --json
 ```
 
 ---
@@ -390,7 +390,7 @@ prompt-manager validate --json
 Deploy prompts and rules to AI coding assistant handlers (currently: **Continue**).
 
 ```bash
-prompt-manager deploy [NAME] [OPTIONS]
+prompt-unifier deploy [NAME] [OPTIONS]
 ```
 
 **Arguments:**
@@ -420,22 +420,22 @@ prompt-manager deploy [NAME] [OPTIONS]
 
 ```bash
 # Deploy all prompts/rules to Continue
-prompt-manager deploy
+prompt-unifier deploy
 
 # Deploy specific prompt
-prompt-manager deploy code-review
+prompt-unifier deploy code-review
 
 # Deploy only items tagged "python"
-prompt-manager deploy --tags python
+prompt-unifier deploy --tags python
 
 # Deploy with multiple tags
-prompt-manager deploy --tags python,review
+prompt-unifier deploy --tags python,review
 
 # Deploy to custom location
-prompt-manager deploy --base-path /custom/path
+prompt-unifier deploy --base-path /custom/path
 
 # Clean orphaned files during deployment
-prompt-manager deploy --clean
+prompt-unifier deploy --clean
 ```
 
 **Tag Filtering:**
@@ -450,14 +450,14 @@ Items are deployed if they contain **at least one** of the specified tags.
 
 ## Configuration
 
-The `.prompt-manager/config.yaml` file stores project configuration:
+The `.prompt-unifier/config.yaml` file stores project configuration:
 
 ```yaml
 # Git synchronization
 repo_url: https://github.com/example/prompts.git
 last_sync_timestamp: 2024-11-11T14:30:00+00:00
 last_sync_commit: abc1234
-storage_path: /home/user/.prompt-manager/storage
+storage_path: /home/user/.prompt-unifier/storage
 
 # Deployment filters (optional)
 deploy_tags:
@@ -522,7 +522,7 @@ handlers:
 | **Aider** | 📋 Planned | TBD | Q2 2025 |
 | **Kilo Code** | 📋 Planned | TBD | Q2 2025 |
 
-Want another handler? [Open an issue](https://github.com/your-org/prompt-manager/issues/new?template=handler-request.md) 🚀
+Want another handler? [Open an issue](https://github.com/your-org/prompt-unifier/issues/new?template=handler-request.md) 🚀
 
 ---
 
@@ -570,10 +570,10 @@ poetry run pre-commit run --all-files
 
 ```bash
 # ✅ Recommended: SSH authentication
-prompt-manager sync --repo git@github.com:username/repo.git
+prompt-unifier sync --repo git@github.com:username/repo.git
 
 # ❌ Avoid: Token in URL (security risk)
-prompt-manager sync --repo https://user:TOKEN@github.com/user/repo.git
+prompt-unifier sync --repo https://user:TOKEN@github.com/user/repo.git
 ```
 
 **Reporting Security Issues:**
@@ -627,9 +627,9 @@ git clone git@github.com:company/backend-service.git
 cd backend-service
 
 # One-time setup
-prompt-manager init
-prompt-manager sync  # Gets company's standard prompts
-prompt-manager deploy  # Ready to use Continue with team prompts
+prompt-unifier init
+prompt-unifier sync  # Gets company's standard prompts
+prompt-unifier deploy  # Ready to use Continue with team prompts
 
 # Done! Prompts available in Continue
 ```
@@ -639,12 +639,12 @@ prompt-manager deploy  # Ready to use Continue with team prompts
 ```bash
 # Each project has its own prompt config
 cd ~/projects/api-service
-prompt-manager sync  # Uses API-specific prompts
+prompt-unifier sync  # Uses API-specific prompts
 
 cd ~/projects/frontend-app
-prompt-manager sync  # Uses frontend-specific prompts
+prompt-unifier sync  # Uses frontend-specific prompts
 
-# Each project's `.prompt-manager/config.yaml` stores its own repo_url
+# Each project's `.prompt-unifier/config.yaml` stores its own repo_url
 ```
 
 ### Example 3: Testing New Prompts
@@ -657,8 +657,8 @@ git checkout -b test-new-prompt
 git commit && git push
 
 # In your project
-prompt-manager sync --repo git@github.com:you/prompts.git#test-new-prompt
-prompt-manager deploy
+prompt-unifier sync --repo git@github.com:you/prompts.git#test-new-prompt
+prompt-unifier deploy
 # Test the new prompt in Continue
 ```
 
@@ -666,30 +666,30 @@ prompt-manager deploy
 
 ```bash
 # Deploy only Python-related prompts to Continue
-prompt-manager deploy --tags python --handlers continue
+prompt-unifier deploy --tags python --handlers continue
 
 # Deploy Python AND review prompts
-prompt-manager deploy --tags python,review
+prompt-unifier deploy --tags python,review
 
 # Deploy everything
-prompt-manager deploy
+prompt-unifier deploy
 ```
 
 ### Example 5: Custom Deployment Location
 
 ```bash
 # Deploy to project-specific .continue directory
-prompt-manager deploy --base-path $PWD/.continue
+prompt-unifier deploy --base-path $PWD/.continue
 
 # Or configure permanently in config.yaml
-cat >> .prompt-manager/config.yaml << 'EOF'
+cat >> .prompt-unifier/config.yaml << 'EOF'
 handlers:
   continue:
     base_path: $PWD/.continue
 EOF
 
 # Now deploy uses project location
-prompt-manager deploy
+prompt-unifier deploy
 ```
 
 ---
@@ -772,7 +772,7 @@ poetry run pytest tests/handlers/
 poetry run pytest tests/integration/
 
 # With coverage
-poetry run pytest --cov=src/prompt_manager --cov-report=html
+poetry run pytest --cov=src/prompt_unifier --cov-report=html
 ```
 
 ### Quality Standards
@@ -792,7 +792,7 @@ poetry run pytest --cov=src/prompt_manager --cov-report=html
 
 **Solution:**
 ```bash
-prompt-manager init
+prompt-unifier init
 ```
 
 ### Authentication Failures
@@ -812,7 +812,7 @@ prompt-manager init
 1. Verify internet connectivity
 2. Check repository URL is correct
 3. Command automatically retries 3 times
-4. Use `prompt-manager status` to see cached information while offline
+4. Use `prompt-unifier status` to see cached information while offline
 
 ### Repository Structure Issues
 
@@ -826,7 +826,7 @@ prompt-manager init
 
 **Solutions:**
 1. Ensure write permissions in current directory
-2. Check `.prompt-manager/` directory is writable
+2. Check `.prompt-unifier/` directory is writable
 3. Avoid using `sudo` unless necessary
 
 ### Environment Variable Errors
@@ -835,7 +835,7 @@ prompt-manager init
 
 **Solution:**
 - Use supported variables only: `$HOME`, `$USER`, `$PWD`
-- Fix variable reference in `.prompt-manager/config.yaml`
+- Fix variable reference in `.prompt-unifier/config.yaml`
 
 ```yaml
 # ❌ Incorrect - CUSTOM_VAR not supported
@@ -855,15 +855,15 @@ handlers:
 
 **Solution:**
 1. Check precedence: CLI `--base-path` > config > default
-2. Verify `handlers` section in `.prompt-manager/config.yaml`
+2. Verify `handlers` section in `.prompt-unifier/config.yaml`
 3. Use `--base-path` flag to test deployment
 
 ```bash
 # Debug deployment location
-cat .prompt-manager/config.yaml | grep -A2 handlers
+cat .prompt-unifier/config.yaml | grep -A2 handlers
 
 # Deploy with explicit path to verify
-prompt-manager deploy --base-path /tmp/test-deploy
+prompt-unifier deploy --base-path /tmp/test-deploy
 
 # Check deployment
 ls -la /tmp/test-deploy/.continue/prompts/
@@ -874,8 +874,8 @@ ls -la /tmp/test-deploy/.continue/prompts/
 Enable verbose logging for troubleshooting:
 
 ```bash
-export PROMPT_MANAGER_DEBUG=1
-prompt-manager sync --verbose
+export prompt_unifier_DEBUG=1
+prompt-unifier sync --verbose
 ```
 
 This will show:
@@ -890,7 +890,7 @@ This will show:
 <details>
 <summary><b>Q: Can I use multiple Git repositories for prompts?</b></summary>
 
-A: Yes! Each project can have its own `.prompt-manager/config.yaml` pointing to different repositories. Switch between projects and run `prompt-manager sync` to load project-specific prompts.
+A: Yes! Each project can have its own `.prompt-unifier/config.yaml` pointing to different repositories. Switch between projects and run `prompt-unifier sync` to load project-specific prompts.
 </details>
 
 <details>
@@ -902,7 +902,7 @@ A: Your changes will be overwritten on the next `deploy`. Always edit prompts in
 <details>
 <summary><b>Q: Can I use this without Git?</b></summary>
 
-A: Not recommended, but you can manually manage files in `~/.prompt-manager/storage/`. However, you'll lose versioning and team sync benefits.
+A: Not recommended, but you can manually manage files in `~/.prompt-unifier/storage/`. However, you'll lose versioning and team sync benefits.
 </details>
 
 <details>
@@ -930,14 +930,14 @@ A: Sync whenever you want the latest prompts. Common patterns:
 <details>
 <summary><b>Q: Can I deploy to multiple handlers?</b></summary>
 
-A: Yes! Currently only Continue is supported, but Cursor and Windsurf handlers are coming in Q1 2025. You'll be able to do: `prompt-manager deploy --handlers continue,cursor,windsurf`
+A: Yes! Currently only Continue is supported, but Cursor and Windsurf handlers are coming in Q1 2025. You'll be able to do: `prompt-unifier deploy --handlers continue,cursor,windsurf`
 </details>
 
 <details>
 <summary><b>Q: What's the difference between `--base-path` and `storage_path`?</b></summary>
 
 A: 
-- **storage_path** (`~/.prompt-manager/storage/`) - Where synced prompts are stored locally
+- **storage_path** (`~/.prompt-unifier/storage/`) - Where synced prompts are stored locally
 - **base_path** (`~/.continue/`) - Where deployed prompts are written for AI tools to use
 </details>
 

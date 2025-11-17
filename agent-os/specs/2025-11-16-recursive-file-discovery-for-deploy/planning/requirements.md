@@ -24,8 +24,8 @@ Implement recursive file discovery for `prompts/` and `rules/` directories when 
 
 ### Existing Code to Reference
 **Similar Features Identified:**
-- Feature: File scanning in `BatchValidator` - Path: `src/prompt_manager/core/batch_validator.py`
-- Components to potentially reuse: `FileScanner` in `src/prompt_manager/utils/file_scanner.py` already performs recursive scanning. The `deploy` command's file discovery needs to be updated to match this recursive behavior.
+- Feature: File scanning in `BatchValidator` - Path: `src/prompt_unifier/core/batch_validator.py`
+- Components to potentially reuse: `FileScanner` in `src/prompt_unifier/utils/file_scanner.py` already performs recursive scanning. The `deploy` command's file discovery needs to be updated to match this recursive behavior.
 - Backend logic to reference: The existing `glob` calls in the `deploy` command will be modified.
 
 ### Visual Assets
@@ -46,7 +46,7 @@ No visual assets provided.
 - **New:** The relative path of the prompt/rule file within its `prompts/` or `rules/` source directory must be preserved when deploying to the target handler's location. This means the target handler should reproduce the same subdirectory structure.
 
 ### Reusability Opportunities
-- The `FileScanner` class in `src/prompt_manager/utils/file_scanner.py` provides a good model for recursive file discovery.
+- The `FileScanner` class in `src/prompt_unifier/utils/file_scanner.py` provides a good model for recursive file discovery.
 - The existing parsing logic using `ContentFileParser` should be reused.
 
 ### Scope Boundaries
@@ -62,7 +62,7 @@ No visual assets provided.
 - Implementing `list` or `status` commands (they are on the roadmap but not part of this spec).
 
 ### Technical Considerations
-- The change will primarily involve updating `glob` patterns in `src/prompt_manager/cli/commands.py`.
+- The change will primarily involve updating `glob` patterns in `src/prompt_unifier/cli/commands.py`.
 - A new check for duplicate `title` fields will be added in the `deploy` function before handler iteration.
 - Error handling for duplicate titles should use `typer.Exit(code=1)`.
 - The `deploy` method of `ToolHandler` implementations will need to receive and utilize the relative path information to reproduce the directory structure. This might require modifying the `deploy` method signature in `handlers/protocol.py` and its implementations (e.g., `handlers/continue_handler.py`).

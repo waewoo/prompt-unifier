@@ -1,1 +1,1 @@
-@/root/travail/prompt-manager/agent-os/product/tech-stack.md
+@/root/travail/prompt-unifier/agent-os/product/tech-stack.md

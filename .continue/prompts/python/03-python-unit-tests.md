@@ -11,7 +11,7 @@ tags:
 - pytest
 - unit-test
 - quality
-author: prompt-manager
+author: prompt-unifier
 language: python
 ---
 You are a Software Engineer in Test specializing in Python. Your mission is to generate a comprehensive unit test file for a given Python function or class using the `pytest` framework.

@@ -23,13 +23,13 @@ This feature implements three new CLI commands (init, sync, status) to enable re
     - Test handling of corrupted config file with clear error
     - Test config save with proper YAML formatting
     - Skip exhaustive edge cases (focus on critical workflows)
-  - [x] 1.2 Create GitConfig Pydantic model in src/prompt_manager/models/git_config.py
+  - [x] 1.2 Create GitConfig Pydantic model in src/prompt_unifier/models/git_config.py
     - Fields: repo_url (str | None), last_sync_timestamp (str | None), last_sync_commit (str | None)
     - Use Pydantic v2 BaseModel pattern from models/validation.py
     - Add Field() descriptors with validation
     - Add model_config with json_schema_extra for examples
     - Use ISO 8601 format for timestamp field
-  - [x] 1.3 Create ConfigManager class in src/prompt_manager/config/manager.py
+  - [x] 1.3 Create ConfigManager class in src/prompt_unifier/config/manager.py
     - Method: load_config(config_path: Path) -> GitConfig | None
     - Method: save_config(config_path: Path, config: GitConfig) -> None
     - Method: update_sync_info(config_path: Path, repo_url: str, commit_hash: str) -> None
@@ -52,9 +52,9 @@ This feature implements three new CLI commands (init, sync, status) to enable re
 - Clear error messages for corrupted or missing config files
 
 **Reference Patterns:**
-- Pydantic models: src/prompt_manager/models/validation.py (ValidationIssue, ValidationResult)
-- YAML handling: src/prompt_manager/core/yaml_parser.py (safe_load, safe_dump, error handling)
-- Path operations: src/prompt_manager/utils/file_scanner.py (pathlib.Path patterns)
+- Pydantic models: src/prompt_unifier/models/validation.py (ValidationIssue, ValidationResult)
+- YAML handling: src/prompt_unifier/core/yaml_parser.py (safe_load, safe_dump, error handling)
+- Path operations: src/prompt_unifier/utils/file_scanner.py (pathlib.Path patterns)
 
 ---
 
@@ -75,7 +75,7 @@ This feature implements three new CLI commands (init, sync, status) to enable re
     - Test cleanup of temporary directory after operations
     - Test authentication error handling with helpful message
     - Skip network retry logic testing (integration test covers this)
-  - [x] 2.2 Create GitService class in src/prompt_manager/git/service.py
+  - [x] 2.2 Create GitService class in src/prompt_unifier/git/service.py
     - Use GitPython library (already in dependencies: gitpython ^3.1.40)
     - Method: clone_to_temp(repo_url: str) -> tuple[Path, git.Repo]
     - Method: get_latest_commit(repo: git.Repo) -> str (return short SHA)
@@ -109,8 +109,8 @@ This feature implements three new CLI commands (init, sync, status) to enable re
 - Retry logic implemented with exponential backoff (3 attempts)
 
 **Reference Patterns:**
-- File operations: src/prompt_manager/utils/file_scanner.py (pathlib.Path, directory validation)
-- Error handling: src/prompt_manager/core/yaml_parser.py (try-except with clear messages)
+- File operations: src/prompt_unifier/utils/file_scanner.py (pathlib.Path, directory validation)
+- Error handling: src/prompt_unifier/core/yaml_parser.py (try-except with clear messages)
 - Context managers: Python tempfile.TemporaryDirectory() for cleanup
 
 **GitPython Usage Examples:**
@@ -143,28 +143,28 @@ commits_behind = len(list(repo.iter_commits(f'{local_commit}..origin/main')))
 
 - [x] 3.0 Complete CLI commands implementation
   - [x] 3.1 Write 8 focused tests for CLI commands
-    - Test init command creates .prompt-manager/ directory and config.yaml
+    - Test init command creates .prompt-unifier/ directory and config.yaml
     - Test init command creates prompts/ and rules/ directories at project root
-    - Test init command creates .gitignore if it doesn't exist (without ignoring .prompt-manager/)
-    - Test init command fails if .prompt-manager/ already exists
+    - Test init command creates .gitignore if it doesn't exist (without ignoring .prompt-unifier/)
+    - Test init command fails if .prompt-unifier/ already exists
     - Test sync command fails if init not run first (missing config.yaml)
     - Test sync command with --repo flag stores URL and syncs prompts
     - Test sync command without --repo flag reads URL from config
     - Test status command displays repo URL, last sync time, and update availability
     - Skip exhaustive testing of all edge cases
-  - [x] 3.2 Implement init command in src/prompt_manager/cli/commands.py
+  - [x] 3.2 Implement init command in src/prompt_unifier/cli/commands.py
     - Function signature: def init() -> None
-    - Create .prompt-manager/ directory in current working directory (Path.cwd())
+    - Create .prompt-unifier/ directory in current working directory (Path.cwd())
     - Use Path.mkdir(parents=True, exist_ok=False) to prevent re-initialization
     - Create config.yaml with empty placeholders: repo_url: null, last_sync_timestamp: null, last_sync_commit: null
     - Create prompts/ and rules/ directories at project root
-    - Create .gitignore template if not exists (do NOT ignore .prompt-manager/)
+    - Create .gitignore template if not exists (do NOT ignore .prompt-unifier/)
     - Use Rich Console for success output with green checkmark
     - Exit with code 0 on success, code 1 on failure (raise typer.Exit(code=1))
     - Follow pattern from cli/commands.py validate command
-  - [x] 3.3 Implement sync command in src/prompt_manager/cli/commands.py
+  - [x] 3.3 Implement sync command in src/prompt_unifier/cli/commands.py
     - Function signature: def sync(repo: str | None = typer.Option(None, "--repo")) -> None
-    - Validate .prompt-manager/config.yaml exists (error if not: "Run 'prompt-manager init' first")
+    - Validate .prompt-unifier/config.yaml exists (error if not: "Run 'prompt-unifier init' first")
     - If --repo provided: use repo URL from flag
     - If --repo not provided: read repo URL from config.yaml
     - Error if repo URL is None: "No repository URL configured. Use --repo flag."
@@ -174,16 +174,16 @@ commits_behind = len(list(repo.iter_commits(f'{local_commit}..origin/main')))
     - Display Rich formatted output: repo URL, files synced, timestamp
     - Handle all Git errors with clear messages and exit code 1
     - Clean up temporary directory on success or error
-  - [x] 3.4 Implement status command in src/prompt_manager/cli/commands.py
+  - [x] 3.4 Implement status command in src/prompt_unifier/cli/commands.py
     - Function signature: def status() -> None
-    - Validate .prompt-manager/config.yaml exists (error if not: "Run 'prompt-manager init' first")
+    - Validate .prompt-unifier/config.yaml exists (error if not: "Run 'prompt-unifier init' first")
     - Load config.yaml and display: repo URL, last sync timestamp (human-readable), last commit hash (short)
     - Use GitService.check_remote_updates() to check for new commits
     - Display "Updates available" or "Up to date" with green/yellow color
     - Show commits behind count if updates available
     - Use Rich Console with symbols (checkmark for up-to-date, warning for updates)
     - Exit with code 0 always (status is informational)
-  - [x] 3.5 Register commands in src/prompt_manager/cli/main.py
+  - [x] 3.5 Register commands in src/prompt_unifier/cli/main.py
     - Add @app.command(name="init", help="...") decorator for init
     - Add @app.command(name="sync", help="...") decorator for sync
     - Add @app.command(name="status", help="...") decorator for status
@@ -207,9 +207,9 @@ commits_behind = len(list(repo.iter_commits(f'{local_commit}..origin/main')))
 - Exit codes follow specification (0 for success, 1 for errors)
 
 **Reference Patterns:**
-- CLI structure: src/prompt_manager/cli/commands.py (validate command)
-- CLI registration: src/prompt_manager/cli/main.py (@app.command decorator)
-- Rich output: src/prompt_manager/output/rich_formatter.py (Console, colors, symbols)
+- CLI structure: src/prompt_unifier/cli/commands.py (validate command)
+- CLI registration: src/prompt_unifier/cli/main.py (@app.command decorator)
+- Rich output: src/prompt_unifier/output/rich_formatter.py (Console, colors, symbols)
 - Error handling: typer.echo(message, err=True) and raise typer.Exit(code=1)
 
 **Rich Console Output Examples:**
@@ -248,11 +248,11 @@ console.print("[yellow]⚠ Updates available[/yellow] (3 commits behind)")
     - Authentication error: "Authentication failed. Ensure Git credentials are configured."
     - Missing prompts/ in repo: "Repository does not contain a prompts/ directory."
     - Network failure: "Network error. Retrying... (attempt X/3)"
-    - Missing config: "Configuration not found. Run 'prompt-manager init' first."
+    - Missing config: "Configuration not found. Run 'prompt-unifier init' first."
     - Permission error: "Permission denied. Check directory permissions."
     - Review all error messages for clarity and actionability
   - [x] 4.3 Implement human-readable timestamp formatting
-    - Create utility function in src/prompt_manager/utils/formatting.py
+    - Create utility function in src/prompt_unifier/utils/formatting.py
     - Function: format_timestamp(iso_timestamp: str) -> str
     - Convert ISO 8601 to relative time: "2 hours ago", "3 days ago"
     - Fallback to absolute format if relative not applicable: "2024-11-11 14:30:00"
@@ -280,9 +280,9 @@ console.print("[yellow]⚠ Updates available[/yellow] (3 commits behind)")
 
 **Reference Patterns:**
 - Integration tests: tests/integration/test_end_to_end.py
-- Error messages: src/prompt_manager/cli/commands.py (typer.echo with err=True)
+- Error messages: src/prompt_unifier/cli/commands.py (typer.echo with err=True)
 - Type hints: All modules use strict typing (mypy strict mode)
-- Docstrings: src/prompt_manager/core/yaml_parser.py (comprehensive examples)
+- Docstrings: src/prompt_unifier/core/yaml_parser.py (comprehensive examples)
 
 ---
 
@@ -350,12 +350,12 @@ console.print("[yellow]⚠ Updates available[/yellow] (3 commits behind)")
 **Testing Commands:**
 ```bash
 # Run feature-specific tests with coverage
-pytest tests/config/ tests/git/ tests/cli/test_git_commands.py tests/integration/test_git_integration.py tests/utils/test_formatting.py --cov=src/prompt_manager/config --cov=src/prompt_manager/git --cov-report=term-missing
+pytest tests/config/ tests/git/ tests/cli/test_git_commands.py tests/integration/test_git_integration.py tests/utils/test_formatting.py --cov=src/prompt_unifier/config --cov=src/prompt_unifier/git --cov-report=term-missing
 
 # Run code quality checks
-ruff check src/prompt_manager/config src/prompt_manager/git
-ruff format --check src/prompt_manager/config src/prompt_manager/git
-mypy src/prompt_manager/config src/prompt_manager/git
+ruff check src/prompt_unifier/config src/prompt_unifier/git
+ruff format --check src/prompt_unifier/config src/prompt_unifier/git
+mypy src/prompt_unifier/config src/prompt_unifier/git
 ```
 
 **Reference Patterns:**
@@ -404,8 +404,8 @@ Task Group 5 (Testing Review) ← depends on Task Groups 1-4
 ## Implementation Notes
 
 **Critical Constraints:**
-- .prompt-manager/ directory must be tracked in version control (NOT gitignored)
-- Each application project has its own .prompt-manager/ configuration
+- .prompt-unifier/ directory must be tracked in version control (NOT gitignored)
+- Each application project has its own .prompt-unifier/ configuration
 - Sync is unidirectional: central repo → application project only
 - Init must be run before sync (no automatic initialization)
 - Repository URL can be overridden with --repo flag even after initial sync
@@ -428,12 +428,12 @@ Task Group 5 (Testing Review) ← depends on Task Groups 1-4
 
 **New Files to Create:**
 ```
-src/prompt_manager/models/git_config.py
-src/prompt_manager/config/__init__.py
-src/prompt_manager/config/manager.py
-src/prompt_manager/git/__init__.py
-src/prompt_manager/git/service.py
-src/prompt_manager/utils/formatting.py (for timestamp formatting)
+src/prompt_unifier/models/git_config.py
+src/prompt_unifier/config/__init__.py
+src/prompt_unifier/config/manager.py
+src/prompt_unifier/git/__init__.py
+src/prompt_unifier/git/service.py
+src/prompt_unifier/utils/formatting.py (for timestamp formatting)
 
 tests/models/test_git_config.py
 tests/config/__init__.py
@@ -447,7 +447,7 @@ tests/utils/test_formatting.py
 
 **Files to Modify:**
 ```
-src/prompt_manager/cli/commands.py (add init, sync, status functions)
-src/prompt_manager/cli/main.py (register new commands)
+src/prompt_unifier/cli/commands.py (add init, sync, status functions)
+src/prompt_unifier/cli/main.py (register new commands)
 README.md (add Git integration documentation)
 ```

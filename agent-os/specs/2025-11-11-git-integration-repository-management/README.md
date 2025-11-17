@@ -2,7 +2,7 @@
 
 ## Vue d'ensemble
 
-Cette spécification décrit l'implémentation de l'intégration Git pour le prompt-manager, permettant la synchronisation des prompts et rules depuis un repository central vers les projets applicatifs.
+Cette spécification décrit l'implémentation de l'intégration Git pour le prompt-unifier, permettant la synchronisation des prompts et rules depuis un repository central vers les projets applicatifs.
 
 ## Structure de la Spécification
 
@@ -31,7 +31,7 @@ La spécification complète de la feature, incluant :
 - ✅ Option `--version` ajoutée aux commandes CLI globales
 - ✅ Commande `init` rendue **idempotente** (pas d'erreur si déjà initialisé)
 - ✅ Utilisation de `tempfile.mkdtemp()` au lieu de `TemporaryDirectory`
-- ✅ Support du **centralized storage** (`~/.prompt-manager/storage`)
+- ✅ Support du **centralized storage** (`~/.prompt-unifier/storage`)
 - ✅ Gestion améliorée des erreurs (repository vide, cleanup temporaire)
 - ✅ Section "Development Environment" ajoutée
 
@@ -121,16 +121,16 @@ poetry self update  # Important pour éviter les warnings
 ### Commandes Disponibles
 ```bash
 # Afficher la version
-poetry run prompt-manager --version
+poetry run prompt-unifier --version
 
 # Initialiser (idempotent - peut être ré-exécuté)
-poetry run prompt-manager init
+poetry run prompt-unifier init
 
 # Synchroniser depuis un repository
-poetry run prompt-manager sync --repo <git-url>
+poetry run prompt-unifier sync --repo <git-url>
 
 # Vérifier le statut
-poetry run prompt-manager status
+poetry run prompt-unifier status
 ```
 
 ### Raccourcis Développement
@@ -159,7 +159,7 @@ make check       # Tout (lint + typecheck + test)
 
 1. **Poetry Version:** Assurez-vous d'utiliser Poetry 2.2.1+ avec `poetry self update`
 2. **Init Idempotent:** La commande `init` peut être exécutée plusieurs fois sans erreur
-3. **Storage Centralisé:** Les prompts et rules sont stockés dans `~/.prompt-manager/storage` par défaut
+3. **Storage Centralisé:** Les prompts et rules sont stockés dans `~/.prompt-unifier/storage` par défaut
 4. **Rules Directory:** Le répertoire rules/ est optionnel dans les repositories - prompts/ reste obligatoire
 5. **Tests:** Toujours exécuter `make check` avant de commiter
 6. **Coverage:** Maintenir au-dessus de 95%

@@ -12,7 +12,7 @@ This module tests the validation logic for prompt frontmatter including:
 import pytest
 from pydantic import ValidationError
 
-from prompt_manager.models.prompt import PromptFrontmatter
+from prompt_unifier.models.prompt import PromptFrontmatter
 
 
 class TestPromptFrontmatterRequiredFields:

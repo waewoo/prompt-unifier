@@ -10,7 +10,7 @@ This module contains tests for:
 
 from pathlib import Path
 
-from prompt_manager.models.validation import (
+from prompt_unifier.models.validation import (
     ErrorCode,
     ValidationIssue,
     ValidationResult,

@@ -12,10 +12,10 @@ import pytest
 import typer
 
 import git
-from prompt_manager.cli.commands import init, status, sync
-from prompt_manager.config.manager import ConfigManager
-from prompt_manager.git.service import GitService
-from prompt_manager.models.git_config import GitConfig
+from prompt_unifier.cli.commands import init, status, sync
+from prompt_unifier.config.manager import ConfigManager
+from prompt_unifier.git.service import GitService
+from prompt_unifier.models.git_config import GitConfig
 
 
 class TestCompleteGitWorkflow:
@@ -42,9 +42,9 @@ class TestCompleteGitWorkflow:
             # Step 1: Initialize project with custom storage path
             init(storage_path=str(storage_dir))
 
-            # Verify .prompt-manager/ directory and config were created
-            assert (tmp_path / ".prompt-manager").exists()
-            assert (tmp_path / ".prompt-manager" / "config.yaml").exists()
+            # Verify .prompt-unifier/ directory and config were created
+            assert (tmp_path / ".prompt-unifier").exists()
+            assert (tmp_path / ".prompt-unifier" / "config.yaml").exists()
 
             # Verify prompts/ and rules/ in storage directory
             assert (storage_dir / "prompts").exists()
@@ -73,7 +73,7 @@ class TestCompleteGitWorkflow:
                     # Verify config was updated
                     config_manager = ConfigManager()
                     config = config_manager.load_config(
-                        tmp_path / ".prompt-manager" / "config.yaml"
+                        tmp_path / ".prompt-unifier" / "config.yaml"
                     )
                     assert config is not None
                     assert config.repo_url == "https://github.com/example/prompts.git"
@@ -265,7 +265,7 @@ class TestCompleteGitWorkflow:
 
             # Create config with sync information
             config_manager = ConfigManager()
-            config_path = tmp_path / ".prompt-manager" / "config.yaml"
+            config_path = tmp_path / ".prompt-unifier" / "config.yaml"
             config = GitConfig(
                 repo_url="https://github.com/example/prompts.git",
                 last_sync_timestamp="2024-11-11T14:30:00Z",
@@ -342,7 +342,7 @@ class TestCompleteGitWorkflow:
                     # Verify config was updated with new commit
                     config_manager = ConfigManager()
                     config = config_manager.load_config(
-                        tmp_path / ".prompt-manager" / "config.yaml"
+                        tmp_path / ".prompt-unifier" / "config.yaml"
                     )
                     assert config is not None
                     assert config.last_sync_commit == "abc2222"
@@ -365,16 +365,16 @@ class TestCompleteGitWorkflow:
             # First init should succeed
             init()
 
-            # Verify .prompt-manager/ was created
-            assert (tmp_path / ".prompt-manager").exists()
-            assert (tmp_path / ".prompt-manager" / "config.yaml").exists()
+            # Verify .prompt-unifier/ was created
+            assert (tmp_path / ".prompt-unifier").exists()
+            assert (tmp_path / ".prompt-unifier" / "config.yaml").exists()
 
             # Second init should also succeed (idempotent)
             init()
 
             # Verify everything still exists
-            assert (tmp_path / ".prompt-manager").exists()
-            assert (tmp_path / ".prompt-manager" / "config.yaml").exists()
+            assert (tmp_path / ".prompt-unifier").exists()
+            assert (tmp_path / ".prompt-unifier" / "config.yaml").exists()
 
         finally:
             os.chdir(original_cwd)

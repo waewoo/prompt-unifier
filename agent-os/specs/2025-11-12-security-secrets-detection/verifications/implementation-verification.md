@@ -320,13 +320,13 @@ Note: `.secrets.baseline` is committed (baseline is part of the repository).
    - Justification: Example URL showing authentication format
    - Risk: None (example only)
 
-2. **src/prompt_manager/git/service.py:199** - Basic Auth Credentials
+2. **src/prompt_unifier/git/service.py:199** - Basic Auth Credentials
    - Type: Error message example
    - Content: URL format in error message
    - Justification: Help text for users
    - Risk: None (example only)
 
-3. **src/prompt_manager/git/service.py:200** - Basic Auth Credentials
+3. **src/prompt_unifier/git/service.py:200** - Basic Auth Credentials
    - Type: Error message example
    - Content: URL format in error message
    - Justification: Help text for users

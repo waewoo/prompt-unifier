@@ -11,7 +11,7 @@ tags:
 - pytest
 - infrastructure
 - module
-author: prompt-manager
+author: prompt-unifier
 language: python
 ---
 You are a Software Engineer in Test specializing in Infrastructure as Code. Your mission is to generate a comprehensive test file for a given Terraform module or configuration.

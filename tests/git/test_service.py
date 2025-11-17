@@ -10,7 +10,7 @@ from unittest.mock import Mock, patch
 import pytest
 
 import git
-from prompt_manager.git.service import GitService, retry_with_backoff
+from prompt_unifier.git.service import GitService, retry_with_backoff
 
 
 class TestGitService:

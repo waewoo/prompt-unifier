@@ -18,7 +18,7 @@ Total Tasks: 4 Task Groups
 **Dependencies:** None
 
 - [x] 1.0 Implement the `ContinueToolHandler`
-  - [x] 1.1 Create `src/prompt_manager/handlers/continue_handler.py`.
+  - [x] 1.1 Create `src/prompt_unifier/handlers/continue_handler.py`.
   - [x] 1.2 Implement the `ContinueToolHandler` class, ensuring it conforms to the `ToolHandler` protocol.
   - [x] 1.3 Implement the `deploy` method to handle both prompts and rules.
     - For prompts, ensure `invokable: true` is in the YAML frontmatter.
@@ -37,9 +37,9 @@ Total Tasks: 4 Task Groups
 **Dependencies:** Task Group 1
 
 - [x] 2.0 Extend configuration to support deployment options
-  - [x] 2.1 Update `src/prompt_manager/models/git_config.py` to include `deploy_tags: List[str]` and `target_handlers: List[str]` fields in `GitConfig` model.
-  - [x] 2.2 Update `src/prompt_manager/config/manager.py` to handle serialization/deserialization of new fields in `load_config` and `save_config`.
-  - [x] 2.3 Update `src/prompt_manager/cli/commands.py` init function to include default values for new fields in config.yaml (empty lists).
+  - [x] 2.1 Update `src/prompt_unifier/models/git_config.py` to include `deploy_tags: List[str]` and `target_handlers: List[str]` fields in `GitConfig` model.
+  - [x] 2.2 Update `src/prompt_unifier/config/manager.py` to handle serialization/deserialization of new fields in `load_config` and `save_config`.
+  - [x] 2.3 Update `src/prompt_unifier/cli/commands.py` init function to include default values for new fields in config.yaml (empty lists).
   - [x] 2.4 Add CLI options to deploy command for overriding config: `--tags` (list) and `--handlers` (list).
 
 **Acceptance Criteria:**
@@ -51,7 +51,7 @@ Total Tasks: 4 Task Groups
 **Dependencies:** Task Groups 1 and 2
 
 - [x] 3.0 Implement full deploy command logic
-  - [x] 3.1 Update `src/prompt_manager/cli/commands.py` deploy function to scan `storage/prompts/` and `storage/rules/` for .md files.
+  - [x] 3.1 Update `src/prompt_unifier/cli/commands.py` deploy function to scan `storage/prompts/` and `storage/rules/` for .md files.
   - [x] 3.2 Implement filtering by `deploy_tags` from config (or CLI override); if empty, deploy all.
   - [x] 3.3 For each matching item, parse frontmatter using `ContentFileParser`, map fields (title -> name, add invokable: true for prompts, applies_to -> globs for rules).
   - [x] 3.4 Deploy to handlers in `target_handlers` from config (or CLI override); if empty, to all registered handlers.
@@ -105,7 +105,7 @@ Implementation sequence (COMPLETED):
 ## Deliverables Summary
 
 **Code:**
-- `src/prompt_manager/handlers/continue_handler.py` (173 lines)
+- `src/prompt_unifier/handlers/continue_handler.py` (173 lines)
 - `tests/handlers/test_continue_handler.py` (617 lines)
 - `tests/handlers/test_protocol.py` (657 lines)
 - Enhanced protocol, CLI, and models

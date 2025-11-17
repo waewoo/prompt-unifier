@@ -1,7 +1,7 @@
-repo_url: git@gitlab.com:waewoo/prompt-manager-data.git
+repo_url: git@gitlab.com:waewoo/prompt-unifier-data.git
 last_sync_timestamp: '2025-11-16T17:47:34.329907+00:00'
 last_sync_commit: c1e9fe8
-storage_path: /root/.prompt-manager/storage
+storage_path: /root/.prompt-unifier/storage
 deploy_tags: null
 target_handlers: null
 handlers: null

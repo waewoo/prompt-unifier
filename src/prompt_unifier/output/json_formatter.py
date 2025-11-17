@@ -7,7 +7,7 @@ suitable for machine-readable output and integration with other tools.
 import json
 from pathlib import Path
 
-from prompt_manager.models.validation import ValidationSummary
+from prompt_unifier.models.validation import ValidationSummary
 
 
 class JSONFormatter:

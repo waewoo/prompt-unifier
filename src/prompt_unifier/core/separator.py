@@ -4,7 +4,7 @@ This module validates the YAML frontmatter delimiters (---) that separate
 frontmatter from content in standard Markdown format.
 """
 
-from prompt_manager.models.validation import ErrorCode, ValidationIssue, ValidationSeverity
+from prompt_unifier.models.validation import ErrorCode, ValidationIssue, ValidationSeverity
 
 
 class SeparatorValidator:

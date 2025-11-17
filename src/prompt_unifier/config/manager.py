@@ -6,7 +6,7 @@ import yaml
 from pydantic import ValidationError
 from rich.console import Console
 
-from prompt_manager.models.git_config import GitConfig
+from prompt_unifier.models.git_config import GitConfig
 
 console = Console()
 
@@ -14,7 +14,7 @@ console = Console()
 class ConfigManager:
     """Manages Git configuration file operations.
 
-    This class handles all interactions with the .prompt-manager/config.yaml
+    This class handles all interactions with the .prompt-unifier/config.yaml
     file, including loading, saving, and updating sync metadata. It follows
     YAML handling patterns from core/yaml_parser.py using safe_load/safe_dump.
 
@@ -42,7 +42,7 @@ class ConfigManager:
 
         Examples:
             >>> manager = ConfigManager()
-            >>> config = manager.load_config(Path(".prompt-manager/config.yaml"))
+            >>> config = manager.load_config(Path(".prompt-unifier/config.yaml"))
             >>> if config:
             ...     print(config.repo_url)
         """
@@ -122,7 +122,7 @@ class ConfigManager:
         Examples:
             >>> manager = ConfigManager()
             >>> manager.update_sync_info(
-            ...     Path(".prompt-manager/config.yaml"),
+            ...     Path(".prompt-unifier/config.yaml"),
             ...     "https://github.com/example/prompts.git",
             ...     "abc1234"
             ... )

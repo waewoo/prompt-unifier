@@ -20,23 +20,23 @@ The Python Project Scaffold specification has been fully implemented and verifie
 ### Completed Tasks
 
 - [x] Task Group 1: Foundation - Project Structure
-  - [x] 1.1 Create src/prompt_manager/ package directory
-  - [x] 1.2 Create src/prompt_manager/cli/ subdirectory for Typer CLI commands
-  - [x] 1.3 Create src/prompt_manager/core/ subdirectory for core business logic
-  - [x] 1.4 Create src/prompt_manager/handlers/ subdirectory for ToolHandler implementations
-  - [x] 1.5 Create src/prompt_manager/models/ subdirectory for Pydantic models
-  - [x] 1.6 Create src/prompt_manager/utils/ subdirectory for shared utilities
+  - [x] 1.1 Create src/prompt_unifier/ package directory
+  - [x] 1.2 Create src/prompt_unifier/cli/ subdirectory for Typer CLI commands
+  - [x] 1.3 Create src/prompt_unifier/core/ subdirectory for core business logic
+  - [x] 1.4 Create src/prompt_unifier/handlers/ subdirectory for ToolHandler implementations
+  - [x] 1.5 Create src/prompt_unifier/models/ subdirectory for Pydantic models
+  - [x] 1.6 Create src/prompt_unifier/utils/ subdirectory for shared utilities
   - [x] 1.7 Create tests/ directory at project root for TDD test suite
   - [x] 1.8 Create docs/ directory for project documentation
   - [x] 1.9 Verify all directories exist with correct paths
 
 - [x] Task Group 2: Python Package Configuration
-  - [x] 2.1 Create src/prompt_manager/__init__.py with package version (0.1.0)
-  - [x] 2.2 Create src/prompt_manager/cli/__init__.py (empty)
-  - [x] 2.3 Create src/prompt_manager/core/__init__.py (empty)
-  - [x] 2.4 Create src/prompt_manager/handlers/__init__.py (empty)
-  - [x] 2.5 Create src/prompt_manager/models/__init__.py (empty)
-  - [x] 2.6 Create src/prompt_manager/utils/__init__.py (empty)
+  - [x] 2.1 Create src/prompt_unifier/__init__.py with package version (0.1.0)
+  - [x] 2.2 Create src/prompt_unifier/cli/__init__.py (empty)
+  - [x] 2.3 Create src/prompt_unifier/core/__init__.py (empty)
+  - [x] 2.4 Create src/prompt_unifier/handlers/__init__.py (empty)
+  - [x] 2.5 Create src/prompt_unifier/models/__init__.py (empty)
+  - [x] 2.6 Create src/prompt_unifier/utils/__init__.py (empty)
   - [x] 2.7 Verify package can be imported successfully
 
 - [x] Task Group 3: Dependency Management and Configuration
@@ -130,7 +130,7 @@ The Python Project Scaffold establishes the complete foundation for roadmap item
 ```
 ============================= test session starts ==============================
 platform linux -- Python 3.11.2, pytest-8.4.2, pluggy-1.6.0
-rootdir: /root/travail/prompt-manager
+rootdir: /root/travail/prompt-unifier
 configfile: pyproject.toml
 testpaths: tests
 plugins: mock-3.15.1, cov-4.1.0
@@ -141,12 +141,12 @@ tests/test_version.py ..                                                 [100%]
 ---------- coverage: platform linux, python 3.11.2-final-0 -----------
 Name                                      Stmts   Miss Branch BrPart  Cover   Missing
 -------------------------------------------------------------------------------------
-src/prompt_manager/__init__.py                1      0      0      0   100%
-src/prompt_manager/cli/__init__.py            0      0      0      0   100%
-src/prompt_manager/core/__init__.py           0      0      0      0   100%
-src/prompt_manager/handlers/__init__.py       0      0      0      0   100%
-src/prompt_manager/models/__init__.py         0      0      0      0   100%
-src/prompt_manager/utils/__init__.py          0      0      0      0   100%
+src/prompt_unifier/__init__.py                1      0      0      0   100%
+src/prompt_unifier/cli/__init__.py            0      0      0      0   100%
+src/prompt_unifier/core/__init__.py           0      0      0      0   100%
+src/prompt_unifier/handlers/__init__.py       0      0      0      0   100%
+src/prompt_unifier/models/__init__.py         0      0      0      0   100%
+src/prompt_unifier/utils/__init__.py          0      0      0      0   100%
 -------------------------------------------------------------------------------------
 TOTAL                                         1      0      0      0   100%
 
@@ -208,7 +208,7 @@ poetry run ruff check src/ tests/
 All checks passed!
 poetry run mypy src/
 Success: no issues found in 6 source files
-poetry run pytest --cov=src/prompt_manager --cov-report=term-missing --cov-report=html
+poetry run pytest --cov=src/prompt_unifier --cov-report=term-missing --cov-report=html
 ============================== 2 passed in 0.10s ===============================
 Required test coverage of 85.0% reached. Total coverage: 100.00%
 ```
@@ -226,9 +226,9 @@ Required test coverage of 85.0% reached. Total coverage: 100.00%
 Verified all required directories exist:
 
 ```
-/root/travail/prompt-manager/
+/root/travail/prompt-unifier/
 ├── src/
-│   └── prompt_manager/
+│   └── prompt_unifier/
 │       ├── __init__.py (version: 0.1.0)
 │       ├── cli/
 │       │   └── __init__.py
@@ -255,7 +255,7 @@ Verified all required directories exist:
 ### Package Import Test
 
 ```bash
-$ poetry run python -c "import prompt_manager; print(prompt_manager.__version__)"
+$ poetry run python -c "import prompt_unifier; print(prompt_unifier.__version__)"
 0.1.0
 ```
 
@@ -264,11 +264,11 @@ $ poetry run python -c "import prompt_manager; print(prompt_manager.__version__)
 ### Subpackage Import Test
 
 All subpackages import successfully:
-- prompt_manager.cli ✅
-- prompt_manager.core ✅
-- prompt_manager.handlers ✅
-- prompt_manager.models ✅
-- prompt_manager.utils ✅
+- prompt_unifier.cli ✅
+- prompt_unifier.core ✅
+- prompt_unifier.handlers ✅
+- prompt_unifier.models ✅
+- prompt_unifier.utils ✅
 
 ---
 
@@ -446,7 +446,7 @@ mypy.................................................(no files to check)Skipped
 
 ### Task Group 1: Foundation - Project Structure
 
-- ✅ All 8 directories exist: src/prompt_manager/ (with 5 subdirectories), tests/, docs/
+- ✅ All 8 directories exist: src/prompt_unifier/ (with 5 subdirectories), tests/, docs/
 - ✅ Directory structure mirrors spec requirements exactly
 - ✅ All paths are accessible and correctly nested
 
@@ -454,8 +454,8 @@ mypy.................................................(no files to check)Skipped
 
 - ✅ All 6 __init__.py files created
 - ✅ Main __init__.py contains version: __version__ = "0.1.0"
-- ✅ Python recognizes src/prompt_manager as a valid package
-- ✅ No import errors when attempting: `python -c "import prompt_manager"`
+- ✅ Python recognizes src/prompt_unifier as a valid package
+- ✅ No import errors when attempting: `python -c "import prompt_unifier"`
 
 ### Task Group 3: Dependency Management and Configuration
 
@@ -526,7 +526,7 @@ $ make format
 ✅ 8 files left unchanged
 
 # 4. Test package import
-$ poetry run python -c "import prompt_manager; print(prompt_manager.__version__)"
+$ poetry run python -c "import prompt_unifier; print(prompt_unifier.__version__)"
 ✅ Output: 0.1.0
 
 # 5. Test pre-commit hooks

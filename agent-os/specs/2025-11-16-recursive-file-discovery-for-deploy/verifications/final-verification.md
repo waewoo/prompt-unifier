@@ -21,7 +21,7 @@ The recursive file discovery feature has been successfully implemented and verif
 
 - [x] Task Group 1: CLI Layer Modifications
   - [x] 1.1 Write 2-8 focused tests for recursive file discovery in `deploy` command
-  - [x] 1.2 Modify `src/prompt_manager/cli/commands.py` to use `glob("**/*.md")`
+  - [x] 1.2 Modify `src/prompt_unifier/cli/commands.py` to use `glob("**/*.md")`
   - [x] 1.3 Implement duplicate title conflict detection in `deploy` command
   - [x] 1.4 Ensure CLI layer tests pass
 
@@ -153,7 +153,7 @@ The test suite provides comprehensive coverage of:
 
 ### CLI Layer Changes
 
-**File:** `src/prompt_manager/cli/commands.py`
+**File:** `src/prompt_unifier/cli/commands.py`
 
 ✅ **Verified:** Lines 742-756 implement recursive file discovery using `glob("**/*.md")` for both prompts and rules directories
 
@@ -163,7 +163,7 @@ The test suite provides comprehensive coverage of:
 
 ### Handler Protocol Changes
 
-**File:** `src/prompt_manager/handlers/protocol.py`
+**File:** `src/prompt_unifier/handlers/protocol.py`
 
 ✅ **Verified:** Lines 13-33 show updated `deploy` method signature with `relative_path: Path | None = None` parameter
 
@@ -171,7 +171,7 @@ The test suite provides comprehensive coverage of:
 
 ### Handler Implementation Changes
 
-**File:** `src/prompt_manager/handlers/continue_handler.py`
+**File:** `src/prompt_unifier/handlers/continue_handler.py`
 
 ✅ **Verified:** Lines 226-283 implement the updated `deploy` method with full relative_path support
 

@@ -10,7 +10,7 @@ tags:
 - gitignore
 - generator
 - standards
-author: prompt-manager
+author: prompt-unifier
 language: en
 ---
 You are an expert in version control with Git and have an encyclopedic knowledge of common file patterns that should be ignored for various languages, frameworks, and operating systems.

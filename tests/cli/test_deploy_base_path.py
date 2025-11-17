@@ -6,7 +6,7 @@ from unittest.mock import MagicMock, patch
 import pytest
 from typer.testing import CliRunner
 
-from prompt_manager.cli.main import app
+from prompt_unifier.cli.main import app
 
 runner = CliRunner()
 
@@ -14,7 +14,7 @@ runner = CliRunner()
 @pytest.fixture
 def mock_config_with_handlers(tmp_path: Path) -> tuple[Path, Path]:
     """Create a mock config file with handlers configuration."""
-    config_dir = tmp_path / ".prompt-manager"
+    config_dir = tmp_path / ".prompt-unifier"
     config_dir.mkdir()
     config_file = config_dir / "config.yaml"
     storage_dir = tmp_path / "storage"
@@ -71,7 +71,7 @@ class TestDeployBasePathCLIOption:
     def test_deploy_accepts_base_path_option(self, tmp_path: Path, mock_storage_with_content: Path):
         """Test that deploy command accepts --base-path option."""
         # Setup
-        config_dir = tmp_path / ".prompt-manager"
+        config_dir = tmp_path / ".prompt-unifier"
         config_dir.mkdir()
         config_file = config_dir / "config.yaml"
         config_file.write_text(f"""
@@ -83,7 +83,7 @@ target_handlers: ["continue"]
         custom_base_path = tmp_path / "custom_continue"
 
         # Mock the current working directory
-        with patch("prompt_manager.cli.commands.Path.cwd", return_value=tmp_path):
+        with patch("prompt_unifier.cli.commands.Path.cwd", return_value=tmp_path):
             # Run deploy with --base-path
             result = runner.invoke(app, ["deploy", "--base-path", str(custom_base_path)])
 
@@ -94,7 +94,7 @@ target_handlers: ["continue"]
     def test_base_path_overrides_config(self, tmp_path: Path, mock_storage_with_content: Path):
         """Test that --base-path overrides config.yaml base_path."""
         # Setup config with handlers.continue.base_path
-        config_dir = tmp_path / ".prompt-manager"
+        config_dir = tmp_path / ".prompt-unifier"
         config_dir.mkdir()
         config_file = config_dir / "config.yaml"
         configured_path = tmp_path / "configured_path"
@@ -110,8 +110,8 @@ handlers:
         # CLI override path
         cli_override_path = tmp_path / "cli_override_path"
 
-        with patch("prompt_manager.cli.commands.Path.cwd", return_value=tmp_path):
-            with patch("prompt_manager.cli.commands.ContinueToolHandler") as MockHandler:  # noqa: N806
+        with patch("prompt_unifier.cli.commands.Path.cwd", return_value=tmp_path):
+            with patch("prompt_unifier.cli.commands.ContinueToolHandler") as MockHandler:  # noqa: N806
                 mock_handler_instance = MagicMock()
                 MockHandler.return_value = mock_handler_instance
                 mock_handler_instance.get_name.return_value = "continue"
@@ -129,7 +129,7 @@ handlers:
         self, tmp_path: Path, mock_storage_with_content: Path
     ):
         """Test that --base-path works with --handlers flag."""
-        config_dir = tmp_path / ".prompt-manager"
+        config_dir = tmp_path / ".prompt-unifier"
         config_dir.mkdir()
         config_file = config_dir / "config.yaml"
         config_file.write_text(f"""
@@ -139,7 +139,7 @@ storage_path: {mock_storage_with_content}
 
         custom_base_path = tmp_path / "custom_continue"
 
-        with patch("prompt_manager.cli.commands.Path.cwd", return_value=tmp_path):
+        with patch("prompt_unifier.cli.commands.Path.cwd", return_value=tmp_path):
             result = runner.invoke(
                 app,
                 [
@@ -162,7 +162,7 @@ class TestBasePathResolutionLogic:
         self, tmp_path: Path, mock_storage_with_content: Path
     ):
         """Test precedence order: CLI flag > config.yaml > default Path.cwd()."""
-        config_dir = tmp_path / ".prompt-manager"
+        config_dir = tmp_path / ".prompt-unifier"
         config_dir.mkdir()
         config_file = config_dir / "config.yaml"
         configured_path = tmp_path / "configured_path"
@@ -177,8 +177,8 @@ handlers:
 
         cli_path = tmp_path / "cli_path"
 
-        with patch("prompt_manager.cli.commands.Path.cwd", return_value=tmp_path):
-            with patch("prompt_manager.cli.commands.ContinueToolHandler") as MockHandler:  # noqa: N806
+        with patch("prompt_unifier.cli.commands.Path.cwd", return_value=tmp_path):
+            with patch("prompt_unifier.cli.commands.ContinueToolHandler") as MockHandler:  # noqa: N806
                 mock_handler_instance = MagicMock()
                 MockHandler.return_value = mock_handler_instance
                 mock_handler_instance.get_name.return_value = "continue"
@@ -202,7 +202,7 @@ handlers:
         self, tmp_path: Path, mock_storage_with_content: Path
     ):
         """Test environment variable expansion in configured paths."""
-        config_dir = tmp_path / ".prompt-manager"
+        config_dir = tmp_path / ".prompt-unifier"
         config_dir.mkdir()
         config_file = config_dir / "config.yaml"
         config_file.write_text(f"""
@@ -214,8 +214,8 @@ handlers:
     base_path: $PWD/.continue
 """)
 
-        with patch("prompt_manager.cli.commands.Path.cwd", return_value=tmp_path):
-            with patch("prompt_manager.cli.commands.ContinueToolHandler") as MockHandler:  # noqa: N806
+        with patch("prompt_unifier.cli.commands.Path.cwd", return_value=tmp_path):
+            with patch("prompt_unifier.cli.commands.ContinueToolHandler") as MockHandler:  # noqa: N806
                 mock_handler_instance = MagicMock()
                 MockHandler.return_value = mock_handler_instance
                 mock_handler_instance.get_name.return_value = "continue"
@@ -234,7 +234,7 @@ handlers:
         self, tmp_path: Path, mock_storage_with_content: Path
     ):
         """Test error handling for missing environment variables."""
-        config_dir = tmp_path / ".prompt-manager"
+        config_dir = tmp_path / ".prompt-unifier"
         config_dir.mkdir()
         config_file = config_dir / "config.yaml"
         config_file.write_text(f"""
@@ -246,7 +246,7 @@ handlers:
     base_path: $NONEXISTENT_VAR/.continue
 """)
 
-        with patch("prompt_manager.cli.commands.Path.cwd", return_value=tmp_path):
+        with patch("prompt_unifier.cli.commands.Path.cwd", return_value=tmp_path):
             result = runner.invoke(app, ["deploy"])
 
             # Should fail with error about missing environment variable
@@ -255,7 +255,7 @@ handlers:
 
     def test_default_path_cwd_when_no_config(self, tmp_path: Path, mock_storage_with_content: Path):
         """Test that Path.cwd() is used as default when no configuration."""
-        config_dir = tmp_path / ".prompt-manager"
+        config_dir = tmp_path / ".prompt-unifier"
         config_dir.mkdir()
         config_file = config_dir / "config.yaml"
         config_file.write_text(f"""
@@ -264,8 +264,8 @@ storage_path: {mock_storage_with_content}
 target_handlers: ["continue"]
 """)
 
-        with patch("prompt_manager.cli.commands.Path.cwd", return_value=tmp_path):
-            with patch("prompt_manager.cli.commands.ContinueToolHandler") as MockHandler:  # noqa: N806
+        with patch("prompt_unifier.cli.commands.Path.cwd", return_value=tmp_path):
+            with patch("prompt_unifier.cli.commands.ContinueToolHandler") as MockHandler:  # noqa: N806
                 mock_handler_instance = MagicMock()
                 MockHandler.return_value = mock_handler_instance
                 mock_handler_instance.get_name.return_value = "continue"

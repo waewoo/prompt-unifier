@@ -11,7 +11,7 @@ tags:
 - generator
 - python
 - etl
-author: prompt-manager
+author: prompt-unifier
 language: python
 ---
 You are an expert Airflow developer. Your mission is to generate a complete, production-ready DAG file based on the user's request, strictly following all established best practices.

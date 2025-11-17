@@ -9,10 +9,10 @@ from pathlib import Path
 
 import pytest
 
-from prompt_manager.cli.commands import validate
-from prompt_manager.core.batch_validator import BatchValidator
-from prompt_manager.core.validator import PromptValidator
-from prompt_manager.models.validation import ErrorCode, WarningCode
+from prompt_unifier.cli.commands import validate
+from prompt_unifier.core.batch_validator import BatchValidator
+from prompt_unifier.core.validator import PromptValidator
+from prompt_unifier.models.validation import ErrorCode, WarningCode
 
 
 class TestValidationPipelineIntegration:

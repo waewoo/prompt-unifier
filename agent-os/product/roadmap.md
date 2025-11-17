@@ -6,7 +6,7 @@
 
 3. [x] Git Integration & Repository Management — Implement init command to create centralized prompt repository with .gitignore and structure, add sync command to pull prompts from Git remote, handle Git operations (clone, pull, status), and implement error handling for Git conflicts or network issues. `M`
 
-3.5. [x] Centralized Storage Architecture — Refactor Git integration to use centralized storage directory (~/.prompt-manager/storage by default) instead of storing prompts/rules in project directory. Add storage_path field to config.yaml, support --storage-path flag in init and sync commands for custom storage locations, and ensure .prompt-manager/config.yaml remains local to each project while prompts/rules are stored centrally and shared across projects. `S`
+3.5. [x] Centralized Storage Architecture — Refactor Git integration to use centralized storage directory (~/.prompt-unifier/storage by default) instead of storing prompts/rules in project directory. Add storage_path field to config.yaml, support --storage-path flag in init and sync commands for custom storage locations, and ensure .prompt-unifier/config.yaml remains local to each project while prompts/rules are stored centrally and shared across projects. `S`
 
 3.6. [x] Rules Directory Synchronization — Add automatic synchronization of rules/ directory alongside prompts/ during sync operations. The rules/ directory is optional and allows teams to share coding standards, best practices, and guidelines. Update GitService to extract both prompts/ (required) and rules/ (optional), maintain backward compatibility, and update all documentation. `S`
 
@@ -26,7 +26,7 @@
 
 10. [ ] List & Status Commands with Rich UI — Create list command showing all available prompts with metadata (name, description, tools, last modified), implement status command displaying deployment state per tool, add filtering/sorting options, and format output using Rich tables and syntax highlighting. `S`
 
-11. [ ] Configuration Management System — Implement user configuration file (~/.prompt-manager/config.yaml) to store repository paths, enabled tools, deployment preferences, and validation rules. Support init-time configuration, runtime overrides via CLI flags, and config validation. `S`
+11. [ ] Configuration Management System — Implement user configuration file (~/.prompt-unifier/config.yaml) to store repository paths, enabled tools, deployment preferences, and validation rules. Support init-time configuration, runtime overrides via CLI flags, and config validation. `S`
 
 12. [ ] Error Handling, Logging & User Feedback — Implement comprehensive error handling with user-friendly messages, add logging system for debugging (optional --verbose flag), create helpful suggestions for common errors, and ensure graceful degradation when tools are not installed. `S`
 

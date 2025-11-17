@@ -12,8 +12,8 @@ from unittest.mock import patch
 import pytest
 from typer.testing import CliRunner
 
-from prompt_manager.cli.main import app
-from prompt_manager.config.manager import ConfigManager
+from prompt_unifier.cli.main import app
+from prompt_unifier.config.manager import ConfigManager
 
 runner = CliRunner()
 
@@ -253,13 +253,13 @@ class TestEndToEndRecursiveDeployment:
         project_dir = tmp_path / "project"
         project_dir.mkdir()
 
-        with patch("prompt_manager.cli.commands.Path.cwd", return_value=project_dir):
+        with patch("prompt_unifier.cli.commands.Path.cwd", return_value=project_dir):
             # Initialize
             result = runner.invoke(app, ["init"], catch_exceptions=False)
             assert result.exit_code == 0
 
             # Update config to point to complex storage
-            config_path = project_dir / ".prompt-manager" / "config.yaml"
+            config_path = project_dir / ".prompt-unifier" / "config.yaml"
             config_manager = ConfigManager()
             config = config_manager.load_config(config_path)
             assert config is not None
@@ -310,7 +310,7 @@ class TestEndToEndRecursiveDeployment:
         project_dir = tmp_path / "project"
         project_dir.mkdir()
 
-        with patch("prompt_manager.cli.commands.Path.cwd", return_value=project_dir):
+        with patch("prompt_unifier.cli.commands.Path.cwd", return_value=project_dir):
             # Step 1: Initialize
             result = runner.invoke(app, ["init"], catch_exceptions=False)
             assert result.exit_code == 0
@@ -348,10 +348,10 @@ class TestEndToEndRecursiveDeployment:
         project_dir = tmp_path / "project"
         project_dir.mkdir()
 
-        with patch("prompt_manager.cli.commands.Path.cwd", return_value=project_dir):
+        with patch("prompt_unifier.cli.commands.Path.cwd", return_value=project_dir):
             # Initialize and configure
             runner.invoke(app, ["init"], catch_exceptions=False)
-            config_path = project_dir / ".prompt-manager" / "config.yaml"
+            config_path = project_dir / ".prompt-unifier" / "config.yaml"
             config_manager = ConfigManager()
             config = config_manager.load_config(config_path)
             config.storage_path = str(complex_storage_structure)
@@ -392,10 +392,10 @@ class TestEndToEndRecursiveDeployment:
         project_dir.mkdir()
         custom_base = project_dir / "custom-tools"
 
-        with patch("prompt_manager.cli.commands.Path.cwd", return_value=project_dir):
+        with patch("prompt_unifier.cli.commands.Path.cwd", return_value=project_dir):
             # Initialize and configure
             runner.invoke(app, ["init"], catch_exceptions=False)
-            config_path = project_dir / ".prompt-manager" / "config.yaml"
+            config_path = project_dir / ".prompt-unifier" / "config.yaml"
             config_manager = ConfigManager()
             config = config_manager.load_config(config_path)
             config.storage_path = str(complex_storage_structure)
@@ -438,10 +438,10 @@ class TestCleanOperationWithSubdirectories:
         project_dir = tmp_path / "project"
         project_dir.mkdir()
 
-        with patch("prompt_manager.cli.commands.Path.cwd", return_value=project_dir):
+        with patch("prompt_unifier.cli.commands.Path.cwd", return_value=project_dir):
             # Initialize and configure
             runner.invoke(app, ["init"], catch_exceptions=False)
-            config_path = project_dir / ".prompt-manager" / "config.yaml"
+            config_path = project_dir / ".prompt-unifier" / "config.yaml"
             config_manager = ConfigManager()
             config = config_manager.load_config(config_path)
             config.storage_path = str(complex_storage_structure)
@@ -478,10 +478,10 @@ class TestCleanOperationWithSubdirectories:
         project_dir = tmp_path / "project"
         project_dir.mkdir()
 
-        with patch("prompt_manager.cli.commands.Path.cwd", return_value=project_dir):
+        with patch("prompt_unifier.cli.commands.Path.cwd", return_value=project_dir):
             # Initialize and configure
             runner.invoke(app, ["init"], catch_exceptions=False)
-            config_path = project_dir / ".prompt-manager" / "config.yaml"
+            config_path = project_dir / ".prompt-unifier" / "config.yaml"
             config_manager = ConfigManager()
             config = config_manager.load_config(config_path)
             config.storage_path = str(complex_storage_structure)
@@ -547,9 +547,9 @@ Content
         project_dir = tmp_path / "project"
         project_dir.mkdir()
 
-        with patch("prompt_manager.cli.commands.Path.cwd", return_value=project_dir):
+        with patch("prompt_unifier.cli.commands.Path.cwd", return_value=project_dir):
             runner.invoke(app, ["init"], catch_exceptions=False)
-            config_path = project_dir / ".prompt-manager" / "config.yaml"
+            config_path = project_dir / ".prompt-unifier" / "config.yaml"
             config_manager = ConfigManager()
             config = config_manager.load_config(config_path)
             config.storage_path = str(storage_dir)
@@ -573,10 +573,10 @@ Content
         project_dir = tmp_path / "project"
         project_dir.mkdir()
 
-        with patch("prompt_manager.cli.commands.Path.cwd", return_value=project_dir):
+        with patch("prompt_unifier.cli.commands.Path.cwd", return_value=project_dir):
             # Initialize and configure
             runner.invoke(app, ["init"], catch_exceptions=False)
-            config_path = project_dir / ".prompt-manager" / "config.yaml"
+            config_path = project_dir / ".prompt-unifier" / "config.yaml"
             config_manager = ConfigManager()
             config = config_manager.load_config(config_path)
             config.storage_path = str(complex_storage_structure)
@@ -651,9 +651,9 @@ Content
         project_dir = tmp_path / "project"
         project_dir.mkdir()
 
-        with patch("prompt_manager.cli.commands.Path.cwd", return_value=project_dir):
+        with patch("prompt_unifier.cli.commands.Path.cwd", return_value=project_dir):
             runner.invoke(app, ["init"], catch_exceptions=False)
-            config_path = project_dir / ".prompt-manager" / "config.yaml"
+            config_path = project_dir / ".prompt-unifier" / "config.yaml"
             config_manager = ConfigManager()
             config = config_manager.load_config(config_path)
             config.storage_path = str(storage_dir)
@@ -723,9 +723,9 @@ Backend content
         project_dir = tmp_path / "project"
         project_dir.mkdir()
 
-        with patch("prompt_manager.cli.commands.Path.cwd", return_value=project_dir):
+        with patch("prompt_unifier.cli.commands.Path.cwd", return_value=project_dir):
             runner.invoke(app, ["init"], catch_exceptions=False)
-            config_path = project_dir / ".prompt-manager" / "config.yaml"
+            config_path = project_dir / ".prompt-unifier" / "config.yaml"
             config_manager = ConfigManager()
             config = config_manager.load_config(config_path)
             config.storage_path = str(storage_dir)

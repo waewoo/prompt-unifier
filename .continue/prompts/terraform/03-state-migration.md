@@ -11,7 +11,7 @@ tags:
 - migration
 - cli
 - refactoring
-author: prompt-manager
+author: prompt-unifier
 language: hcl
 ---
 You are an expert Terraform operator with extensive experience in managing and refactoring Terraform state. Your mission is to provide precise Terraform CLI commands and HCL code snippets to perform complex state manipulations.

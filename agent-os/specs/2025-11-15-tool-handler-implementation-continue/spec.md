@@ -1,21 +1,21 @@
 # Specification: Tool Handler Implementation: Continue
 
 ## Goal
-The goal of this specification is to implement a `ContinueToolHandler` that allows users to deploy prompts and rules from `prompt-manager` to the "Continue" AI assistant. This handler will be responsible for converting and copying files to the appropriate directories, as well as handling backups and deployment verification.
+The goal of this specification is to implement a `ContinueToolHandler` that allows users to deploy prompts and rules from `prompt-unifier` to the "Continue" AI assistant. This handler will be responsible for converting and copying files to the appropriate directories, as well as handling backups and deployment verification.
 
 ## User Stories
-- As a developer using "Continue", I want to be able to deploy my `prompt-manager` prompts and rules to "Continue" so that I can use them in my AI-assisted development workflow.
-- As a tech lead, I want to be able to standardize the prompts and rules used by my team in "Continue" by managing them through `prompt-manager`.
+- As a developer using "Continue", I want to be able to deploy my `prompt-unifier` prompts and rules to "Continue" so that I can use them in my AI-assisted development workflow.
+- As a tech lead, I want to be able to standardize the prompts and rules used by my team in "Continue" by managing them through `prompt-unifier`.
 
 ## Specific Requirements
 
 **`ContinueToolHandler` Implementation**
-- Create a `ContinueToolHandler` class in `src/prompt_manager/handlers/continue_handler.py`.
+- Create a `ContinueToolHandler` class in `src/prompt_unifier/handlers/continue_handler.py`.
 - The class must conform to the `ToolHandler` protocol.
 - The handler should be registered in the `ToolHandlerRegistry`.
 
 **Configuration for Deployment**
-- The `.prompt-manager/config.yaml` must be extended to support deployment configuration:
+- The `.prompt-unifier/config.yaml` must be extended to support deployment configuration:
   - `deploy_tags`: List of strings (e.g., ["python", "review"]) to filter prompts and rules by their `tags` field in frontmatter. If empty or absent, deploy all items.
   - `target_handlers`: List of strings (e.g., ["continue", "cursor"]) specifying the handlers to deploy to. If empty or absent, deploy to all registered handlers.
 - Example extended config.yaml:
@@ -23,7 +23,7 @@ The goal of this specification is to implement a `ContinueToolHandler` that allo
   repo_url: https://example.com/prompts.git
   last_sync_timestamp: "2025-11-15T10:00:00Z"
   last_sync_commit: "abc123"
-  storage_path: "~/.prompt-manager/storage"
+  storage_path: "~/.prompt-unifier/storage"
   deploy_tags: ["python", "api"]
   target_handlers: ["continue", "cursor"]
   ```
@@ -55,7 +55,7 @@ The goal of this specification is to implement a `ContinueToolHandler` that allo
 - For each deployed item, verify file exists in target location and frontmatter/content is correct (e.g., name, description, invokable for prompts; name, globs for rules).
 
 **File Formats**
-- **Input (prompt-manager storage):** MD with YAML frontmatter using title, description, tags, etc. Filenames can contain spaces and special characters (e.g., `Python Code Refactoring Expert.md`, `backend-python-packages.md`).
+- **Input (prompt-unifier storage):** MD with YAML frontmatter using title, description, tags, etc. Filenames can contain spaces and special characters (e.g., `Python Code Refactoring Expert.md`, `backend-python-packages.md`).
 - **Output (Continue):** MD with YAML frontmatter using name (from title), description, invokable: true for prompts; name (from title), globs (from applies_to), description, alwaysApply: false for rules. **Filenames are preserved from source** to maintain consistency and readability.
 
 
@@ -64,7 +64,7 @@ No visual assets provided.
 
 ## Existing Code to Leverage
 
-**`src/prompt_manager/git/service.py`**
+**`src/prompt_unifier/git/service.py`**
 - The `GitService` class provides a good example of how to structure a service class that interacts with the file system.
 - The `ContinueToolHandler` can follow a similar pattern for reading, writing, and copying files.
 
@@ -75,7 +75,7 @@ No visual assets provided.
   - Files in the destination that were NOT just deployed (orphaned files) are permanently removed
   - Any existing `.bak` backup files are also removed during cleanup
   - This ensures the destination only contains files from the current source repository
-- Example: `prompt-manager deploy --clean`
+- Example: `prompt-unifier deploy --clean`
 - The number of cleaned files is reported in the deployment summary
 - **Note:** Files are deleted permanently without creating backups - use with caution
 

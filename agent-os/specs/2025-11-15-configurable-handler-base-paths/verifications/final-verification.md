@@ -43,9 +43,9 @@ The feature is functionally complete and ready for deployment after addressing l
   - [x] 1.7 Ensure configuration model tests pass
 
 **Verification:** Reviewed implementation in:
-- `/root/travail/prompt-manager/src/prompt_manager/utils/path_helpers.py` - expand_env_vars() function correctly implements environment variable expansion for $HOME, $USER, $PWD with both ${VAR} and $VAR syntaxes
-- `/root/travail/prompt-manager/src/prompt_manager/models/git_config.py` - HandlerConfig model added with base_path field, handlers field added to GitConfig
-- Tests located in `/root/travail/prompt-manager/tests/utils/test_path_helpers.py` and verified in git config tests
+- `/root/travail/prompt-unifier/src/prompt_unifier/utils/path_helpers.py` - expand_env_vars() function correctly implements environment variable expansion for $HOME, $USER, $PWD with both ${VAR} and $VAR syntaxes
+- `/root/travail/prompt-unifier/src/prompt_unifier/models/git_config.py` - HandlerConfig model added with base_path field, handlers field added to GitConfig
+- Tests located in `/root/travail/prompt-unifier/tests/utils/test_path_helpers.py` and verified in git config tests
 
 ### Task Group 2: ConfigManager Integration - COMPLETED
 - [x] 2.0 Complete ConfigManager integration for handlers configuration
@@ -65,9 +65,9 @@ The feature is functionally complete and ready for deployment after addressing l
   - [x] 3.5 Ensure handler implementation tests pass
 
 **Verification:** Reviewed implementation in:
-- `/root/travail/prompt-manager/src/prompt_manager/handlers/continue_handler.py` - Line 23 confirms default changed from Path.home() to Path.cwd()
+- `/root/travail/prompt-unifier/src/prompt_unifier/handlers/continue_handler.py` - Line 23 confirms default changed from Path.home() to Path.cwd()
 - validate_tool_installation() method implemented with comprehensive directory creation and permission checking
-- Tests in `/root/travail/prompt-manager/tests/handlers/test_continue_handler_base_path.py`
+- Tests in `/root/travail/prompt-unifier/tests/handlers/test_continue_handler_base_path.py`
 
 ### Task Group 4: CLI Integration and Base Path Resolution - COMPLETED
 - [x] 4.0 Complete CLI integration for configurable base paths
@@ -80,11 +80,11 @@ The feature is functionally complete and ready for deployment after addressing l
   - [x] 4.7 Ensure CLI integration tests pass
 
 **Verification:** Reviewed implementation in:
-- `/root/travail/prompt-manager/src/prompt_manager/cli/main.py` - Lines 137-141 show --base-path option added to deploy command
-- `/root/travail/prompt-manager/src/prompt_manager/cli/commands.py` - Lines 642-674 implement resolve_handler_base_path() with correct precedence order (CLI > config > default)
+- `/root/travail/prompt-unifier/src/prompt_unifier/cli/main.py` - Lines 137-141 show --base-path option added to deploy command
+- `/root/travail/prompt-unifier/src/prompt_unifier/cli/commands.py` - Lines 642-674 implement resolve_handler_base_path() with correct precedence order (CLI > config > default)
 - Environment variable expansion integrated via expand_env_vars() call at line 662
 - Handler instantiation at lines 684-687 uses resolved base_path
-- Tests in `/root/travail/prompt-manager/tests/cli/test_deploy_base_path.py` (7 tests)
+- Tests in `/root/travail/prompt-unifier/tests/cli/test_deploy_base_path.py` (7 tests)
 
 ### Task Group 5: Integration Testing and Documentation - COMPLETED
 - [x] 5.0 Complete integration testing and documentation
@@ -97,7 +97,7 @@ The feature is functionally complete and ready for deployment after addressing l
   - [x] 5.7 Update inline code documentation
 
 **Verification:**
-- Integration tests in `/root/travail/prompt-manager/tests/integration/test_configurable_base_paths.py` (10 comprehensive tests)
+- Integration tests in `/root/travail/prompt-unifier/tests/integration/test_configurable_base_paths.py` (10 comprehensive tests)
 - User documentation updated in README.md with extensive "Configurable Handler Base Paths" section
 - All inline documentation follows project conventions
 
@@ -184,12 +184,12 @@ No other roadmap items affected by this implementation. Item 8 (Deploy Command w
 - **Gap:** -1.10%
 
 ### Coverage by Module
-- src/prompt_manager/utils/path_helpers.py: **100%** (17 statements)
-- src/prompt_manager/models/git_config.py: **100%** (13 statements)
-- src/prompt_manager/cli/main.py: **97%** (1 miss on line 165)
-- src/prompt_manager/cli/commands.py: **95%** (14 misses, primarily error paths)
-- src/prompt_manager/config/manager.py: **94%** (2 misses on error handling)
-- src/prompt_manager/handlers/continue_handler.py: **83%** (26 misses)
+- src/prompt_unifier/utils/path_helpers.py: **100%** (17 statements)
+- src/prompt_unifier/models/git_config.py: **100%** (13 statements)
+- src/prompt_unifier/cli/main.py: **97%** (1 miss on line 165)
+- src/prompt_unifier/cli/commands.py: **95%** (14 misses, primarily error paths)
+- src/prompt_unifier/config/manager.py: **94%** (2 misses on error handling)
+- src/prompt_unifier/handlers/continue_handler.py: **83%** (26 misses)
 
 ### Areas Below Target Coverage
 1. **ContinueToolHandler** (83%): Missing coverage on error paths in validate_tool_installation() method (lines 92-99), permission error scenarios, and some deployment edge cases
@@ -219,10 +219,10 @@ None - all issues are style violations.
 
 #### Style Violations (Should Fix)
 1. **Line length violations (E501):** 10 instances
-   - src/prompt_manager/cli/commands.py:54 (103 chars)
-   - src/prompt_manager/handlers/continue_handler.py:64 (104 chars)
-   - src/prompt_manager/handlers/continue_handler.py:73 (111 chars)
-   - src/prompt_manager/handlers/continue_handler.py:122 (102 chars)
+   - src/prompt_unifier/cli/commands.py:54 (103 chars)
+   - src/prompt_unifier/handlers/continue_handler.py:64 (104 chars)
+   - src/prompt_unifier/handlers/continue_handler.py:73 (111 chars)
+   - src/prompt_unifier/handlers/continue_handler.py:122 (102 chars)
    - tests/cli/test_deploy_base_path.py:134 (103 chars)
    - tests/cli/test_deploy_base_path.py:159 (108 chars)
    - tests/cli/test_deploy_base_path.py:197 (119 chars)
@@ -237,8 +237,8 @@ None - all issues are style violations.
    - tests/integration/test_configurable_base_paths.py:9 (shutil)
 
 3. **F-strings without placeholders (F541):** 2 instances (auto-fixable)
-   - src/prompt_manager/cli/commands.py:693
-   - src/prompt_manager/cli/commands.py:696
+   - src/prompt_unifier/cli/commands.py:693
+   - src/prompt_unifier/cli/commands.py:696
 
 4. **Unused variables (F841):** 2 instances
    - tests/cli/test_deploy_base_path.py:123 (result)
@@ -337,7 +337,7 @@ Based on code review:
 - Rich console used throughout for formatted messages
 
 **10. Support Per-Project Configuration** ✅
-- VERIFIED: Each project's .prompt-manager/config.yaml can specify different base paths
+- VERIFIED: Each project's .prompt-unifier/config.yaml can specify different base paths
 - Configuration loaded from current working directory
 - Same handler can deploy to different locations based on project context
 
@@ -362,9 +362,9 @@ All 10 success criteria from tasks.md verified as COMPLETE:
 
 ### Workflow 1: Deploy with Custom Base Path via Config ✅
 **Steps:**
-1. Initialize project: `prompt-manager init`
+1. Initialize project: `prompt-unifier init`
 2. Edit config.yaml to add handlers.continue.base_path: "$PWD/.continue"
-3. Run deploy: `prompt-manager deploy`
+3. Run deploy: `prompt-unifier deploy`
 
 **Expected:** Prompts deploy to project's .continue directory
 **Verification:** Integration test test_deployment_with_configured_base_path() passes
@@ -373,7 +373,7 @@ All 10 success criteria from tasks.md verified as COMPLETE:
 ### Workflow 2: Override Config with CLI Flag ✅
 **Steps:**
 1. Project has config.yaml with handlers.continue.base_path: "$HOME/.continue"
-2. Run: `prompt-manager deploy --base-path /custom/path`
+2. Run: `prompt-unifier deploy --base-path /custom/path`
 
 **Expected:** Prompts deploy to /custom/path instead of configured location
 **Verification:** CLI test test_base_path_cli_option_overrides_config() passes
@@ -415,7 +415,7 @@ All 10 success criteria from tasks.md verified as COMPLETE:
 1. **Custom environment variables:** Only $HOME, $USER, $PWD supported (not custom user variables)
 2. **Advanced shell expansion:** No globbing, command substitution, or tilde expansion beyond PathLib
 3. **Automatic handler installation:** Paths are created but tools are not installed automatically
-4. **Global configuration:** Only per-project .prompt-manager/config.yaml supported
+4. **Global configuration:** Only per-project .prompt-unifier/config.yaml supported
 5. **Handler-specific CLI flags:** Single --base-path flag instead of per-handler flags (e.g., no --continue-base-path)
 6. **Symlink handling:** Basic path resolution only, complex symlink scenarios not handled
 
@@ -615,45 +615,45 @@ Found 26 errors.
 ## Appendix B: File Modifications
 
 ### New Files Created
-1. `/root/travail/prompt-manager/src/prompt_manager/utils/path_helpers.py` - Environment variable expansion
-2. `/root/travail/prompt-manager/tests/utils/test_path_helpers.py` - Path helpers tests (8 tests)
-3. `/root/travail/prompt-manager/tests/handlers/test_continue_handler_base_path.py` - Handler tests (12 tests)
-4. `/root/travail/prompt-manager/tests/cli/test_deploy_base_path.py` - CLI tests (7 tests)
-5. `/root/travail/prompt-manager/tests/integration/test_configurable_base_paths.py` - Integration tests (10 tests)
+1. `/root/travail/prompt-unifier/src/prompt_unifier/utils/path_helpers.py` - Environment variable expansion
+2. `/root/travail/prompt-unifier/tests/utils/test_path_helpers.py` - Path helpers tests (8 tests)
+3. `/root/travail/prompt-unifier/tests/handlers/test_continue_handler_base_path.py` - Handler tests (12 tests)
+4. `/root/travail/prompt-unifier/tests/cli/test_deploy_base_path.py` - CLI tests (7 tests)
+5. `/root/travail/prompt-unifier/tests/integration/test_configurable_base_paths.py` - Integration tests (10 tests)
 
 ### Modified Files
-1. `/root/travail/prompt-manager/src/prompt_manager/models/git_config.py` - Added HandlerConfig and handlers field
-2. `/root/travail/prompt-manager/src/prompt_manager/handlers/continue_handler.py` - Changed default base_path, added validation
-3. `/root/travail/prompt-manager/src/prompt_manager/cli/commands.py` - Added base path resolution logic
-4. `/root/travail/prompt-manager/src/prompt_manager/cli/main.py` - Added --base-path parameter
-5. `/root/travail/prompt-manager/README.md` - Comprehensive documentation update
-6. `/root/travail/prompt-manager/agent-os/product/roadmap.md` - Marked Item 7 complete
+1. `/root/travail/prompt-unifier/src/prompt_unifier/models/git_config.py` - Added HandlerConfig and handlers field
+2. `/root/travail/prompt-unifier/src/prompt_unifier/handlers/continue_handler.py` - Changed default base_path, added validation
+3. `/root/travail/prompt-unifier/src/prompt_unifier/cli/commands.py` - Added base path resolution logic
+4. `/root/travail/prompt-unifier/src/prompt_unifier/cli/main.py` - Added --base-path parameter
+5. `/root/travail/prompt-unifier/README.md` - Comprehensive documentation update
+6. `/root/travail/prompt-unifier/agent-os/product/roadmap.md` - Marked Item 7 complete
 
 ### Test Files Modified
-1. `/root/travail/prompt-manager/tests/config/test_manager.py` - Added handlers tests (7 tests)
-2. `/root/travail/prompt-manager/tests/models/test_git_config.py` - Added HandlerConfig tests (11 tests)
+1. `/root/travail/prompt-unifier/tests/config/test_manager.py` - Added handlers tests (7 tests)
+2. `/root/travail/prompt-unifier/tests/models/test_git_config.py` - Added HandlerConfig tests (11 tests)
 
 ---
 
 ## Appendix C: Coverage Details
 
 ### Modules with 100% Coverage
-- src/prompt_manager/utils/path_helpers.py (17 statements)
-- src/prompt_manager/models/git_config.py (13 statements)
-- src/prompt_manager/handlers/registry.py (18 statements)
-- src/prompt_manager/models/validation.py (65 statements)
+- src/prompt_unifier/utils/path_helpers.py (17 statements)
+- src/prompt_unifier/models/git_config.py (13 statements)
+- src/prompt_unifier/handlers/registry.py (18 statements)
+- src/prompt_unifier/models/validation.py (65 statements)
 
 ### Modules Below 95% Coverage
-1. **src/prompt_manager/handlers/continue_handler.py** (83%)
+1. **src/prompt_unifier/handlers/continue_handler.py** (83%)
    - Missing: Lines 63-67, 72-76, 80-81, 84-85, 92-97, 106-124 (error paths)
 
-2. **src/prompt_manager/cli/commands.py** (95%)
+2. **src/prompt_unifier/cli/commands.py** (95%)
    - Missing: Lines 113-118, 123, 145, 221, 692-698 (edge cases)
 
-3. **src/prompt_manager/git/service.py** (88%)
+3. **src/prompt_unifier/git/service.py** (88%)
    - Missing: Lines 68, 133-152, 158-163, 351-353 (not related to this feature)
 
-4. **src/prompt_manager/handlers/protocol.py** (64%)
+4. **src/prompt_unifier/handlers/protocol.py** (64%)
    - Missing: Protocol method definitions (expected for abstract protocols)
 
 ---

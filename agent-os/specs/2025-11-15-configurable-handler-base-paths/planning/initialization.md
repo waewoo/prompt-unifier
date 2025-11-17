@@ -19,7 +19,7 @@ The ContinueToolHandler currently has a base_path parameter in its __init__ meth
 
 ## Context
 
-This is for the prompt-manager project which manages AI prompts/rules deployment to various AI coding assistants. The Continue handler is already implemented and working, but lacks the ability to customize deployment location.
+This is for the prompt-unifier project which manages AI prompts/rules deployment to various AI coding assistants. The Continue handler is already implemented and working, but lacks the ability to customize deployment location.
 
 ## Product Context
 

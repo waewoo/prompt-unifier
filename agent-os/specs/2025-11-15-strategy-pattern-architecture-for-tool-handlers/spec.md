@@ -47,7 +47,7 @@ Prompt Manager is a Python CLI tool designed to centralize and standardize the m
 ### 4.5. Enabling/Disabling Tool Handlers
 
 *   Implement a mechanism for users to enable or disable specific tool handlers.
-*   This configuration will be managed via the existing `ConfigManager` and stored in the application's configuration file (`.prompt-manager/config.yaml`).
+*   This configuration will be managed via the existing `ConfigManager` and stored in the application's configuration file (`.prompt-unifier/config.yaml`).
 *   The application will only attempt to deploy prompts to active tool handlers.
 
 ## 5. Architecture and Design
@@ -61,15 +61,15 @@ Prompt Manager is a Python CLI tool designed to centralize and standardize the m
 
 ### 5.2. File Structure
 
-*   `ToolHandler` implementations will be placed in the `src/prompt_manager/handlers/` directory.
-*   A `src/prompt_manager/handlers/__init__.py` file will be used for handler registration and export.
-*   The `ConfigManager` (in `src/prompt_manager/config/manager.py`) will be updated to manage the enable/disable configuration of the handlers.
+*   `ToolHandler` implementations will be placed in the `src/prompt_unifier/handlers/` directory.
+*   A `src/prompt_unifier/handlers/__init__.py` file will be used for handler registration and export.
+*   The `ConfigManager` (in `src/prompt_unifier/config/manager.py`) will be updated to manage the enable/disable configuration of the handlers.
 
 ### 5.3. Reuse of Existing Code
 
-*   **`src/prompt_manager/git/service.py`**: Will serve as a model for the structure of service classes interacting with external systems.
-*   **`src/prompt_manager/config/manager.py`**: Will be extended to manage the configuration of tool handlers (enabled/disabled list).
-*   **`src/prompt_manager/handlers/`**: Dedicated directory for new `ToolHandler` implementations.
+*   **`src/prompt_unifier/git/service.py`**: Will serve as a model for the structure of service classes interacting with external systems.
+*   **`src/prompt_unifier/config/manager.py`**: Will be extended to manage the configuration of tool handlers (enabled/disabled list).
+*   **`src/prompt_unifier/handlers/`**: Dedicated directory for new `ToolHandler` implementations.
 
 ## 6. Technical Considerations
 

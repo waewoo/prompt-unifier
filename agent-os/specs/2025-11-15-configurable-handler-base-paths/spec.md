@@ -43,7 +43,7 @@ Enable flexible deployment locations for AI coding assistant handlers through pe
 - Read handlers config from config.yaml via ConfigManager
 - Apply environment variable expansion to configured base_path
 - Create handler instances with appropriate base_path: ContinueToolHandler(base_path=resolved_path)
-- Support per-project configuration through project's .prompt-manager/config.yaml
+- Support per-project configuration through project's .prompt-unifier/config.yaml
 
 **Auto-Create Deployment Paths**
 - Maintain existing auto-creation behavior in ContinueToolHandler.__init__
@@ -66,7 +66,7 @@ Enable flexible deployment locations for AI coding assistant handlers through pe
 repo_url: https://github.com/example/prompts.git
 last_sync_timestamp: '2024-11-15T10:30:00Z'
 last_sync_commit: abc1234
-storage_path: ~/.prompt-manager/storage
+storage_path: ~/.prompt-unifier/storage
 deploy_tags:
   - python
   - review
@@ -92,16 +92,16 @@ handlers:
 - Use Rich console for formatted, color-coded error messages
 
 **Support Per-Project Configuration**
-- Each project's .prompt-manager/config.yaml can specify different base paths
+- Each project's .prompt-unifier/config.yaml can specify different base paths
 - Same handler can deploy to different locations based on project context
 - Example workflow: Project A has continue.base_path=$PWD/.continue, Project B has continue.base_path=$HOME/.continue
-- Configuration is loaded from current working directory's .prompt-manager/config.yaml
+- Configuration is loaded from current working directory's .prompt-unifier/config.yaml
 
 ## Out of Scope
 - Custom/user-defined environment variables beyond $HOME, $USER, $PWD
 - Advanced shell expansion (globbing, command substitution, tilde expansion beyond ~)
 - Automatic handler installation or setup at non-existent paths
-- Global configuration file (only per-project .prompt-manager/config.yaml supported)
+- Global configuration file (only per-project .prompt-unifier/config.yaml supported)
 - Modifying handler protocol to require base_path parameter
 - Backward compatibility or migration (tool not yet in production)
 - Handler-specific CLI flags like --continue-base-path (single --base-path is sufficient)
@@ -111,27 +111,27 @@ handlers:
 
 ## Existing Code to Leverage
 
-**GitConfig Model Pattern (src/prompt_manager/models/git_config.py)**
+**GitConfig Model Pattern (src/prompt_unifier/models/git_config.py)**
 - Follow existing Pydantic model structure with Field descriptors
 - Use model_dump() for serialization to YAML
 - Include json_schema_extra with examples for documentation
 - Apply similar optional field pattern (field: Type | None = Field(default=None))
 - Reuse validation patterns already established
 
-**ConfigManager Load/Save Pattern (src/prompt_manager/config/manager.py)**
+**ConfigManager Load/Save Pattern (src/prompt_unifier/config/manager.py)**
 - Use existing load_config() and save_config() methods as template
 - Follow yaml.safe_load() and yaml.safe_dump() patterns
 - Apply same error handling approach (ValidationError, YAMLError)
 - Use console.print() for error messages with Rich formatting
 - Maintain existing config_path.parent.mkdir(parents=True, exist_ok=True) pattern
 
-**ContinueToolHandler Base Path Infrastructure (src/prompt_manager/handlers/continue_handler.py)**
+**ContinueToolHandler Base Path Infrastructure (src/prompt_unifier/handlers/continue_handler.py)**
 - Leverage existing base_path parameter in __init__ (line 20)
 - Modify default logic at line 22: Change Path.home() to Path.cwd()
 - Reuse existing directory creation pattern: self.prompts_dir.mkdir(parents=True, exist_ok=True)
 - Maintain current backup and deployment logic unchanged
 
-**Deploy Command Handler Registration (src/prompt_manager/cli/commands.py)**
+**Deploy Command Handler Registration (src/prompt_unifier/cli/commands.py)**
 - Modify registry.register(ContinueToolHandler()) at line 628
 - Pass base_path parameter: registry.register(ContinueToolHandler(base_path=resolved_path))
 - Reuse existing config loading pattern from lines 609-613

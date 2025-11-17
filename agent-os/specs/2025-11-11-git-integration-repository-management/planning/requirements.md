@@ -5,32 +5,32 @@ Implement init command to create centralized prompt repository with .gitignore a
 
 ## Application Context & Architecture
 
-The prompt-manager application follows this workflow:
+The prompt-unifier application follows this workflow:
 1. A central Git repository stores prompts/rules in a standardized format
-2. Application projects (any project in development) use prompt-manager to sync prompts from the central repository
+2. Application projects (any project in development) use prompt-unifier to sync prompts from the central repository
 3. Synced prompts are then transformed/deployed to tool-specific formats (Continue, Cursor, etc.)
 
 This means:
-- Each application project has its own `.prompt-manager/` directory (tracked in git)
-- The `.prompt-manager/config.yaml` file stores the central repository URL to sync from
+- Each application project has its own `.prompt-unifier/` directory (tracked in git)
+- The `.prompt-unifier/config.yaml` file stores the central repository URL to sync from
 - Synced prompts are placed in the `prompts/` directory structure within the application project
 
 ## Requirements Discussion
 
 ### First Round Questions
 
-**Q1:** I assume the `init` command should create a `.prompt-manager/` directory in the current working directory with a `config.yaml` file to store the remote repository URL and sync settings. Is that correct, or should it be a different directory structure?
+**Q1:** I assume the `init` command should create a `.prompt-unifier/` directory in the current working directory with a `config.yaml` file to store the remote repository URL and sync settings. Is that correct, or should it be a different directory structure?
 
-**Answer:** Yes, `.prompt-manager/` directory with `config.yaml` is correct.
+**Answer:** Yes, `.prompt-unifier/` directory with `config.yaml` is correct.
 
-**Q2:** For the sync command, I'm thinking it should work like: `prompt-manager sync --repo <git-url>` for the first sync, then subsequent syncs can just be `prompt-manager sync` (reading the URL from config). Should we support both approaches?
+**Q2:** For the sync command, I'm thinking it should work like: `prompt-unifier sync --repo <git-url>` for the first sync, then subsequent syncs can just be `prompt-unifier sync` (reading the URL from config). Should we support both approaches?
 
 **Answer:** Yes, this approach is correct.
 
 **Q3:** When syncing prompts, should the command:
 - (a) Clone the entire repository to a temporary location and copy only the prompts/ directory content
 - (b) Use sparse checkout to fetch only the prompts/ directory
-- (c) Clone the entire repository into `.prompt-manager/repo/`
+- (c) Clone the entire repository into `.prompt-unifier/repo/`
 
 **Answer:** Option (a) - Clone to temp location and copy only prompts/ directory content.
 
@@ -41,13 +41,13 @@ This means:
 
 **Answer:** Option (a) - Auto-resolve by always taking remote changes (overwrite local). This is acceptable because prompts should be version-controlled in the central repo.
 
-**Q5:** Should the `.gitignore` file created by init specifically exclude any prompt-manager temporary files or sync artifacts?
+**Q5:** Should the `.gitignore` file created by init specifically exclude any prompt-unifier temporary files or sync artifacts?
 
-**Answer:** The init command should create a basic `.gitignore` template, but NOT ignore `.prompt-manager/` directory. The `.prompt-manager/` directory must be tracked in the application's git repository.
+**Answer:** The init command should create a basic `.gitignore` template, but NOT ignore `.prompt-unifier/` directory. The `.prompt-unifier/` directory must be tracked in the application's git repository.
 
 **Q6:** For the repository structure created by init, should it also create the prompts/ directory structure, or just the configuration directory?
 
-**Answer:** Yes, create both `.prompt-manager/` for configuration and a basic `prompts/` directory structure as a template.
+**Answer:** Yes, create both `.prompt-unifier/` for configuration and a basic `prompts/` directory structure as a template.
 
 **Q7:** Should there be a status command to show the current sync state (last synced commit, any pending updates from remote)?
 
@@ -60,24 +60,24 @@ This means:
 ### Existing Code to Reference
 
 **Similar Features Identified:**
-- `lib/prompt_manager.rb` - Main entry point with command structure pattern
-- `lib/prompt_manager/cli.rb` - CLI command handling using Thor
-- `lib/prompt_manager/template_transformer.rb` - File operations and directory structure handling
+- `lib/prompt_unifier.rb` - Main entry point with command structure pattern
+- `lib/prompt_unifier/cli.rb` - CLI command handling using Thor
+- `lib/prompt_unifier/template_transformer.rb` - File operations and directory structure handling
 - These provide patterns for CLI structure, file operations, and configuration management
 
 ### Follow-up Questions
 
 **Follow-up 1:** Where exactly should the config directory be created? In the current working directory of any application project, or in a specific global location?
 
-**Answer:** In the current working directory, which corresponds to any application project under development. The `.prompt-manager/` directory is specific to each application project.
+**Answer:** In the current working directory, which corresponds to any application project under development. The `.prompt-unifier/` directory is specific to each application project.
 
-**Follow-up 2:** Is the config directory the same as `.prompt-manager/`, or are these two separate concepts?
+**Follow-up 2:** Is the config directory the same as `.prompt-unifier/`, or are these two separate concepts?
 
-**Answer:** They are the same - `.prompt-manager/` is the config directory.
+**Answer:** They are the same - `.prompt-unifier/` is the config directory.
 
-**Follow-up 3:** Should the `.gitignore` file ignore the `.prompt-manager/` directory?
+**Follow-up 3:** Should the `.gitignore` file ignore the `.prompt-unifier/` directory?
 
-**Answer:** NO. The `.prompt-manager/` directory must be tracked in the application project's git repository. This directory contains the configuration that other developers need.
+**Answer:** NO. The `.prompt-unifier/` directory must be tracked in the application project's git repository. This directory contains the configuration that other developers need.
 
 **Follow-up 4:** If someone runs `sync` without running `init` first, should the command:
 - (a) Auto-run init automatically
@@ -104,18 +104,18 @@ N/A - This is a CLI tool feature with no visual interface.
 ### Functional Requirements
 
 **Init Command:**
-- Create `.prompt-manager/` directory in current working directory (application project root)
-- Generate `config.yaml` file inside `.prompt-manager/` to store:
+- Create `.prompt-unifier/` directory in current working directory (application project root)
+- Generate `config.yaml` file inside `.prompt-unifier/` to store:
   - Remote repository URL
   - Last sync timestamp
   - Last synced commit hash
 - Create basic `prompts/` directory structure as a template
-- Create a basic `.gitignore` template file (but do NOT ignore `.prompt-manager/` itself)
-- `.prompt-manager/` directory should be tracked in version control
+- Create a basic `.gitignore` template file (but do NOT ignore `.prompt-unifier/` itself)
+- `.prompt-unifier/` directory should be tracked in version control
 
 **Sync Command:**
 - Accept optional `--repo <git-url>` argument
-- On first sync (or when --repo provided): Store repository URL in `.prompt-manager/config.yaml`
+- On first sync (or when --repo provided): Store repository URL in `.prompt-unifier/config.yaml`
 - On subsequent syncs: Read repository URL from config (unless --repo override provided)
 - Clone repository to temporary location
 - Extract only `prompts/` directory content from the cloned repo
@@ -123,7 +123,7 @@ N/A - This is a CLI tool feature with no visual interface.
 - Auto-resolve conflicts by taking remote changes (overwrite local)
 - Update `config.yaml` with sync timestamp and commit hash
 - Clean up temporary cloned repository
-- Validate that init has been run before allowing sync (error if `.prompt-manager/` doesn't exist)
+- Validate that init has been run before allowing sync (error if `.prompt-unifier/` doesn't exist)
 
 **Status Command:**
 - Show current repository URL being synced from
@@ -143,14 +143,14 @@ N/A - This is a CLI tool feature with no visual interface.
 ### Reusability Opportunities
 
 **Components to Reference:**
-- `lib/prompt_manager/cli.rb` - Use Thor command structure pattern for new commands
-- `lib/prompt_manager/template_transformer.rb` - File operations, directory copying, template handling patterns
+- `lib/prompt_unifier/cli.rb` - Use Thor command structure pattern for new commands
+- `lib/prompt_unifier/template_transformer.rb` - File operations, directory copying, template handling patterns
 - General Ruby file I/O patterns from existing codebase
 - YAML configuration handling (if exists elsewhere in codebase)
 
 **New Components to Create:**
 - Git operations wrapper/service object
-- Config manager for `.prompt-manager/config.yaml`
+- Config manager for `.prompt-unifier/config.yaml`
 - Sync orchestrator to coordinate clone, extract, copy operations
 - Status checker to compare local vs remote state
 
@@ -160,7 +160,7 @@ N/A - This is a CLI tool feature with no visual interface.
 - `init` command implementation
 - `sync` command implementation (pull-only from remote)
 - `status` command implementation
-- Configuration management (`.prompt-manager/config.yaml`)
+- Configuration management (`.prompt-unifier/config.yaml`)
 - Git operations: clone, pull, status check
 - Error handling for Git and network failures
 - Automatic conflict resolution (always take remote)
@@ -181,14 +181,14 @@ N/A - This is a CLI tool feature with no visual interface.
 ### Technical Considerations
 
 **Integration Points:**
-- Must integrate with existing Thor CLI structure in `lib/prompt_manager/cli.rb`
-- Should follow file operation patterns from `lib/prompt_manager/template_transformer.rb`
+- Must integrate with existing Thor CLI structure in `lib/prompt_unifier/cli.rb`
+- Should follow file operation patterns from `lib/prompt_unifier/template_transformer.rb`
 - Config file should be YAML format for consistency with Ruby ecosystem
 - Git operations should use Ruby's `git` gem or shell commands via backticks/system calls
 
 **Existing System Constraints:**
 - Application is Ruby-based using Thor for CLI
-- Current directory structure uses `lib/prompt_manager/` for modules
+- Current directory structure uses `lib/prompt_unifier/` for modules
 - Must maintain compatibility with existing prompt transformation features
 
 **Technology Preferences:**
@@ -203,8 +203,8 @@ N/A - This is a CLI tool feature with no visual interface.
 - Maintain consistent error handling style with existing commands
 
 **Critical Design Decisions:**
-1. `.prompt-manager/` directory must be tracked in version control (not gitignored)
-2. Each application project has its own `.prompt-manager/` config directory
+1. `.prompt-unifier/` directory must be tracked in version control (not gitignored)
+2. Each application project has its own `.prompt-unifier/` config directory
 3. Sync is always unidirectional: central repo → application project (never reverse)
 4. Conflicts are always resolved in favor of remote (central repo is source of truth)
 5. Init must be run before sync (no automatic init)

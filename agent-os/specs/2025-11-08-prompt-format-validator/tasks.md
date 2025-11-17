@@ -23,7 +23,7 @@
     - Test flat structure enforcement (no nested dicts)
     - Test field type validation (string vs list)
     - Test model serialization to dict
-  - [x] 1.2 Create PromptFrontmatter Pydantic model in `src/prompt_manager/models/prompt.py`
+  - [x] 1.2 Create PromptFrontmatter Pydantic model in `src/prompt_unifier/models/prompt.py`
     - Required fields: name (str), description (str)
     - Optional fields: version (str | None), tags (list[str] | None), author (str | None)
     - Use `field_validator` for non-empty string validation on name/description
@@ -31,7 +31,7 @@
     - Use `model_validator(mode='after')` to reject prohibited fields (tools)
     - Add detailed error messages with field names
     - Use Pydantic v2 API (Field, field_validator, model_validator)
-  - [x] 1.3 Create error/warning classification enums in `src/prompt_manager/models/validation.py`
+  - [x] 1.3 Create error/warning classification enums in `src/prompt_unifier/models/validation.py`
     - ValidationSeverity enum: ERROR, WARNING
     - ErrorCode enum with 12 error types:
       - INVALID_ENCODING, MISSING_REQUIRED_FIELD, INVALID_YAML
@@ -40,11 +40,11 @@
       - INVALID_SEMVER, PROHIBITED_FIELD, INVALID_FILE_EXTENSION
     - WarningCode enum with 3 warning types:
       - MISSING_OPTIONAL_FIELD, EMPTY_TAGS_LIST, MISSING_AUTHOR
-  - [x] 1.4 Create ValidationIssue Pydantic model in `src/prompt_manager/models/validation.py`
+  - [x] 1.4 Create ValidationIssue Pydantic model in `src/prompt_unifier/models/validation.py`
     - Fields: line (int | None), severity (ValidationSeverity), code (str)
     - Fields: message (str), excerpt (str | None), suggestion (str)
     - Enable JSON serialization via model_dump()
-  - [x] 1.5 Create ValidationResult Pydantic model in `src/prompt_manager/models/validation.py`
+  - [x] 1.5 Create ValidationResult Pydantic model in `src/prompt_unifier/models/validation.py`
     - Fields: file (Path), status (Literal["passed", "failed"])
     - Fields: errors (list[ValidationIssue]), warnings (list[ValidationIssue])
     - Computed property: is_valid (no errors)
@@ -78,7 +78,7 @@
     - Test separator with trailing whitespace error
     - Test empty content after separator error
     - Test valid content after separator
-  - [x] 2.2 Create SeparatorValidator class in `src/prompt_manager/core/separator.py`
+  - [x] 2.2 Create SeparatorValidator class in `src/prompt_unifier/core/separator.py`
     - Method: validate_separator(file_content: str) -> tuple[str, str, list[ValidationIssue]]
     - Return: (frontmatter_text, content_text, issues)
     - Detect exactly one `>>>` on its own line using line-by-line check
@@ -94,7 +94,7 @@
     - Test file not found error handling
     - Test permission denied error handling (optional, may be hard to test)
     - Test empty file error handling
-  - [x] 2.4 Create EncodingValidator class in `src/prompt_manager/core/encoding.py`
+  - [x] 2.4 Create EncodingValidator class in `src/prompt_unifier/core/encoding.py`
     - Method: validate_encoding(file_path: Path) -> tuple[str | None, list[ValidationIssue]]
     - Return: (file_content or None, issues)
     - Read file with strict UTF-8 encoding (errors='strict')
@@ -109,7 +109,7 @@
     - Test YAML with list values (tags field)
     - Test YAML parsing with line number tracking
     - Test YAML with prohibited fields detection preparation
-  - [x] 2.6 Create YAMLParser class in `src/prompt_manager/core/yaml_parser.py`
+  - [x] 2.6 Create YAMLParser class in `src/prompt_unifier/core/yaml_parser.py`
     - Method: parse_yaml(yaml_text: str) -> tuple[dict | None, list[ValidationIssue]]
     - Return: (parsed_dict or None, issues)
     - Use `yaml.safe_load()` to parse YAML
@@ -147,7 +147,7 @@
     - Test missing optional fields generate warnings
     - Test empty tags list generates warning
     - Test multiple errors collected (not stopping at first)
-  - [x] 3.2 Create PromptValidator class in `src/prompt_manager/core/validator.py`
+  - [x] 3.2 Create PromptValidator class in `src/prompt_unifier/core/validator.py`
     - Method: validate_file(file_path: Path) -> ValidationResult
     - Orchestrate full validation pipeline:
       1. EncodingValidator.validate_encoding()
@@ -207,7 +207,7 @@
     - Test directory not found error handling
     - Test empty directory returns empty list
     - Test absolute vs relative path resolution
-  - [x] 4.2 Create FileScanner class in `src/prompt_manager/utils/file_scanner.py`
+  - [x] 4.2 Create FileScanner class in `src/prompt_unifier/utils/file_scanner.py`
     - Method: scan_directory(directory: Path) -> list[Path]
     - Use pathlib.Path.rglob("*.md") for recursive scanning
     - Resolve relative paths to absolute paths
@@ -223,7 +223,7 @@
     - Test validation continues after file errors
     - Test mixed results (some pass, some fail)
     - Test all files pass scenario
-  - [x] 4.4 Create BatchValidator class in `src/prompt_manager/core/batch_validator.py`
+  - [x] 4.4 Create BatchValidator class in `src/prompt_unifier/core/batch_validator.py`
     - Method: validate_directory(directory: Path) -> ValidationSummary
     - Use FileScanner to discover .md files
     - Validate each file with PromptValidator.validate_file()
@@ -233,7 +233,7 @@
       - total_files, passed_files, failed_files
       - total_errors, total_warnings
       - success (bool: True if no errors across all files)
-  - [x] 4.5 Create ValidationSummary Pydantic model in `src/prompt_manager/models/validation.py`
+  - [x] 4.5 Create ValidationSummary Pydantic model in `src/prompt_unifier/models/validation.py`
     - Fields: total_files (int), passed (int), failed (int)
     - Fields: error_count (int), warning_count (int), success (bool)
     - Field: results (list[ValidationResult])
@@ -267,7 +267,7 @@
     - Test warnings displayed in yellow
     - Test line numbers formatted correctly
     - Test code excerpts indented properly
-  - [ ] 5.2 Create RichFormatter class in `src/prompt_manager/output/rich_formatter.py`
+  - [ ] 5.2 Create RichFormatter class in `src/prompt_unifier/output/rich_formatter.py`
     - Method: format_summary(summary: ValidationSummary, directory: Path) -> None
     - Use Rich Console for output
     - Display header with directory path and separator line
@@ -286,7 +286,7 @@
     - Test excerpt at file end (last 3 lines)
     - Test excerpt highlighting with Rich Syntax
     - Test excerpt with line numbers
-  - [ ] 5.4 Create ExcerptFormatter utility in `src/prompt_manager/utils/excerpt.py`
+  - [ ] 5.4 Create ExcerptFormatter utility in `src/prompt_unifier/utils/excerpt.py`
     - Method: extract_excerpt(file_content: str, line_number: int, context_lines: int = 1) -> str
     - Extract line_number ± context_lines from file content
     - Handle edge cases (start/end of file)
@@ -332,7 +332,7 @@
     - Test warning object structure
     - Test JSON serialization (valid JSON output)
     - Test pretty-printing (indentation)
-  - [ ] 6.2 Create JSONFormatter class in `src/prompt_manager/output/json_formatter.py`
+  - [ ] 6.2 Create JSONFormatter class in `src/prompt_unifier/output/json_formatter.py`
     - Method: format_summary(summary: ValidationSummary, directory: Path) -> str
     - Convert ValidationSummary to JSON structure:
       - summary: {total_files, passed, failed, error_count, warning_count, success}
@@ -349,7 +349,7 @@
     - Test --verbose flag shows progress
     - Test exit code 0 when validation passes (warnings OK)
     - Test exit code 1 when validation fails (errors present)
-  - [ ] 6.4 Create validate command in `src/prompt_manager/cli/commands.py`
+  - [ ] 6.4 Create validate command in `src/prompt_unifier/cli/commands.py`
     - Use Typer for CLI framework
     - Command signature: validate(directory: Path, json: bool = False, verbose: bool = False)
     - Required argument: directory (Path to validate)
@@ -361,7 +361,7 @@
       3. If --json: use JSONFormatter, print to stdout
       4. Else: use RichFormatter, display to console
       5. Exit with code 1 if summary.success == False, else 0
-  - [ ] 6.5 Add command to main CLI app in `src/prompt_manager/cli/main.py`
+  - [ ] 6.5 Add command to main CLI app in `src/prompt_unifier/cli/main.py`
     - Import validate command
     - Register with Typer app
     - Ensure command appears in --help output
@@ -404,7 +404,7 @@
     - Group 5: 8-12 tests (Rich output)
     - Group 6: 12-18 tests (JSON/CLI)
   - [ ] 7.2 Analyze test coverage gaps for THIS feature only
-    - Run coverage report: `pytest --cov=src/prompt_manager --cov-report=term-missing`
+    - Run coverage report: `pytest --cov=src/prompt_unifier --cov-report=term-missing`
     - Identify uncovered critical paths:
       - Edge cases in separator detection
       - Error recovery scenarios
@@ -448,12 +448,12 @@
     - Test with random UTF-8 strings for robustness
     - ONLY if coverage still below 95% after 7.4
   - [ ] 7.6 Run comprehensive test suite
-    - Execute: `pytest tests/ -v --cov=src/prompt_manager --cov-report=term-missing --cov-report=html`
+    - Execute: `pytest tests/ -v --cov=src/prompt_unifier --cov-report=term-missing --cov-report=html`
     - Verify coverage >= 95% (project requirement)
     - Verify all critical paths covered
     - Expected total tests: approximately 39-62 tests maximum
   - [ ] 7.7 Verify type checking and linting
-    - Run mypy: `mypy src/prompt_manager/`
+    - Run mypy: `mypy src/prompt_unifier/`
     - Verify no type errors with strict mode
     - Run ruff: `ruff check src/ tests/`
     - Verify no linting errors
@@ -666,7 +666,7 @@ Batch Validator (Group 4) ← uses PromptValidator
 - [ ] No known bugs in validation logic
 
 ### Integration Readiness
-- [ ] CLI command available via `prompt-manager validate`
+- [ ] CLI command available via `prompt-unifier validate`
 - [ ] Exit codes work correctly for CI/CD
 - [ ] JSON output parseable by automated tools
 - [ ] Error messages actionable for developers
@@ -700,27 +700,27 @@ Batch Validator (Group 4) ← uses PromptValidator
 pytest tests/models/test_prompt.py -v
 
 # Run tests with coverage for specific module
-pytest tests/core/ --cov=src/prompt_manager/core --cov-report=term-missing
+pytest tests/core/ --cov=src/prompt_unifier/core --cov-report=term-missing
 
 # Type check specific file
-mypy src/prompt_manager/models/prompt.py
+mypy src/prompt_unifier/models/prompt.py
 
 # Lint specific directory
-ruff check src/prompt_manager/core/
+ruff check src/prompt_unifier/core/
 
 # Format code
-ruff format src/prompt_manager/
+ruff format src/prompt_unifier/
 
 # Run all quality checks
 make test lint typecheck
 ```
 
 ### File Naming Conventions
-- Models: `src/prompt_manager/models/*.py`
-- Core logic: `src/prompt_manager/core/*.py`
-- Utilities: `src/prompt_manager/utils/*.py`
-- Output formatters: `src/prompt_manager/output/*.py`
-- CLI: `src/prompt_manager/cli/*.py`
+- Models: `src/prompt_unifier/models/*.py`
+- Core logic: `src/prompt_unifier/core/*.py`
+- Utilities: `src/prompt_unifier/utils/*.py`
+- Output formatters: `src/prompt_unifier/output/*.py`
+- CLI: `src/prompt_unifier/cli/*.py`
 - Tests: `tests/*/test_*.py` (mirror source structure)
 
 ---
@@ -728,7 +728,7 @@ make test lint typecheck
 ## Appendix: Example Validation Flow
 
 ```
-1. User runs: prompt-manager validate ./prompts
+1. User runs: prompt-unifier validate ./prompts
 
 2. CLI command (Group 6) receives args
    ↓

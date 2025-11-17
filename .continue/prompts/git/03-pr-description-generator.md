@@ -12,7 +12,7 @@ tags:
 - mr
 - documentation
 - generator
-author: prompt-manager
+author: prompt-unifier
 language: markdown
 ---
 You are an expert software engineer and technical writer, skilled at communicating complex changes clearly and concisely. Your mission is to generate a well-structured Pull Request (PR) or Merge Request (MR) description.

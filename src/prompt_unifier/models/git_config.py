@@ -61,7 +61,7 @@ class GitConfig(BaseModel):
         repo_url: URL of the Git repository to sync from (None before first sync)
         last_sync_timestamp: ISO 8601 timestamp of last sync (None before first sync)
         last_sync_commit: Commit hash (SHA) from last sync (None before first sync)
-        storage_path: Path to centralized storage directory (defaults to ~/.prompt-manager/storage)
+        storage_path: Path to centralized storage directory (defaults to ~/.prompt-unifier/storage)
         deploy_tags: List of tags to filter prompts and rules for deployment (None to deploy all)
         target_handlers: List of target handlers for deployment (None to use all registered)
         handlers: Per-handler configuration including base paths
@@ -118,7 +118,7 @@ class GitConfig(BaseModel):
         default=None,
         description=(
             "Path to centralized storage directory for prompts and rules "
-            "(defaults to ~/.prompt-manager/storage)"
+            "(defaults to ~/.prompt-unifier/storage)"
         ),
     )
 
@@ -150,7 +150,7 @@ class GitConfig(BaseModel):
                     "repo_url": "https://github.com/example/prompts.git",
                     "last_sync_timestamp": "2024-11-11T14:30:00Z",
                     "last_sync_commit": "abc1234",
-                    "storage_path": "/home/user/.prompt-manager/storage",
+                    "storage_path": "/home/user/.prompt-unifier/storage",
                     "deploy_tags": ["python", "review"],
                     "target_handlers": ["continue", "cursor"],
                 },
@@ -158,7 +158,7 @@ class GitConfig(BaseModel):
                     "repo_url": "https://github.com/example/prompts.git",
                     "last_sync_timestamp": "2024-11-15T10:30:00Z",
                     "last_sync_commit": "def5678",
-                    "storage_path": "~/.prompt-manager/storage",
+                    "storage_path": "~/.prompt-unifier/storage",
                     "deploy_tags": ["python", "review"],
                     "target_handlers": ["continue"],
                     "handlers": {

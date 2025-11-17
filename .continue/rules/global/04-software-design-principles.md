@@ -17,7 +17,7 @@ tags:
 - architecture
 - standards
 - global
-author: prompt-manager
+author: prompt-unifier
 language: en
 ---
 # Software Design Principles

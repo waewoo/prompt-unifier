@@ -13,7 +13,7 @@ Successfully implemented rules/context files support with path-based type detect
 ### Core Features Implemented
 
 #### 1. Path-Based Type Detection ✅
-**Location:** `src/prompt_manager/core/content_parser.py`
+**Location:** `src/prompt_unifier/core/content_parser.py`
 
 - Files in `rules/` directory automatically detected as rules
 - Files in `prompts/` directory automatically detected as prompts
@@ -35,7 +35,7 @@ else:
 ```
 
 #### 2. CLI Validation Filtering ✅
-**Location:** `src/prompt_manager/cli/commands.py`, `src/prompt_manager/cli/main.py`
+**Location:** `src/prompt_unifier/cli/commands.py`, `src/prompt_unifier/cli/main.py`
 
 - Added `--type` / `-t` flag to `validate` command
 - Options: `all` (default), `prompts`, `rules`
@@ -45,13 +45,13 @@ else:
 **Usage:**
 ```bash
 # Validate everything (default)
-prompt-manager validate
+prompt-unifier validate
 
 # Validate only prompts
-prompt-manager validate --type prompts
+prompt-unifier validate --type prompts
 
 # Validate only rules
-prompt-manager validate --type rules
+prompt-unifier validate --type rules
 ```
 
 #### 3. Enhanced Testing ✅
@@ -92,7 +92,7 @@ poetry run pytest -v
 
 ### Code Coverage
 ```bash
-poetry run pytest --cov=src/prompt_manager --cov-report=term-missing
+poetry run pytest --cov=src/prompt_unifier --cov-report=term-missing
 ```
 
 **Results:**
@@ -125,9 +125,9 @@ The implementation maintains full backward compatibility:
 ## Files Modified
 
 ### Core Implementation
-- `src/prompt_manager/core/content_parser.py` - Path-based detection
-- `src/prompt_manager/cli/commands.py` - Content type filtering
-- `src/prompt_manager/cli/main.py` - CLI parameter
+- `src/prompt_unifier/core/content_parser.py` - Path-based detection
+- `src/prompt_unifier/cli/commands.py` - Content type filtering
+- `src/prompt_unifier/cli/main.py` - CLI parameter
 
 ### Tests
 - `tests/core/test_content_parser.py` - Parser tests updated
@@ -148,7 +148,7 @@ The implementation maintains full backward compatibility:
 
 ### Actual Usage (Storage Directory)
 ```bash
-time prompt-manager validate
+time prompt-unifier validate
 ```
 - ✅ Validation time: < 0.5s for typical repositories
 - ✅ Memory usage: Minimal (~50MB)

@@ -77,10 +77,10 @@ No visual assets provided.
 ## Existing Code to Leverage
 
 **Project Structure from 2025-11-08-python-project-scaffold**
-- Use existing `src/prompt_manager/models/` directory for Pydantic models
-- Use existing `src/prompt_manager/core/` directory for validation business logic
-- Use existing `src/prompt_manager/cli/` directory for Typer command implementation
-- Use existing `src/prompt_manager/utils/` directory for file scanning and parsing utilities
+- Use existing `src/prompt_unifier/models/` directory for Pydantic models
+- Use existing `src/prompt_unifier/core/` directory for validation business logic
+- Use existing `src/prompt_unifier/cli/` directory for Typer command implementation
+- Use existing `src/prompt_unifier/utils/` directory for file scanning and parsing utilities
 - Follow established testing pattern with `tests/` directory mirroring source structure
 
 **pyproject.toml Configuration**

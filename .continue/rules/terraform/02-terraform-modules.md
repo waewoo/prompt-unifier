@@ -13,7 +13,7 @@ tags:
 - standards
 - reusability
 - versioning
-author: prompt-manager
+author: prompt-unifier
 language: hcl
 ---
 # Terraform Module Standards

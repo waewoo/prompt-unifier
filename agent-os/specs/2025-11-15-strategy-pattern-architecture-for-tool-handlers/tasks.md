@@ -14,9 +14,9 @@ Total Tasks: 3
   - [x] 1.1 Write 2-4 focused tests for the `ToolHandler` protocol and registry.
     - Test that the registry can register and retrieve handlers.
     - Test that the protocol enforces the required methods.
-  - [x] 1.2 Create the `ToolHandler` protocol in `src/prompt_manager/handlers/protocol.py`.
+  - [x] 1.2 Create the `ToolHandler` protocol in `src/prompt_unifier/handlers/protocol.py`.
     - Define the methods: `deploy(prompt: Prompt) -> None`, `get_status() -> str`, and `get_name() -> str`.
-  - [x] 1.3 Create the handler registry in `src/prompt_manager/handlers/registry.py`.
+  - [x] 1.3 Create the handler registry in `src/prompt_unifier/handlers/registry.py`.
     - Implement a dictionary-based registry to store and retrieve handlers by name.
   - [x] 1.4 Ensure the core architecture tests pass.
     - Run ONLY the tests written in 1.1.
@@ -34,7 +34,7 @@ Total Tasks: 3
 - [x] 2.0 Complete the configuration management
   - [x] 2.1 Write 2-4 focused tests for the configuration management.
     - Test that the `ConfigManager` can load and save the list of enabled/disabled handlers.
-  - [x] 2.2 Extend the `ConfigManager` in `src/prompt_manager/config/manager.py`.
+  - [x] 2.2 Extend the `ConfigManager` in `src/prompt_unifier/config/manager.py`.
     - Add a field to the `GitConfig` model to store the list of enabled handlers.
     - Implement methods to get and set the list of enabled handlers.
   - [x] 2.3 Ensure the configuration management tests pass.

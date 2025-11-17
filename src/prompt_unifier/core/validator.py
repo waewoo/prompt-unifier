@@ -10,11 +10,11 @@ from typing import Any, Literal
 from pydantic import ValidationError
 from pydantic_core import ErrorDetails
 
-from prompt_manager.core.encoding import EncodingValidator
-from prompt_manager.core.separator import SeparatorValidator
-from prompt_manager.core.yaml_parser import YAMLParser
-from prompt_manager.models.prompt import PromptFrontmatter
-from prompt_manager.models.validation import (
+from prompt_unifier.core.encoding import EncodingValidator
+from prompt_unifier.core.separator import SeparatorValidator
+from prompt_unifier.core.yaml_parser import YAMLParser
+from prompt_unifier.models.prompt import PromptFrontmatter
+from prompt_unifier.models.validation import (
     ErrorCode,
     ValidationIssue,
     ValidationResult,

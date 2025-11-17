@@ -36,14 +36,14 @@ Please be respectful and constructive in all interactions. We aim to maintain a 
 2. Clone your fork locally:
 
 ```bash
-git clone https://github.com/YOUR_USERNAME/prompt-manager.git
-cd prompt-manager
+git clone https://github.com/YOUR_USERNAME/prompt-unifier.git
+cd prompt-unifier
 ```
 
 3. Add the upstream remote:
 
 ```bash
-git remote add upstream https://github.com/ORIGINAL_OWNER/prompt-manager.git
+git remote add upstream https://github.com/ORIGINAL_OWNER/prompt-unifier.git
 ```
 
 ---
@@ -173,7 +173,7 @@ All code must pass type checking without errors.
 ### Code Organization
 
 ```
-src/prompt_manager/
+src/prompt_unifier/
 ├── cli/           # CLI commands and main entry point
 ├── core/          # Core validation and parsing logic
 ├── handlers/      # Tool handler implementations
@@ -248,7 +248,7 @@ poetry run pytest tests/handlers/test_continue_handler.py
 poetry run pytest -v
 
 # Run with coverage report
-poetry run pytest --cov=src/prompt_manager --cov-report=html
+poetry run pytest --cov=src/prompt_unifier --cov-report=html
 ```
 
 ### Test Structure
@@ -357,15 +357,15 @@ To add support for a new AI coding assistant:
 
 ### 1. Create Handler Class
 
-Create a new file in `src/prompt_manager/handlers/`:
+Create a new file in `src/prompt_unifier/handlers/`:
 
 ```python
-# src/prompt_manager/handlers/cursor_handler.py
+# src/prompt_unifier/handlers/cursor_handler.py
 
 from pathlib import Path
-from prompt_manager.handlers.protocol import ToolHandler
-from prompt_manager.models.prompt import Prompt
-from prompt_manager.models.rule import Rule
+from prompt_unifier.handlers.protocol import ToolHandler
+from prompt_unifier.models.prompt import Prompt
+from prompt_unifier.models.rule import Rule
 
 
 class CursorToolHandler(ToolHandler):
@@ -393,11 +393,11 @@ class CursorToolHandler(ToolHandler):
 
 ### 2. Register Handler
 
-Add to `src/prompt_manager/handlers/__init__.py`:
+Add to `src/prompt_unifier/handlers/__init__.py`:
 
 ```python
-from prompt_manager.handlers.cursor_handler import CursorToolHandler
-from prompt_manager.handlers.registry import register_handler
+from prompt_unifier.handlers.cursor_handler import CursorToolHandler
+from prompt_unifier.handlers.registry import register_handler
 
 register_handler(CursorToolHandler())
 ```
@@ -409,7 +409,7 @@ Create `tests/handlers/test_cursor_handler.py`:
 ```python
 import pytest
 from pathlib import Path
-from prompt_manager.handlers.cursor_handler import CursorToolHandler
+from prompt_unifier.handlers.cursor_handler import CursorToolHandler
 
 
 def test_cursor_handler_deploys_prompt(tmp_path: Path) -> None:

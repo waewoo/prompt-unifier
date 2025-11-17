@@ -2,9 +2,9 @@ from typing import Any
 
 import pytest
 
-from prompt_manager.handlers.protocol import ToolHandler
-from prompt_manager.handlers.registry import ToolHandlerRegistry
-from prompt_manager.models.prompt import PromptFrontmatter
+from prompt_unifier.handlers.protocol import ToolHandler
+from prompt_unifier.handlers.registry import ToolHandlerRegistry
+from prompt_unifier.models.prompt import PromptFrontmatter
 
 
 # Implement a dummy Prompt for testing
@@ -30,8 +30,8 @@ class MockToolHandler:
         source_filename: str | None = None,
     ) -> None:
         """Mock deploy method that accepts the correct signature."""
-        from prompt_manager.models.prompt import PromptFrontmatter
-        from prompt_manager.models.rule import RuleFrontmatter
+        from prompt_unifier.models.prompt import PromptFrontmatter
+        from prompt_unifier.models.rule import RuleFrontmatter
 
         # Create dummy content based on type
         if content_type == "prompt":

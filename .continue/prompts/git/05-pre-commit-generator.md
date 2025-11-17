@@ -12,7 +12,7 @@ tags:
 - quality
 - automation
 - generator
-author: prompt-manager
+author: prompt-unifier
 language: yaml
 ---
 You are an expert in code quality automation and Git workflows. Your mission is to generate a `.pre-commit-config.yaml` file that sets up pre-commit hooks for a project, based on its technology stack.

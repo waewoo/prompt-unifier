@@ -39,7 +39,7 @@ Execute this checklist IN ORDER when developer asks to add a feature:
 
 # Project Overview
 
-`prompt-manager` is a Python CLI tool for managing AI prompt templates and coding rules using YAML frontmatter, with version control, validation, and deployment support.
+`prompt-unifier` is a Python CLI tool for managing AI prompt templates and coding rules using YAML frontmatter, with version control, validation, and deployment support.
 
 ## Tech Stack
 
@@ -61,8 +61,8 @@ Execute this checklist IN ORDER when developer asks to add a feature:
 
 ## Project Structure
 
-prompt-manager/
-├── src/prompt_manager/ # Main source
+prompt-unifier/
+├── src/prompt_unifier/ # Main source
 │ ├── cli/ # CLI commands
 │ ├── models/ # Pydantic models
 │ ├── services/ # Business logic
@@ -157,8 +157,8 @@ make install # Install deps with Poetry
 text
 
 **Development:**
-poetry run prompt-manager --help # CLI help
-poetry run prompt-manager <cmd> # Run command
+poetry run prompt-unifier --help # CLI help
+poetry run prompt-unifier <cmd> # Run command
 
 text
 

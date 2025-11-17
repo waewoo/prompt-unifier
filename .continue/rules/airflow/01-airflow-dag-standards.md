@@ -13,7 +13,7 @@ tags:
 - standards
 - etl
 - orchestration
-author: prompt-manager
+author: prompt-unifier
 language: python
 ---
 # Airflow DAG Standards

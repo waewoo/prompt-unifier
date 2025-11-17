@@ -8,7 +8,7 @@ from typing import Any
 
 import yaml
 
-from prompt_manager.models.validation import ErrorCode, ValidationIssue, ValidationSeverity
+from prompt_unifier.models.validation import ErrorCode, ValidationIssue, ValidationSeverity
 
 
 class YAMLParser:

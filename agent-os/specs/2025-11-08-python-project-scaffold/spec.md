@@ -10,12 +10,12 @@ Establish a complete, production-ready Python project structure for the Prompt M
 ## Specific Requirements
 
 **Project Directory Structure**
-- Create `src/prompt_manager/` as the main package with `__init__.py`
-- Create `src/prompt_manager/cli/` subdirectory for Typer-based CLI command implementations
-- Create `src/prompt_manager/core/` subdirectory for core business logic (validation, deployment orchestration)
-- Create `src/prompt_manager/handlers/` subdirectory for ToolHandler implementations following Strategy Pattern
-- Create `src/prompt_manager/models/` subdirectory for Pydantic data models
-- Create `src/prompt_manager/utils/` subdirectory for shared utility functions
+- Create `src/prompt_unifier/` as the main package with `__init__.py`
+- Create `src/prompt_unifier/cli/` subdirectory for Typer-based CLI command implementations
+- Create `src/prompt_unifier/core/` subdirectory for core business logic (validation, deployment orchestration)
+- Create `src/prompt_unifier/handlers/` subdirectory for ToolHandler implementations following Strategy Pattern
+- Create `src/prompt_unifier/models/` subdirectory for Pydantic data models
+- Create `src/prompt_unifier/utils/` subdirectory for shared utility functions
 - Create `tests/` directory at project root mirroring the src/ structure for TDD
 - Create `docs/` directory for project documentation
 
@@ -68,12 +68,12 @@ Establish a complete, production-ready Python project structure for the Prompt M
 - Link to product documentation in agent-os/product/
 
 **Empty __init__.py Files**
-- Create `src/prompt_manager/__init__.py` with package version
-- Create `src/prompt_manager/cli/__init__.py`
-- Create `src/prompt_manager/core/__init__.py`
-- Create `src/prompt_manager/handlers/__init__.py`
-- Create `src/prompt_manager/models/__init__.py`
-- Create `src/prompt_manager/utils/__init__.py`
+- Create `src/prompt_unifier/__init__.py` with package version
+- Create `src/prompt_unifier/cli/__init__.py`
+- Create `src/prompt_unifier/core/__init__.py`
+- Create `src/prompt_unifier/handlers/__init__.py`
+- Create `src/prompt_unifier/models/__init__.py`
+- Create `src/prompt_unifier/utils/__init__.py`
 
 ## Visual Design
 No visual assets provided for this scaffold specification.

@@ -11,7 +11,7 @@ tags:
 - generator
 - yaml
 - configuration-management
-author: prompt-manager
+author: prompt-unifier
 language: yaml
 ---
 You are an expert in Kubernetes configuration management with Kustomize. Your mission is to generate a Kustomize `kustomization.yaml` overlay and any necessary patch files to customize a given base set of Kubernetes manifests.

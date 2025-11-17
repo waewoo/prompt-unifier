@@ -13,7 +13,7 @@ tags:
 - iam
 - secrets
 - sast
-author: prompt-manager
+author: prompt-unifier
 language: hcl
 ---
 # Terraform Security Best Practices

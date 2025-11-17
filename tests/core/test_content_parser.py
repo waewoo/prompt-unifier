@@ -6,9 +6,9 @@ from unittest.mock import patch
 import pytest
 from pydantic import ValidationError
 
-from prompt_manager.core.content_parser import ContentFileParser, parse_content_file
-from prompt_manager.models import PromptFrontmatter, RuleFile
-from prompt_manager.models.prompt import PromptFile
+from prompt_unifier.core.content_parser import ContentFileParser, parse_content_file
+from prompt_unifier.models import PromptFrontmatter, RuleFile
+from prompt_unifier.models.prompt import PromptFile
 
 # Fixture paths
 FIXTURES_DIR = Path(__file__).parent.parent / "fixtures"

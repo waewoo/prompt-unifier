@@ -6,9 +6,9 @@ prompt files in a directory and aggregating the results.
 
 from pathlib import Path
 
-from prompt_manager.core.validator import PromptValidator
-from prompt_manager.models.validation import ValidationResult, ValidationSummary
-from prompt_manager.utils.file_scanner import FileScanner
+from prompt_unifier.core.validator import PromptValidator
+from prompt_unifier.models.validation import ValidationResult, ValidationSummary
+from prompt_unifier.utils.file_scanner import FileScanner
 
 
 class BatchValidator:

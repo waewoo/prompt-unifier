@@ -8,7 +8,7 @@ from pathlib import Path
 
 import pytest
 
-from prompt_manager.utils.path_helpers import expand_env_vars
+from prompt_unifier.utils.path_helpers import expand_env_vars
 
 
 class TestExpandEnvVars:

@@ -15,7 +15,7 @@ tags:
 - yaml
 - standards
 - security
-author: prompt-manager
+author: prompt-unifier
 language: yaml
 ---
 # Kubernetes Manifest Standards

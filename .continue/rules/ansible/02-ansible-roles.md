@@ -13,7 +13,7 @@ tags:
 - standards
 - reusability
 - testing
-author: prompt-manager
+author: prompt-unifier
 language: yaml
 ---
 # Ansible Role Standards

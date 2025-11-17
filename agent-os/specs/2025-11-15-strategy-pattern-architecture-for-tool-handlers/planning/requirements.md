@@ -29,9 +29,9 @@ Strategy Pattern Architecture for Tool Handlers
 **Answer:** oui il faut un mécanisme pour activer/désactiver des gestionnaires d'outils spécifiques
 
 ### Existing Code to Reference
-- **`src/prompt_manager/git/service.py`**: The `GitService` class can be used as a reference for creating service classes that interact with external tools.
-- **`src/prompt_manager/config/manager.py`**: The `ConfigManager` class will need to be extended to manage the list of enabled and disabled tool handlers.
-- **`src/prompt_manager/handlers/`**: This directory is where the new `ToolHandler` implementations will be created.
+- **`src/prompt_unifier/git/service.py`**: The `GitService` class can be used as a reference for creating service classes that interact with external tools.
+- **`src/prompt_unifier/config/manager.py`**: The `ConfigManager` class will need to be extended to manage the list of enabled and disabled tool handlers.
+- **`src/prompt_unifier/handlers/`**: This directory is where the new `ToolHandler` implementations will be created.
 
 ### Follow-up Questions
 
@@ -59,7 +59,7 @@ No visual assets provided.
 ### Reusability Opportunities
 - Use `GitService` as a reference for creating service classes.
 - Extend `ConfigManager` to manage tool handler configurations.
-- Create new `ToolHandler` implementations in the `src/prompt_manager/handlers/` directory.
+- Create new `ToolHandler` implementations in the `src/prompt_unifier/handlers/` directory.
 
 ### Scope Boundaries
 **In Scope:**

@@ -6,7 +6,7 @@ from unittest.mock import MagicMock, patch
 import pytest
 from typer.testing import CliRunner
 
-from prompt_manager.cli.main import app
+from prompt_unifier.cli.main import app
 
 runner = CliRunner()
 
@@ -14,7 +14,7 @@ runner = CliRunner()
 @pytest.fixture
 def mock_config(tmp_path: Path) -> Path:
     """Create a mock config file."""
-    config_dir = tmp_path / ".prompt-manager"
+    config_dir = tmp_path / ".prompt-unifier"
     config_dir.mkdir()
     config_file = config_dir / "config.yaml"
     config_file.write_text(f"""
@@ -62,7 +62,7 @@ Rule content
     return storage_dir
 
 
-@patch("prompt_manager.handlers.registry.ToolHandlerRegistry")
+@patch("prompt_unifier.handlers.registry.ToolHandlerRegistry")
 def test_deploy_command_triggers_rollback_on_failure(
     mock_registry_class, tmp_path: Path, mock_config: Path, mock_storage: Path
 ) -> None:
@@ -120,7 +120,7 @@ def test_rollback_error_handling():
         tmp_path = Path.cwd()
 
         # Setup config without storage directory to trigger error early
-        config_dir = tmp_path / ".prompt-manager"
+        config_dir = tmp_path / ".prompt-unifier"
         config_dir.mkdir()
         config_file = config_dir / "config.yaml"
         config_file.write_text(f"""
@@ -143,7 +143,7 @@ def test_deploy_with_no_matching_handlers():
         tmp_path = Path.cwd()
 
         # Setup config with non-existent target handler
-        config_dir = tmp_path / ".prompt-manager"
+        config_dir = tmp_path / ".prompt-unifier"
         config_dir.mkdir()
         config_file = config_dir / "config.yaml"
         config_file.write_text(f"""
@@ -170,7 +170,7 @@ def test_deploy_command_completion():
         tmp_path = Path.cwd()
 
         # Setup complete config and storage
-        config_dir = tmp_path / ".prompt-manager"
+        config_dir = tmp_path / ".prompt-unifier"
         config_dir.mkdir()
         config_file = config_dir / "config.yaml"
         config_file.write_text(f"""

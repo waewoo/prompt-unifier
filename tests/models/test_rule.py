@@ -5,7 +5,7 @@ import warnings
 import pytest
 from pydantic import ValidationError
 
-from prompt_manager.models.rule import VALID_CATEGORIES, RuleFile, RuleFrontmatter
+from prompt_unifier.models.rule import VALID_CATEGORIES, RuleFile, RuleFrontmatter
 
 
 class TestRuleFrontmatterValid:

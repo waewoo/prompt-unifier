@@ -2,8 +2,8 @@
 
 import pytest
 
-from prompt_manager.core.separator import SeparatorValidator
-from prompt_manager.models.validation import ErrorCode, ValidationSeverity
+from prompt_unifier.core.separator import SeparatorValidator
+from prompt_unifier.models.validation import ErrorCode, ValidationSeverity
 
 
 class TestSeparatorValidator:

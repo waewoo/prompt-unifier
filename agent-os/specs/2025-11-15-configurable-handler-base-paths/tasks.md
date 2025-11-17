@@ -18,7 +18,7 @@ Total Estimated Tasks: 22
     - Test paths without environment variables (passthrough)
     - Limit to 2-8 highly focused tests maximum
   - [x] 1.2 Create path expansion utility module
-    - Create new file: `src/prompt_manager/utils/path_helpers.py`
+    - Create new file: `src/prompt_unifier/utils/path_helpers.py`
     - Implement `expand_env_vars(path: str) -> str` function
     - Support $HOME, $USER, $PWD environment variables
     - Support both ${VAR} and $VAR syntax using regex substitution
@@ -31,7 +31,7 @@ Total Estimated Tasks: 22
     - Test model serialization/deserialization
     - Limit to 2-8 highly focused tests maximum
   - [x] 1.4 Create HandlerConfig Pydantic model
-    - Add to `src/prompt_manager/models/git_config.py`
+    - Add to `src/prompt_unifier/models/git_config.py`
     - Create HandlerConfig class with base_path field (str | None)
     - Use Field with description and example
     - Follow existing GitConfig model patterns
@@ -75,7 +75,7 @@ Total Estimated Tasks: 22
     - Test invalid handler names are handled gracefully
     - Limit to 2-8 highly focused tests maximum
   - [x] 2.2 Update ConfigManager to handle handlers field
-    - Modify `src/prompt_manager/config/manager.py`
+    - Modify `src/prompt_unifier/config/manager.py`
     - Ensure load_config() correctly deserializes handlers dict
     - Ensure save_config() correctly serializes handlers dict
     - Provide default empty dict if handlers not present
@@ -112,7 +112,7 @@ Total Estimated Tasks: 22
     - Test .continue/prompts/ and .continue/rules/ subdirectory creation
     - Limit to 2-8 highly focused tests maximum
   - [x] 3.2 Change ContinueToolHandler default base_path to Path.cwd()
-    - Modify `src/prompt_manager/handlers/continue_handler.py` line 22
+    - Modify `src/prompt_unifier/handlers/continue_handler.py` line 22
     - Change: `self.base_path = base_path if base_path else Path.home()`
     - To: `self.base_path = base_path if base_path else Path.cwd()`
     - Maintain existing directory creation logic (lines 25-26)
@@ -157,7 +157,7 @@ Total Estimated Tasks: 22
     - Test path validation (accessible and writable)
     - Limit to 2-8 highly focused tests maximum
   - [x] 4.2 Add --base-path option to deploy() command
-    - Modified `src/prompt_manager/cli/main.py` deploy() function
+    - Modified `src/prompt_unifier/cli/main.py` deploy() function
     - Added parameter: `base_path: str | None = typer.Option(None, "--base-path")`
     - Added to function signature with help text
     - Documented that it works with --handlers for per-handler deployment
@@ -207,8 +207,8 @@ Total Estimated Tasks: 22
 
 **Implementation Summary:**
 - Created `tests/cli/test_deploy_base_path.py` with 7 focused tests
-- Modified `src/prompt_manager/cli/main.py` to add --base-path parameter to deploy command
-- Modified `src/prompt_manager/cli/commands.py` to implement base path resolution logic
+- Modified `src/prompt_unifier/cli/main.py` to add --base-path parameter to deploy command
+- Modified `src/prompt_unifier/cli/commands.py` to implement base path resolution logic
 - Implemented helper function `resolve_handler_base_path()` that follows precedence order
 - Added import for `expand_env_vars` utility
 - Added validation call to `validate_tool_installation()` before deployment
@@ -422,18 +422,18 @@ handlers:
 ## File Modifications Summary
 
 ### New Files
-- `src/prompt_manager/utils/path_helpers.py` - Path expansion utilities (COMPLETED)
+- `src/prompt_unifier/utils/path_helpers.py` - Path expansion utilities (COMPLETED)
 - `tests/utils/test_path_helpers.py` - Path expansion tests (COMPLETED)
 - `tests/handlers/test_continue_handler_base_path.py` - Handler base path tests (COMPLETED)
 - `tests/cli/test_deploy_base_path.py` - CLI integration tests (COMPLETED)
 - `tests/integration/test_configurable_base_paths.py` - End-to-end integration tests (COMPLETED)
 
 ### Modified Files
-- `src/prompt_manager/models/git_config.py` - Add HandlerConfig and handlers field (COMPLETED)
-- `src/prompt_manager/config/manager.py` - Handle handlers configuration (COMPLETED)
-- `src/prompt_manager/handlers/continue_handler.py` - Change default, add validation (COMPLETED)
-- `src/prompt_manager/cli/commands.py` - Add --base-path option, resolution logic (COMPLETED)
-- `src/prompt_manager/cli/main.py` - Add --base-path parameter to deploy command (COMPLETED)
+- `src/prompt_unifier/models/git_config.py` - Add HandlerConfig and handlers field (COMPLETED)
+- `src/prompt_unifier/config/manager.py` - Handle handlers configuration (COMPLETED)
+- `src/prompt_unifier/handlers/continue_handler.py` - Change default, add validation (COMPLETED)
+- `src/prompt_unifier/cli/commands.py` - Add --base-path option, resolution logic (COMPLETED)
+- `src/prompt_unifier/cli/main.py` - Add --base-path parameter to deploy command (COMPLETED)
 - `tests/config/test_manager.py` - Add handlers configuration tests (COMPLETED)
 - `tests/models/test_git_config.py` - Add HandlerConfig tests (COMPLETED)
 - `README.md` - Update documentation with new features (COMPLETED)

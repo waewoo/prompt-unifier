@@ -11,7 +11,7 @@ tags:
 - generator
 - cli
 - automation
-author: prompt-manager
+author: prompt-unifier
 language: python
 ---
 You are an expert Python developer with extensive experience in writing command-line interface (CLI) scripts for automation. Your mission is to generate a complete, standalone Python script based on the user's requirements.

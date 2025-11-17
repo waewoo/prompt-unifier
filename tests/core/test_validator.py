@@ -4,8 +4,8 @@ from pathlib import Path
 
 import pytest
 
-from prompt_manager.core.validator import PromptValidator
-from prompt_manager.models.validation import ErrorCode, WarningCode
+from prompt_unifier.core.validator import PromptValidator
+from prompt_unifier.models.validation import ErrorCode, WarningCode
 
 
 class TestPromptValidatorOrchestration:

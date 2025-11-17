@@ -1,10 +1,10 @@
 # Specification: Git Integration & Repository Management
 
 ## Goal
-Enable application projects to sync prompts and rules from a central Git repository by implementing init, sync, and status commands that manage a local .prompt-manager/ configuration directory with read-only synchronization.
+Enable application projects to sync prompts and rules from a central Git repository by implementing init, sync, and status commands that manage a local .prompt-unifier/ configuration directory with read-only synchronization.
 
 ## User Stories
-- As a developer, I want to initialize my application project with prompt-manager so that I can sync prompts and rules from a central repository
+- As a developer, I want to initialize my application project with prompt-unifier so that I can sync prompts and rules from a central repository
 - As a developer, I want to sync the latest prompts and rules from the central repository so that my local content stays up-to-date automatically
 
 ## Specific Requirements
@@ -12,16 +12,16 @@ Enable application projects to sync prompts and rules from a central Git reposit
 **CLI Global Options**
 - Add --version (-v) flag to display application version and exit
 - Version callback should be eager (processed before commands)
-- Display format: "prompt-manager version X.Y.Z"
+- Display format: "prompt-unifier version X.Y.Z"
 - Exit with code 0 after displaying version
 
 **Init Command Implementation**
-- Create .prompt-manager/ directory in current working directory (application project root)
-- Generate config.yaml file inside .prompt-manager/ with placeholders for repo_url, last_sync_timestamp, last_sync_commit, and storage_path fields
-- Create centralized storage directory (default: ~/.prompt-manager/storage) with prompts/ and rules/ subdirectories
+- Create .prompt-unifier/ directory in current working directory (application project root)
+- Generate config.yaml file inside .prompt-unifier/ with placeholders for repo_url, last_sync_timestamp, last_sync_commit, and storage_path fields
+- Create centralized storage directory (default: ~/.prompt-unifier/storage) with prompts/ and rules/ subdirectories
 - Support custom storage path via --storage-path option
 - Generate .gitignore template file in centralized storage directory if it doesn't exist
-- .prompt-manager/ directory must be tracked in version control for team collaboration
+- .prompt-unifier/ directory must be tracked in version control for team collaboration
 - **Command is idempotent**: Running init multiple times succeeds without error, creating only missing components
 - Display clear status messages showing what was created (green) vs what already existed (dim)
 - Use pathlib.Path for all directory operations following existing codebase patterns
@@ -30,8 +30,8 @@ Enable application projects to sync prompts and rules from a central Git reposit
 **Sync Command Implementation**
 - Accept optional --repo flag to specify or override Git repository URL
 - Accept optional --storage-path flag to override storage location for this sync
-- Validate that init has been run before allowing sync (check for .prompt-manager/config.yaml existence)
-- On first sync or when --repo provided: Store repository URL in .prompt-manager/config.yaml
+- Validate that init has been run before allowing sync (check for .prompt-unifier/config.yaml existence)
+- On first sync or when --repo provided: Store repository URL in .prompt-unifier/config.yaml
 - On subsequent syncs: Read repository URL from config.yaml unless --repo override provided
 - Use GitPython library to clone repository to temporary directory using tempfile.mkdtemp() (not TemporaryDirectory context manager to avoid premature cleanup)
 - Extract prompts/ directory content from cloned repo and copy to centralized storage's prompts/ directory (required)
@@ -84,7 +84,7 @@ Enable application projects to sync prompts and rules from a central Git reposit
 **Error Handling & Validation**
 - Git clone failures: Invalid URL, authentication errors, network issues - exit code 1 with helpful error message
 - Empty repository: Error with detailed instructions on how to add prompts/ directory (and optionally rules/) and commit - exit code 1
-- Missing .prompt-manager/: Clear error message "Run 'prompt-manager init' first" - exit code 1
+- Missing .prompt-unifier/: Clear error message "Run 'prompt-unifier init' first" - exit code 1
 - Invalid repository structure: Error if prompts/ directory not found in remote repo - exit code 1
 - Corrupted config file: Error with suggestion to re-run init or manually fix config.yaml - exit code 1
 - Network connectivity issues: Show retry attempts with progress, fail after 3 attempts - exit code 1

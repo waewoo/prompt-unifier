@@ -7,19 +7,19 @@ from pathlib import Path
 
 import typer
 
-from prompt_manager.cli.commands import (
+from prompt_unifier.cli.commands import (
     deploy as deploy_command,
 )
-from prompt_manager.cli.commands import (
+from prompt_unifier.cli.commands import (
     init as init_command,
 )
-from prompt_manager.cli.commands import (
+from prompt_unifier.cli.commands import (
     status as status_command,
 )
-from prompt_manager.cli.commands import (
+from prompt_unifier.cli.commands import (
     sync as sync_command,
 )
-from prompt_manager.cli.commands import (
+from prompt_unifier.cli.commands import (
     validate as validate_command,
 )
 
@@ -30,13 +30,13 @@ __version__ = "0.1.0"
 def version_callback(value: bool) -> None:
     """Display version and exit."""
     if value:
-        typer.echo(f"prompt-manager version {__version__}")
+        typer.echo(f"prompt-unifier version {__version__}")
         raise typer.Exit()
 
 
 # Create the Typer app
 app = typer.Typer(
-    name="prompt-manager",
+    name="prompt-unifier",
     help="CLI tool for managing and validating AI assistant prompt files",
     add_completion=False,
 )
@@ -83,18 +83,18 @@ def validate(
     validate_command(dir_path, json_output=json, verbose=verbose, content_type=type)
 
 
-@app.command(name="init", help="Initialize prompt-manager in current directory")
+@app.command(name="init", help="Initialize prompt-unifier in current directory")
 def init(
     storage_path: str | None = typer.Option(None, "--storage-path"),
 ) -> None:
-    """Initialize prompt-manager configuration.
+    """Initialize prompt-unifier configuration.
 
-    Creates .prompt-manager/ directory with config.yaml and centralized
+    Creates .prompt-unifier/ directory with config.yaml and centralized
     storage directory for prompts and rules.
 
     Args:
         storage_path: Custom path for centralized storage directory
-                      (default: ~/.prompt-manager/storage)
+                      (default: ~/.prompt-unifier/storage)
     """
     init_command(storage_path=storage_path)
 

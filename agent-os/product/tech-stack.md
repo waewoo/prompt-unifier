@@ -89,7 +89,7 @@ This is a pure command-line interface tool with no graphical user interface, no 
 
 **Purpose**: Local metadata storage if needed for caching, deployment history, or tool-specific state
 - **Use Case**: Track deployment timestamps, cache validation results, store user preferences
-- **Location**: ~/.prompt-manager/data.db (user-local, not shared)
+- **Location**: ~/.prompt-unifier/data.db (user-local, not shared)
 - **Migration**: Alembic for schema versioning if needed
 
 **SQLAlchemy + Alembic** (if SQLite is used)
@@ -110,7 +110,7 @@ This is a pure command-line interface tool with no graphical user interface, no 
 **pip / pipx**
 - **Purpose**: Python package installation
 - **Rationale**: Standard Python distribution, pipx for isolated CLI tool installation
-- **Command**: `pipx install prompt-manager` (recommended) or `pip install prompt-manager`
+- **Command**: `pipx install prompt-unifier` (recommended) or `pip install prompt-unifier`
 
 **Gitlab Releases**
 - **Purpose**: Versioned releases with changelog

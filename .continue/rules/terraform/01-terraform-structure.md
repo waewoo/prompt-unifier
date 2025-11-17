@@ -13,7 +13,7 @@ tags:
 - structure
 - modules
 - environments
-author: prompt-manager
+author: prompt-unifier
 language: hcl
 ---
 # Terraform Project Structure

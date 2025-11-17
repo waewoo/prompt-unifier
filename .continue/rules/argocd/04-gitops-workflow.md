@@ -16,7 +16,7 @@ tags:
 - kubernetes
 - workflow
 - standards
-author: prompt-manager
+author: prompt-unifier
 language: en
 ---
 # GitOps Workflow Standards

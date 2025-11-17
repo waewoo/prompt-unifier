@@ -6,7 +6,7 @@ Prompt Manager is a CLI tool for centralizing, validating, and deploying AI prom
 - Standardized format: YAML frontmatter + >>> separator for prompts and rules.
 - Validation engine with Pydantic models, error reporting (Rich/JSON).
 - Extensible deployment via Strategy Pattern handlers.
-- Centralized local storage (~/.prompt-manager/storage) shared across projects.
+- Centralized local storage (~/.prompt-unifier/storage) shared across projects.
 - CLI commands: init, sync, status, validate, list, deploy.
 - Offline-capable, type-safe (mypy strict), TDD (>95% coverage).
 

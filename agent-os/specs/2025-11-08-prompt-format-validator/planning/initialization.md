@@ -17,6 +17,6 @@ Prompt Format Specification & Validation Engine — Define and document the stan
 
 **Project:** Prompt Manager CLI
 
-**Working Directory:** /root/travail/prompt-manager
+**Working Directory:** /root/travail/prompt-unifier
 
 **Product Documentation:** agent-os/product/

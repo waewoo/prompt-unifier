@@ -11,8 +11,8 @@ import pytest
 import typer
 from typer.testing import CliRunner
 
-from prompt_manager.cli.commands import init, status, sync
-from prompt_manager.models.git_config import GitConfig
+from prompt_unifier.cli.commands import init, status, sync
+from prompt_unifier.models.git_config import GitConfig
 
 
 @pytest.fixture
@@ -33,24 +33,24 @@ def mock_config_manager() -> MagicMock:
     return MagicMock()
 
 
-# Test 1: init command creates .prompt-manager/ directory and config.yaml
-def test_init_creates_prompt_manager_directory_and_config(tmp_path: Path) -> None:
-    """Test init command creates .prompt-manager/ directory and config.yaml."""
-    with patch("prompt_manager.cli.commands.Path.cwd", return_value=tmp_path):
-        with patch("prompt_manager.cli.commands.ConfigManager") as mock_manager_class:
+# Test 1: init command creates .prompt-unifier/ directory and config.yaml
+def test_init_creates_prompt_unifier_directory_and_config(tmp_path: Path) -> None:
+    """Test init command creates .prompt-unifier/ directory and config.yaml."""
+    with patch("prompt_unifier.cli.commands.Path.cwd", return_value=tmp_path):
+        with patch("prompt_unifier.cli.commands.ConfigManager") as mock_manager_class:
             mock_manager = MagicMock()
             mock_manager_class.return_value = mock_manager
 
             # Run init command
             init()
 
-            # Verify .prompt-manager/ directory was created
-            prompt_manager_dir = tmp_path / ".prompt-manager"
-            assert prompt_manager_dir.exists()
-            assert prompt_manager_dir.is_dir()
+            # Verify .prompt-unifier/ directory was created
+            prompt_unifier_dir = tmp_path / ".prompt-unifier"
+            assert prompt_unifier_dir.exists()
+            assert prompt_unifier_dir.is_dir()
 
             # Verify config.yaml was created with empty placeholders
-            config_path = prompt_manager_dir / "config.yaml"
+            config_path = prompt_unifier_dir / "config.yaml"
             mock_manager.save_config.assert_called_once()
             call_args = mock_manager.save_config.call_args
             assert call_args[0][0] == config_path
@@ -63,13 +63,13 @@ def test_init_creates_prompt_manager_directory_and_config(tmp_path: Path) -> Non
 # Test 2: init command creates prompts/ and rules/ directories in centralized storage
 def test_init_creates_prompts_directory_structure(tmp_path: Path) -> None:
     """Test init command creates prompts/ and rules/ directories in centralized storage."""
-    with patch("prompt_manager.cli.commands.Path.cwd", return_value=tmp_path):
-        with patch("prompt_manager.cli.commands.ConfigManager"):
+    with patch("prompt_unifier.cli.commands.Path.cwd", return_value=tmp_path):
+        with patch("prompt_unifier.cli.commands.ConfigManager"):
             # Run init command
             init()
 
             # Verify prompts/ and rules/ are created in storage directory (not in tmp_path)
-            storage_dir = Path.home() / ".prompt-manager" / "storage"
+            storage_dir = Path.home() / ".prompt-unifier" / "storage"
             prompts_dir = storage_dir / "prompts"
             assert prompts_dir.exists()
             assert prompts_dir.is_dir()
@@ -80,45 +80,45 @@ def test_init_creates_prompts_directory_structure(tmp_path: Path) -> None:
 
 
 # Test 3: init command creates .gitignore in storage directory
-def test_init_creates_gitignore_without_ignoring_prompt_manager(tmp_path: Path) -> None:
+def test_init_creates_gitignore_without_ignoring_prompt_unifier(tmp_path: Path) -> None:
     """Test init command creates .gitignore in centralized storage directory."""
-    with patch("prompt_manager.cli.commands.Path.cwd", return_value=tmp_path):
-        with patch("prompt_manager.cli.commands.ConfigManager"):
+    with patch("prompt_unifier.cli.commands.Path.cwd", return_value=tmp_path):
+        with patch("prompt_unifier.cli.commands.ConfigManager"):
             # Run init command
             init()
 
             # Verify .gitignore was created in storage directory
-            storage_dir = Path.home() / ".prompt-manager" / "storage"
+            storage_dir = Path.home() / ".prompt-unifier" / "storage"
             gitignore = storage_dir / ".gitignore"
             assert gitignore.exists()
 
-            # Verify .prompt-manager/ is NOT in .gitignore
+            # Verify .prompt-unifier/ is NOT in .gitignore
             content = gitignore.read_text()
-            assert ".prompt-manager/" not in content
-            assert ".prompt-manager" not in content
+            assert ".prompt-unifier/" not in content
+            assert ".prompt-unifier" not in content
 
 
 # Test 4: init command is idempotent (succeeds when already initialized)
 def test_init_is_idempotent_when_already_exists(tmp_path: Path) -> None:
-    """Test init command is idempotent and succeeds when .prompt-manager/ already exists."""
-    with patch("prompt_manager.cli.commands.Path.cwd", return_value=tmp_path):
-        with patch("prompt_manager.cli.commands.ConfigManager") as mock_manager_class:
+    """Test init command is idempotent and succeeds when .prompt-unifier/ already exists."""
+    with patch("prompt_unifier.cli.commands.Path.cwd", return_value=tmp_path):
+        with patch("prompt_unifier.cli.commands.ConfigManager") as mock_manager_class:
             mock_manager = MagicMock()
             mock_manager_class.return_value = mock_manager
 
-            # Create .prompt-manager/ directory and config.yaml before running init
-            (tmp_path / ".prompt-manager").mkdir(parents=True)
-            config_path = tmp_path / ".prompt-manager" / "config.yaml"
+            # Create .prompt-unifier/ directory and config.yaml before running init
+            (tmp_path / ".prompt-unifier").mkdir(parents=True)
+            config_path = tmp_path / ".prompt-unifier" / "config.yaml"
             config_path.write_text("repo_url: null\nlast_sync_timestamp: null\n")
 
             # Mock load_config to return existing config
-            from prompt_manager.models.git_config import GitConfig
+            from prompt_unifier.models.git_config import GitConfig
 
             mock_manager.load_config.return_value = GitConfig(
                 repo_url=None,
                 last_sync_timestamp=None,
                 last_sync_commit=None,
-                storage_path="/root/.prompt-manager/storage",
+                storage_path="/root/.prompt-unifier/storage",
             )
 
             # Run init command - should succeed (not raise)
@@ -130,8 +130,8 @@ def test_init_is_idempotent_when_already_exists(tmp_path: Path) -> None:
 # Test 5: sync command fails if init not run first (missing config.yaml)
 def test_sync_fails_if_init_not_run(tmp_path: Path) -> None:
     """Test sync command fails if init not run first (missing config.yaml)."""
-    with patch("prompt_manager.cli.commands.Path.cwd", return_value=tmp_path):
-        with patch("prompt_manager.cli.commands.ConfigManager") as mock_manager_class:
+    with patch("prompt_unifier.cli.commands.Path.cwd", return_value=tmp_path):
+        with patch("prompt_unifier.cli.commands.ConfigManager") as mock_manager_class:
             mock_manager = MagicMock()
             mock_manager_class.return_value = mock_manager
             # Simulate missing config
@@ -149,18 +149,18 @@ def test_sync_with_repo_flag_stores_url_and_syncs(tmp_path: Path) -> None:
     """Test sync command with --repo flag stores URL and syncs prompts."""
     repo_url = "https://github.com/example/prompts.git"
 
-    with patch("prompt_manager.cli.commands.Path.cwd", return_value=tmp_path):
-        with patch("prompt_manager.cli.commands.ConfigManager") as mock_manager_class:
-            with patch("prompt_manager.cli.commands.GitService") as mock_service_class:
+    with patch("prompt_unifier.cli.commands.Path.cwd", return_value=tmp_path):
+        with patch("prompt_unifier.cli.commands.ConfigManager") as mock_manager_class:
+            with patch("prompt_unifier.cli.commands.GitService") as mock_service_class:
                 # Setup mocks
                 mock_manager = MagicMock()
                 mock_manager_class.return_value = mock_manager
                 mock_service = MagicMock()
                 mock_service_class.return_value = mock_service
 
-                # Create .prompt-manager/config.yaml (actual file)
-                (tmp_path / ".prompt-manager").mkdir(parents=True)
-                config_path = tmp_path / ".prompt-manager" / "config.yaml"
+                # Create .prompt-unifier/config.yaml (actual file)
+                (tmp_path / ".prompt-unifier").mkdir(parents=True)
+                config_path = tmp_path / ".prompt-unifier" / "config.yaml"
                 config_path.write_text(
                     "repo_url: null\nlast_sync_timestamp: null\nlast_sync_commit: null\n"
                 )
@@ -196,18 +196,18 @@ def test_sync_without_repo_flag_reads_from_config(tmp_path: Path) -> None:
     """Test sync command without --repo flag reads URL from config."""
     repo_url = "https://github.com/example/prompts.git"
 
-    with patch("prompt_manager.cli.commands.Path.cwd", return_value=tmp_path):
-        with patch("prompt_manager.cli.commands.ConfigManager") as mock_manager_class:
-            with patch("prompt_manager.cli.commands.GitService") as mock_service_class:
+    with patch("prompt_unifier.cli.commands.Path.cwd", return_value=tmp_path):
+        with patch("prompt_unifier.cli.commands.ConfigManager") as mock_manager_class:
+            with patch("prompt_unifier.cli.commands.GitService") as mock_service_class:
                 # Setup mocks
                 mock_manager = MagicMock()
                 mock_manager_class.return_value = mock_manager
                 mock_service = MagicMock()
                 mock_service_class.return_value = mock_service
 
-                # Create .prompt-manager/config.yaml (actual file)
-                (tmp_path / ".prompt-manager").mkdir(parents=True)
-                config_path = tmp_path / ".prompt-manager" / "config.yaml"
+                # Create .prompt-unifier/config.yaml (actual file)
+                (tmp_path / ".prompt-unifier").mkdir(parents=True)
+                config_path = tmp_path / ".prompt-unifier" / "config.yaml"
                 config_path.write_text(
                     "repo_url: null\nlast_sync_timestamp: null\nlast_sync_commit: null\n"
                 )
@@ -239,18 +239,18 @@ def test_status_displays_repo_info_and_updates(
     """Test status command displays repo URL, last sync time, and update availability."""
     repo_url = "https://github.com/example/prompts.git"
 
-    with patch("prompt_manager.cli.commands.Path.cwd", return_value=tmp_path):
-        with patch("prompt_manager.cli.commands.ConfigManager") as mock_manager_class:
-            with patch("prompt_manager.cli.commands.GitService") as mock_service_class:
+    with patch("prompt_unifier.cli.commands.Path.cwd", return_value=tmp_path):
+        with patch("prompt_unifier.cli.commands.ConfigManager") as mock_manager_class:
+            with patch("prompt_unifier.cli.commands.GitService") as mock_service_class:
                 # Setup mocks
                 mock_manager = MagicMock()
                 mock_manager_class.return_value = mock_manager
                 mock_service = MagicMock()
                 mock_service_class.return_value = mock_service
 
-                # Create .prompt-manager/config.yaml (actual file)
-                (tmp_path / ".prompt-manager").mkdir(parents=True)
-                config_path = tmp_path / ".prompt-manager" / "config.yaml"
+                # Create .prompt-unifier/config.yaml (actual file)
+                (tmp_path / ".prompt-unifier").mkdir(parents=True)
+                config_path = tmp_path / ".prompt-unifier" / "config.yaml"
                 config_path.write_text(
                     "repo_url: null\nlast_sync_timestamp: null\nlast_sync_commit: null\n"
                 )

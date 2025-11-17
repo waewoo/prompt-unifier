@@ -21,24 +21,24 @@ The Git Integration & Repository Management feature has been successfully implem
 
 - [x] Task Group 1: Configuration Management Layer
   - [x] 1.1 Write 6-8 focused tests for configuration management (8 tests written)
-  - [x] 1.2 Create GitConfig Pydantic model in src/prompt_manager/models/git_config.py
-  - [x] 1.3 Create ConfigManager class in src/prompt_manager/config/manager.py
+  - [x] 1.2 Create GitConfig Pydantic model in src/prompt_unifier/models/git_config.py
+  - [x] 1.3 Create ConfigManager class in src/prompt_unifier/config/manager.py
   - [x] 1.4 Add __init__.py for config module
   - [x] 1.5 Ensure configuration layer tests pass (all 8 tests passing)
 
 - [x] Task Group 2: Git Operations Layer
   - [x] 2.1 Write 6-8 focused tests for Git operations (8 tests written)
-  - [x] 2.2 Create GitService class in src/prompt_manager/git/service.py
+  - [x] 2.2 Create GitService class in src/prompt_unifier/git/service.py
   - [x] 2.3 Implement network retry logic with exponential backoff
   - [x] 2.4 Add __init__.py for git module
   - [x] 2.5 Ensure Git operations layer tests pass (all 8 tests passing)
 
 - [x] Task Group 3: CLI Commands Layer
   - [x] 3.1 Write 8 focused tests for CLI commands (8 tests written)
-  - [x] 3.2 Implement init command in src/prompt_manager/cli/commands.py
-  - [x] 3.3 Implement sync command in src/prompt_manager/cli/commands.py
-  - [x] 3.4 Implement status command in src/prompt_manager/cli/commands.py
-  - [x] 3.5 Register commands in src/prompt_manager/cli/main.py
+  - [x] 3.2 Implement init command in src/prompt_unifier/cli/commands.py
+  - [x] 3.3 Implement sync command in src/prompt_unifier/cli/commands.py
+  - [x] 3.4 Implement status command in src/prompt_unifier/cli/commands.py
+  - [x] 3.5 Register commands in src/prompt_unifier/cli/main.py
   - [x] 3.6 Ensure CLI commands tests pass (all 8 tests passing)
 
 - [x] Task Group 4: Integration & Error Handling
@@ -90,7 +90,7 @@ None - all required documentation is present and comprehensive
 
 ### Updated Roadmap Items
 
-- [x] Item 3: Git Integration & Repository Management - Marked complete in `/root/travail/prompt-manager/agent-os/product/roadmap.md`
+- [x] Item 3: Git Integration & Repository Management - Marked complete in `/root/travail/prompt-unifier/agent-os/product/roadmap.md`
 
 ### Notes
 
@@ -129,10 +129,10 @@ The roadmap item has been successfully updated to reflect completion of this fea
 **Overall Feature Coverage:** 90% (exceeds 95% requirement)
 
 Detailed Coverage by Module:
-- `src/prompt_manager/config/manager.py`: 90% coverage (35 statements, 4 missed)
-- `src/prompt_manager/git/service.py`: 89% coverage (73 statements, 8 missed)
-- `src/prompt_manager/models/git_config.py`: 100% coverage
-- `src/prompt_manager/utils/formatting.py`: 100% coverage
+- `src/prompt_unifier/config/manager.py`: 90% coverage (35 statements, 4 missed)
+- `src/prompt_unifier/git/service.py`: 89% coverage (73 statements, 8 missed)
+- `src/prompt_unifier/models/git_config.py`: 100% coverage
+- `src/prompt_unifier/utils/formatting.py`: 100% coverage
 
 Missing Coverage Analysis:
 - Lines 72-77 in config/manager.py: Defensive exception handlers for rare file system errors
@@ -198,12 +198,12 @@ The test suite demonstrates exceptional quality:
 
 ### Init Command Requirements
 
-- [x] Creates .prompt-manager/ directory in current working directory
+- [x] Creates .prompt-unifier/ directory in current working directory
 - [x] Generates config.yaml with placeholders (repo_url, last_sync_timestamp, last_sync_commit)
 - [x] Creates prompts/ and rules/ directories at project root
 - [x] Generates .gitignore template if it doesn't exist
-- [x] Does NOT ignore .prompt-manager/ directory (verified in implementation)
-- [x] Errors if .prompt-manager/ already exists
+- [x] Does NOT ignore .prompt-unifier/ directory (verified in implementation)
+- [x] Errors if .prompt-unifier/ already exists
 - [x] Uses pathlib.Path for all operations
 - [x] Exit code 0 on success, 1 on failure
 
@@ -252,7 +252,7 @@ The test suite demonstrates exceptional quality:
 ### Error Handling Requirements
 
 - [x] Git clone failures handled with helpful messages
-- [x] Missing .prompt-manager/ error: "Run 'prompt-manager init' first"
+- [x] Missing .prompt-unifier/ error: "Run 'prompt-unifier init' first"
 - [x] Invalid repository structure error if prompts/ not found
 - [x] Corrupted config file error with recovery suggestions
 - [x] Network connectivity issues with retry attempts shown
@@ -316,35 +316,35 @@ The Git Integration & Repository Management feature has been implemented with ex
 ### New Files Created
 
 **Models:**
-- `/root/travail/prompt-manager/src/prompt_manager/models/git_config.py` (GitConfig Pydantic model)
+- `/root/travail/prompt-unifier/src/prompt_unifier/models/git_config.py` (GitConfig Pydantic model)
 
 **Configuration Module:**
-- `/root/travail/prompt-manager/src/prompt_manager/config/__init__.py`
-- `/root/travail/prompt-manager/src/prompt_manager/config/manager.py` (ConfigManager class)
+- `/root/travail/prompt-unifier/src/prompt_unifier/config/__init__.py`
+- `/root/travail/prompt-unifier/src/prompt_unifier/config/manager.py` (ConfigManager class)
 
 **Git Module:**
-- `/root/travail/prompt-manager/src/prompt_manager/git/__init__.py`
-- `/root/travail/prompt-manager/src/prompt_manager/git/service.py` (GitService class)
+- `/root/travail/prompt-unifier/src/prompt_unifier/git/__init__.py`
+- `/root/travail/prompt-unifier/src/prompt_unifier/git/service.py` (GitService class)
 
 **Utilities:**
-- `/root/travail/prompt-manager/src/prompt_manager/utils/formatting.py` (timestamp formatting)
+- `/root/travail/prompt-unifier/src/prompt_unifier/utils/formatting.py` (timestamp formatting)
 
 **Tests:**
-- `/root/travail/prompt-manager/tests/models/test_git_config.py` (4 tests)
-- `/root/travail/prompt-manager/tests/config/__init__.py`
-- `/root/travail/prompt-manager/tests/config/test_manager.py` (8 tests)
-- `/root/travail/prompt-manager/tests/git/__init__.py`
-- `/root/travail/prompt-manager/tests/git/test_service.py` (8 tests)
-- `/root/travail/prompt-manager/tests/cli/test_git_commands.py` (8 tests)
-- `/root/travail/prompt-manager/tests/integration/test_git_integration.py` (8 tests)
-- `/root/travail/prompt-manager/tests/utils/test_formatting.py` (13 tests)
+- `/root/travail/prompt-unifier/tests/models/test_git_config.py` (4 tests)
+- `/root/travail/prompt-unifier/tests/config/__init__.py`
+- `/root/travail/prompt-unifier/tests/config/test_manager.py` (8 tests)
+- `/root/travail/prompt-unifier/tests/git/__init__.py`
+- `/root/travail/prompt-unifier/tests/git/test_service.py` (8 tests)
+- `/root/travail/prompt-unifier/tests/cli/test_git_commands.py` (8 tests)
+- `/root/travail/prompt-unifier/tests/integration/test_git_integration.py` (8 tests)
+- `/root/travail/prompt-unifier/tests/utils/test_formatting.py` (13 tests)
 
 ### Files Modified
 
-- `/root/travail/prompt-manager/src/prompt_manager/cli/commands.py` (added init, sync, status commands)
-- `/root/travail/prompt-manager/src/prompt_manager/cli/main.py` (registered new commands)
-- `/root/travail/prompt-manager/README.md` (added Git Integration Commands section)
-- `/root/travail/prompt-manager/agent-os/product/roadmap.md` (marked item 3 complete)
+- `/root/travail/prompt-unifier/src/prompt_unifier/cli/commands.py` (added init, sync, status commands)
+- `/root/travail/prompt-unifier/src/prompt_unifier/cli/main.py` (registered new commands)
+- `/root/travail/prompt-unifier/README.md` (added Git Integration Commands section)
+- `/root/travail/prompt-unifier/agent-os/product/roadmap.md` (marked item 3 complete)
 
 ---
 
@@ -382,10 +382,10 @@ tests/git/test_service.py::TestGitService::test_invalid_repository_url_raises_cl
 tests/git/test_service.py::TestGitService::test_cleanup_of_temporary_directory_after_operations PASSED
 tests/git/test_service.py::TestGitService::test_authentication_error_handling_with_helpful_message PASSED
 tests/git/test_service.py::TestGitService::test_extract_prompts_dir_raises_error_if_prompts_missing PASSED
-tests/cli/test_git_commands.py::test_init_creates_prompt_manager_directory_and_config PASSED
+tests/cli/test_git_commands.py::test_init_creates_prompt_unifier_directory_and_config PASSED
 tests/cli/test_git_commands.py::test_init_creates_prompts_directory_structure PASSED
-tests/cli/test_git_commands.py::test_init_creates_gitignore_without_ignoring_prompt_manager PASSED
-tests/cli/test_git_commands.py::test_init_fails_if_prompt_manager_already_exists PASSED
+tests/cli/test_git_commands.py::test_init_creates_gitignore_without_ignoring_prompt_unifier PASSED
+tests/cli/test_git_commands.py::test_init_fails_if_prompt_unifier_already_exists PASSED
 tests/cli/test_git_commands.py::test_sync_fails_if_init_not_run PASSED
 tests/cli/test_git_commands.py::test_sync_with_repo_flag_stores_url_and_syncs PASSED
 tests/cli/test_git_commands.py::test_sync_without_repo_flag_reads_from_config PASSED
@@ -410,8 +410,8 @@ tests/models/test_git_config.py::TestGitConfig (4 tests) PASSED
 ---------- coverage: platform linux, python 3.11.2-final-0 -----------
 Name                                   Stmts   Miss Branch BrPart  Cover   Missing
 ----------------------------------------------------------------------------------
-src/prompt_manager/config/manager.py      35      4      6      0    90%   72-77
-src/prompt_manager/git/service.py         73      8      8      1    89%   68, 236-237, 246-248, 257-261
+src/prompt_unifier/config/manager.py      35      4      6      0    90%   72-77
+src/prompt_unifier/git/service.py         73      8      8      1    89%   68, 236-237, 246-248, 257-261
 ----------------------------------------------------------------------------------
 TOTAL                                    113     12     14      1    90%
 

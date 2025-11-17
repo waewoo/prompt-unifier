@@ -2,7 +2,7 @@
 
 from datetime import UTC, datetime, timedelta
 
-from prompt_manager.utils.formatting import format_timestamp
+from prompt_unifier.utils.formatting import format_timestamp
 
 
 class TestTimestampFormatting:

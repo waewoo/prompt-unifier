@@ -13,7 +13,7 @@ tags:
 - requests
 - standards
 - resilience
-author: prompt-manager
+author: prompt-unifier
 language: python
 ---
 # Python API Client Design

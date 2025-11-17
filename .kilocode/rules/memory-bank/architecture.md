@@ -12,20 +12,20 @@ Prompt Manager follows a layered architecture designed for separation of concern
 The system is stateless and local-only, with no database or server components. Git serves as the external source of truth for prompts and rules.
 
 ## Source Code Paths
-- `src/prompt_manager/cli/`: Typer commands (main.py, commands.py)
-- `src/prompt_manager/core/`: Validation engine (validator.py, yaml_parser.py, separator.py, encoding.py, batch_validator.py)
-- `src/prompt_manager/handlers/`: Tool handler implementations and registry (protocol.py, registry.py, continue_handler.py)
-- `src/prompt_manager/models/`: Pydantic models (prompt.py, rule.py, git_config.py, validation.py)
-- `src/prompt_manager/config/`: Configuration management (manager.py)
-- `src/prompt_manager/git/`: Git operations (service.py)
-- `src/prompt_manager/output/`: Output formatters (rich_formatter.py, json_formatter.py)
-- `src/prompt_manager/utils/`: Utilities (file_scanner.py, formatting.py, excerpt.py)
+- `src/prompt_unifier/cli/`: Typer commands (main.py, commands.py)
+- `src/prompt_unifier/core/`: Validation engine (validator.py, yaml_parser.py, separator.py, encoding.py, batch_validator.py)
+- `src/prompt_unifier/handlers/`: Tool handler implementations and registry (protocol.py, registry.py, continue_handler.py)
+- `src/prompt_unifier/models/`: Pydantic models (prompt.py, rule.py, git_config.py, validation.py)
+- `src/prompt_unifier/config/`: Configuration management (manager.py)
+- `src/prompt_unifier/git/`: Git operations (service.py)
+- `src/prompt_unifier/output/`: Output formatters (rich_formatter.py, json_formatter.py)
+- `src/prompt_unifier/utils/`: Utilities (file_scanner.py, formatting.py, excerpt.py)
 - `tests/`: Comprehensive test suite mirroring source structure
 
 ## Key Technical Decisions
 - **CLI-First Approach**: Pure terminal interface optimized for developers, scriptable, and CI/CD friendly. No GUI or web components.
 - **Git as Source of Truth**: Read-only sync from central Git repository. No local modifications pushed back.
-- **Centralized Storage**: Prompts and rules stored in `~/.prompt-manager/storage/` for sharing across projects. Project-specific config in `.prompt-manager/config.yaml`.
+- **Centralized Storage**: Prompts and rules stored in `~/.prompt-unifier/storage/` for sharing across projects. Project-specific config in `.prompt-unifier/config.yaml`.
 - **Standardized Format**: YAML frontmatter + `>>>` separator for both prompts and rules. Ensures consistency and validation.
 - **Extensible Handlers**: Strategy Pattern with Python Protocols for adding new AI tools without core changes.
 - **Type Safety**: 100% type hints with mypy strict mode. No `Any` types except where unavoidable.

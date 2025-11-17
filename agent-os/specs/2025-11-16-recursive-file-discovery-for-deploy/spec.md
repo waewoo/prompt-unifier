@@ -11,7 +11,7 @@ Implement recursive file discovery for prompts and rules in the `deploy` command
 ## Specific Requirements
 
 **1. Recursive File Discovery in `deploy` command**
-- Modify `src/prompt_manager/cli/commands.py` to use `glob("**/*.md")` for `prompts_dir` and `rules_dir`.
+- Modify `src/prompt_unifier/cli/commands.py` to use `glob("**/*.md")` for `prompts_dir` and `rules_dir`.
 - This change will enable the `deploy` command to find `.md` files in all subdirectories within `prompts/` and `rules/`.
 
 **2. Preserve Subdirectory Structure during Deployment**
@@ -33,10 +33,10 @@ No visual assets provided.
 ## Existing Code to Leverage
 
 **File Scanning Pattern**
-- The `FileScanner` class (`src/prompt_manager/utils/file_scanner.py`) already demonstrates recursive scanning using `rglob`.
+- The `FileScanner` class (`src/prompt_unifier/utils/file_scanner.py`) already demonstrates recursive scanning using `rglob`.
 
 **Content Parsing**
-- The `ContentFileParser` (`src/prompt_manager/core/content_parser.py`) should continue to be used for parsing individual `.md` files.
+- The `ContentFileParser` (`src/prompt_unifier/core/content_parser.py`) should continue to be used for parsing individual `.md` files.
 
 **Deployment Loop**
 - The existing loop iterating through `filtered_files` and then `all_handlers` in the `deploy` command will be adapted.

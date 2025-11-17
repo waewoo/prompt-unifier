@@ -9,7 +9,7 @@ from pathlib import Path
 from rich.console import Console
 from rich.markup import escape
 
-from prompt_manager.models.validation import (
+from prompt_unifier.models.validation import (
     ValidationIssue,
     ValidationResult,
     ValidationSummary,

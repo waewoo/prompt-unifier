@@ -6,7 +6,7 @@ This module tests the GitConfig model validation and structure.
 import pytest
 from pydantic import ValidationError
 
-from prompt_manager.models.git_config import GitConfig, HandlerConfig
+from prompt_unifier.models.git_config import GitConfig, HandlerConfig
 
 
 class TestGitConfig:

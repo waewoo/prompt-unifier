@@ -11,7 +11,7 @@ tags:
 - ruff
 - mypy
 - generator
-author: prompt-manager
+author: prompt-unifier
 language: toml
 ---
 You are an expert in modern Python project tooling. Your mission is to generate a `pyproject.toml` file with standard configurations for `ruff` and `mypy`, based on the project's standards.

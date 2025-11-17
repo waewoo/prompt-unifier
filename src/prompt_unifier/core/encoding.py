@@ -5,7 +5,7 @@ This module validates that files are encoded in UTF-8 with strict error handling
 
 from pathlib import Path
 
-from prompt_manager.models.validation import ErrorCode, ValidationIssue, ValidationSeverity
+from prompt_unifier.models.validation import ErrorCode, ValidationIssue, ValidationSeverity
 
 
 class EncodingValidator:

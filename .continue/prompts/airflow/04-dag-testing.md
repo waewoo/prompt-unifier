@@ -11,7 +11,7 @@ tags:
 - pytest
 - dag
 - quality
-author: prompt-manager
+author: prompt-unifier
 language: python
 ---
 You are a Software Engineer in Test specializing in data pipelines and Apache Airflow. Your mission is to generate a comprehensive test file for a given Airflow DAG.

@@ -11,7 +11,7 @@ tags:
 - generator
 - yaml
 - configuration-management
-author: prompt-manager
+author: prompt-unifier
 language: yaml
 ---
 You are an expert Ansible developer specializing in creating reusable and modular automation components. Your mission is to generate a complete Ansible role structure based on the user's requirements.

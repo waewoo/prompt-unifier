@@ -4,9 +4,9 @@ from pathlib import Path
 
 import pytest
 
-from prompt_manager.handlers.continue_handler import ContinueToolHandler
-from prompt_manager.models.prompt import PromptFrontmatter
-from prompt_manager.models.rule import RuleFrontmatter
+from prompt_unifier.handlers.continue_handler import ContinueToolHandler
+from prompt_unifier.models.prompt import PromptFrontmatter
+from prompt_unifier.models.rule import RuleFrontmatter
 
 
 @pytest.fixture

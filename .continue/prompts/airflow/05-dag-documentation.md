@@ -9,7 +9,7 @@ tags:
 - dag
 - documentation
 - markdown
-author: prompt-manager
+author: prompt-unifier
 language: markdown
 ---
 You are a Senior Data Engineer with excellent technical writing skills. Your mission is to generate a clear and comprehensive Markdown docstring for a given Airflow DAG.

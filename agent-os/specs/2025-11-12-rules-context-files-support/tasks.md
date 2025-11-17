@@ -42,7 +42,7 @@ The tasks below document the original comprehensive plan. The actual implementat
 **Description:** Implement the RuleFile Pydantic model with all required and optional fields
 
 **Steps:**
-1. Create `src/prompt_manager/models/rule_file.py`
+1. Create `src/prompt_unifier/models/rule_file.py`
 2. Define `RuleFile` class inheriting from `BaseModel`
 3. Add all fields with proper types and validation
 4. Implement `validate_category` field validator
@@ -83,7 +83,7 @@ VALID_CATEGORIES = [
 - ✅ Model raises ValidationError for invalid data
 
 **Files Created:**
-- `src/prompt_manager/models/rule_file.py`
+- `src/prompt_unifier/models/rule_file.py`
 
 ---
 
@@ -91,7 +91,7 @@ VALID_CATEGORIES = [
 **Description:** Create union type for PromptFile and RuleFile
 
 **Steps:**
-1. Update `src/prompt_manager/models/__init__.py`
+1. Update `src/prompt_unifier/models/__init__.py`
 2. Import `RuleFile` from `rule_file`
 3. Create `ContentFile = Union[PromptFile, RuleFile]`
 4. Export `ContentFile` in `__all__`
@@ -102,7 +102,7 @@ VALID_CATEGORIES = [
 - ✅ Can use ContentFile in type annotations
 
 **Files Modified:**
-- `src/prompt_manager/models/__init__.py`
+- `src/prompt_unifier/models/__init__.py`
 
 ---
 
@@ -165,7 +165,7 @@ VALID_CATEGORIES = [
 **Description:** Update parser to automatically detect and parse both prompts and rules
 
 **Steps:**
-1. Update `src/prompt_manager/validation/parser.py`
+1. Update `src/prompt_unifier/validation/parser.py`
 2. Modify `parse_content_file()` to detect `type` field
 3. Return `PromptFile` or `RuleFile` based on type
 4. Handle unknown types with clear error
@@ -199,7 +199,7 @@ def parse_content_file(file_path: Path) -> ContentFile:
 - ✅ Type hints updated
 
 **Files Modified:**
-- `src/prompt_manager/validation/parser.py`
+- `src/prompt_unifier/validation/parser.py`
 
 ---
 
@@ -244,7 +244,7 @@ def parse_content_file(file_path: Path) -> ContentFile:
 **Description:** Implement service to load and manage prompts and rules
 
 **Steps:**
-1. Create `src/prompt_manager/services/content_loader.py`
+1. Create `src/prompt_unifier/services/content_loader.py`
 2. Implement `ContentLoader` class
 3. Add methods: `load_all()`, `load_prompts()`, `load_rules()`
 4. Implement `_load_files()` helper method
@@ -286,7 +286,7 @@ class ContentLoader:
 - ✅ Type hints correct
 
 **Files Created:**
-- `src/prompt_manager/services/content_loader.py`
+- `src/prompt_unifier/services/content_loader.py`
 
 ---
 
@@ -338,7 +338,7 @@ def filter_by_type(
 - ✅ Type filter works for both types
 
 **Files Modified:**
-- `src/prompt_manager/services/content_loader.py`
+- `src/prompt_unifier/services/content_loader.py`
 
 ---
 
@@ -396,7 +396,7 @@ def filter_by_type(
 **Description:** Implement Rich UI components for displaying prompts and rules
 
 **Steps:**
-1. Create `src/prompt_manager/ui/display.py`
+1. Create `src/prompt_unifier/ui/display.py`
 2. Implement `display_prompts_table()`
 3. Implement `display_rules_table()`
 4. Implement `display_combined_tables()`
@@ -433,7 +433,7 @@ def display_combined_tables(
 - ✅ Long text truncates nicely
 
 **Files Created:**
-- `src/prompt_manager/ui/display.py`
+- `src/prompt_unifier/ui/display.py`
 
 ---
 
@@ -487,7 +487,7 @@ Summary:
 - ✅ Categories shown for rules
 
 **Files Modified:**
-- `src/prompt_manager/ui/display.py`
+- `src/prompt_unifier/ui/display.py`
 
 ---
 
@@ -495,7 +495,7 @@ Summary:
 **Description:** Add JSON output format for programmatic use
 
 **Steps:**
-1. Create `src/prompt_manager/ui/formatters.py`
+1. Create `src/prompt_unifier/ui/formatters.py`
 2. Implement `format_as_json()` function
 3. Support prompts, rules, and combined output
 4. Include metadata and summary
@@ -525,7 +525,7 @@ def format_as_json(
 - ✅ Properly formatted and indented
 
 **Files Created:**
-- `src/prompt_manager/ui/formatters.py`
+- `src/prompt_unifier/ui/formatters.py`
 
 ---
 
@@ -535,7 +535,7 @@ def format_as_json(
 **Description:** Add support for validating rules and filtering by type
 
 **Steps:**
-1. Update `validate()` function in `src/prompt_manager/cli/commands.py`
+1. Update `validate()` function in `src/prompt_unifier/cli/commands.py`
 2. Add `--type` option (prompts, rules, or both)
 3. Use ContentLoader to load files
 4. Validate both prompts and rules
@@ -578,7 +578,7 @@ def validate(
 - ✅ Exit code 0 if all valid
 
 **Files Modified:**
-- `src/prompt_manager/cli/commands.py`
+- `src/prompt_unifier/cli/commands.py`
 
 ---
 
@@ -586,7 +586,7 @@ def validate(
 **Description:** Create new list command for browsing prompts and rules
 
 **Steps:**
-1. Add `list()` function to `src/prompt_manager/cli/commands.py`
+1. Add `list()` function to `src/prompt_unifier/cli/commands.py`
 2. Implement all filtering options
 3. Support multiple output formats
 4. Use Rich tables for default display
@@ -633,7 +633,7 @@ def list(
 - ✅ Empty results handled gracefully
 
 **Files Modified:**
-- `src/prompt_manager/cli/commands.py`
+- `src/prompt_unifier/cli/commands.py`
 
 ---
 
@@ -650,7 +650,7 @@ def list(
 ```
 validate --help
 
-Usage: prompt-manager validate [OPTIONS] [PATH]
+Usage: prompt-unifier validate [OPTIONS] [PATH]
 
   Validate prompts and rules format.
 
@@ -661,13 +661,13 @@ Options:
 
 Examples:
   # Validate everything
-  prompt-manager validate
+  prompt-unifier validate
 
   # Validate only prompts
-  prompt-manager validate --type prompts
+  prompt-unifier validate --type prompts
 
   # Validate specific file
-  prompt-manager validate path/to/rule.md
+  prompt-unifier validate path/to/rule.md
 ```
 
 **Acceptance Criteria:**
@@ -677,7 +677,7 @@ Examples:
 - ✅ Consistent with other commands
 
 **Files Modified:**
-- `src/prompt_manager/cli/commands.py`
+- `src/prompt_unifier/cli/commands.py`
 
 ---
 
@@ -844,23 +844,23 @@ that can be synced and validated alongside prompts.
 
 ```bash
 # List all prompts and rules
-prompt-manager list
+prompt-unifier list
 
 # List only rules
-prompt-manager list --type rules
+prompt-unifier list --type rules
 
 # Filter by category
-prompt-manager list --type rules --category coding-standards
+prompt-unifier list --type rules --category coding-standards
 ```
 
 ### Validate Rules
 
 ```bash
 # Validate both prompts and rules
-prompt-manager validate
+prompt-unifier validate
 
 # Validate only rules
-prompt-manager validate --type rules
+prompt-unifier validate --type rules
 ```
 ```
 
@@ -899,7 +899,7 @@ prompt-manager validate --type rules
 - ✅ Validated and error-free
 
 **Location:**
-- Test data repository: `https://gitlab.com/waewoo/prompt-manager-data`
+- Test data repository: `https://gitlab.com/waewoo/prompt-unifier-data`
 - Directory: `rules/`
 
 ---
@@ -1025,7 +1025,7 @@ prompt-manager validate --type rules
 - ✅ Cache invalidation works
 
 **Files Modified:**
-- `src/prompt_manager/services/content_loader.py` (if implemented)
+- `src/prompt_unifier/services/content_loader.py` (if implemented)
 
 ---
 

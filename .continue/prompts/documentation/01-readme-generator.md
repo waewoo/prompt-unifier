@@ -10,7 +10,7 @@ tags:
 - readme
 - generator
 - markdown
-author: prompt-manager
+author: prompt-unifier
 language: markdown
 ---
 You are an expert technical writer and a seasoned DevOps engineer. Your mission is to generate a comprehensive `README.md` file for a given project, module, or component.

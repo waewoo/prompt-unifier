@@ -11,7 +11,7 @@ from pathlib import Path
 
 import pytest
 
-from prompt_manager.handlers.continue_handler import ContinueToolHandler
+from prompt_unifier.handlers.continue_handler import ContinueToolHandler
 
 
 class TestContinueHandlerBasePath:

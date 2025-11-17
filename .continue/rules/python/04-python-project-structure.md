@@ -17,7 +17,7 @@ tags:
 - standards
 - poetry
 - pyproject
-author: prompt-manager
+author: prompt-unifier
 language: python
 ---
 # Python Project Structure and Packaging

@@ -14,7 +14,7 @@ Total Tasks: 3 task groups
   - [x] 1.1 Write 2-8 focused tests for recursive file discovery in `deploy` command
     - Test that files in subdirectories are found.
     - Test that files at the root are still found.
-  - [x] 1.2 Modify `src/prompt_manager/cli/commands.py` to use `glob("**/*.md")`
+  - [x] 1.2 Modify `src/prompt_unifier/cli/commands.py` to use `glob("**/*.md")`
     - Update `prompts_dir.glob("*.md")` to `prompts_dir.glob("**/*.md")`.
     - Update `rules_dir.glob("*.md")` to `rules_dir.glob("**/*.md")`.
   - [x] 1.3 Implement duplicate title conflict detection in `deploy` command

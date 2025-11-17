@@ -6,8 +6,8 @@ from unittest.mock import MagicMock, patch
 import pytest
 from typer.testing import CliRunner
 
-from prompt_manager.cli.main import app
-from prompt_manager.handlers.continue_handler import ContinueToolHandler  # Add this import
+from prompt_unifier.cli.main import app
+from prompt_unifier.handlers.continue_handler import ContinueToolHandler  # Add this import
 
 runner = CliRunner()
 
@@ -141,7 +141,7 @@ Normal rule content
 @pytest.fixture
 def mock_continue_handler():
     """Mock ContinueToolHandler with proper spec."""
-    with patch("prompt_manager.cli.commands.ContinueToolHandler") as mock_handler:
+    with patch("prompt_unifier.cli.commands.ContinueToolHandler") as mock_handler:
         mock_handler_instance = MagicMock(spec=ContinueToolHandler)
         mock_handler.return_value = mock_handler_instance
         mock_handler_instance.get_name.return_value = "continue"
@@ -157,7 +157,7 @@ class TestRecursiveFileDiscovery:
     ):
         """Test that deploy command discovers files in subdirectories."""
         mock_handler, mock_handler_instance = mock_continue_handler
-        config_dir = tmp_path / ".prompt-manager"
+        config_dir = tmp_path / ".prompt-unifier"
         config_dir.mkdir()
         config_file = config_dir / "config.yaml"
         config_file.write_text(f"""
@@ -166,7 +166,7 @@ storage_path: {mock_storage_with_subdirs}
 target_handlers: ["continue"]
 """)
 
-        with patch("prompt_manager.cli.commands.Path.cwd", return_value=tmp_path):
+        with patch("prompt_unifier.cli.commands.Path.cwd", return_value=tmp_path):
             result = runner.invoke(app, ["deploy"])
 
             # Should discover all files (3 prompts + 2 rules = 5 files)
@@ -179,7 +179,7 @@ target_handlers: ["continue"]
     ):
         """Test that deploy still discovers files at the root level."""
         mock_handler, mock_handler_instance = mock_continue_handler
-        config_dir = tmp_path / ".prompt-manager"
+        config_dir = tmp_path / ".prompt-unifier"
         config_dir.mkdir()
         config_file = config_dir / "config.yaml"
         config_file.write_text(f"""
@@ -188,7 +188,7 @@ storage_path: {mock_storage_with_subdirs}
 target_handlers: ["continue"]
 """)
 
-        with patch("prompt_manager.cli.commands.Path.cwd", return_value=tmp_path):
+        with patch("prompt_unifier.cli.commands.Path.cwd", return_value=tmp_path):
             runner.invoke(app, ["deploy"])
 
             # Verify root level files were deployed
@@ -205,7 +205,7 @@ target_handlers: ["continue"]
     ):
         """Test recursive discovery works with tag filtering."""
         mock_handler, mock_handler_instance = mock_continue_handler
-        config_dir = tmp_path / ".prompt-manager"
+        config_dir = tmp_path / ".prompt-unifier"
         config_dir.mkdir()
         config_file = config_dir / "config.yaml"
         config_file.write_text(f"""
@@ -214,7 +214,7 @@ storage_path: {mock_storage_with_subdirs}
 target_handlers: ["continue"]
 """)
 
-        with patch("prompt_manager.cli.commands.Path.cwd", return_value=tmp_path):
+        with patch("prompt_unifier.cli.commands.Path.cwd", return_value=tmp_path):
             # Deploy only files tagged with "api"
             result = runner.invoke(app, ["deploy", "--tags", "api"])
 
@@ -236,7 +236,7 @@ class TestDuplicateTitleDetection:
         self, tmp_path: Path, mock_storage_with_duplicates: Path
     ):
         """Test that deploy fails when duplicate titles are detected."""
-        config_dir = tmp_path / ".prompt-manager"
+        config_dir = tmp_path / ".prompt-unifier"
         config_dir.mkdir()
         config_file = config_dir / "config.yaml"
         config_file.write_text(f"""
@@ -245,7 +245,7 @@ storage_path: {mock_storage_with_duplicates}
 target_handlers: ["continue"]
 """)
 
-        with patch("prompt_manager.cli.commands.Path.cwd", return_value=tmp_path):
+        with patch("prompt_unifier.cli.commands.Path.cwd", return_value=tmp_path):
             result = runner.invoke(app, ["deploy"])
 
             # Should fail with exit code 1
@@ -258,7 +258,7 @@ target_handlers: ["continue"]
         self, tmp_path: Path, mock_storage_with_duplicates: Path
     ):
         """Test that error message lists the conflicting files."""
-        config_dir = tmp_path / ".prompt-manager"
+        config_dir = tmp_path / ".prompt-unifier"
         config_dir.mkdir()
         config_file = config_dir / "config.yaml"
         config_file.write_text(f"""
@@ -267,7 +267,7 @@ storage_path: {mock_storage_with_duplicates}
 target_handlers: ["continue"]
 """)
 
-        with patch("prompt_manager.cli.commands.Path.cwd", return_value=tmp_path):
+        with patch("prompt_unifier.cli.commands.Path.cwd", return_value=tmp_path):
             result = runner.invoke(app, ["deploy"])
 
             # Error message should list both files with the duplicate title
@@ -280,7 +280,7 @@ target_handlers: ["continue"]
     ):
         """Test that deploy succeeds when there are no duplicate titles."""
         mock_handler, mock_handler_instance = mock_continue_handler
-        config_dir = tmp_path / ".prompt-manager"
+        config_dir = tmp_path / ".prompt-unifier"
         config_dir.mkdir()
         config_file = config_dir / "config.yaml"
         config_file.write_text(f"""
@@ -289,7 +289,7 @@ storage_path: {mock_storage_with_subdirs}
 target_handlers: ["continue"]
 """)
 
-        with patch("prompt_manager.cli.commands.Path.cwd", return_value=tmp_path):
+        with patch("prompt_unifier.cli.commands.Path.cwd", return_value=tmp_path):
             result = runner.invoke(app, ["deploy"])
 
             # Should succeed
@@ -327,7 +327,7 @@ version: 1.0.0
 Rule content
 """)
 
-        config_dir = tmp_path / ".prompt-manager"
+        config_dir = tmp_path / ".prompt-unifier"
         config_dir.mkdir()
         config_file = config_dir / "config.yaml"
         config_file.write_text(f"""
@@ -336,7 +336,7 @@ storage_path: {storage_dir}
 target_handlers: ["continue"]
 """)
 
-        with patch("prompt_manager.cli.commands.Path.cwd", return_value=tmp_path):
+        with patch("prompt_unifier.cli.commands.Path.cwd", return_value=tmp_path):
             result = runner.invoke(app, ["deploy"])
 
             # Should fail due to duplicate title across prompts and rules

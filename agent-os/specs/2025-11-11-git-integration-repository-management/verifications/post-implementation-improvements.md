@@ -11,19 +11,19 @@ Cette vérification documente les améliorations apportées après l'implémenta
 **Objectif:** Permettre aux utilisateurs de vérifier rapidement la version installée.
 
 **Implémentation:**
-- Ajout d'un callback `version_callback` dans `src/prompt_manager/cli/main.py`
+- Ajout d'un callback `version_callback` dans `src/prompt_unifier/cli/main.py`
 - Option `--version` ou `-v` disponible globalement
-- Format de sortie: `prompt-manager version X.Y.Z`
+- Format de sortie: `prompt-unifier version X.Y.Z`
 - Callback eager (traité avant les commandes)
 
 **Test:**
 ```bash
-poetry run prompt-manager --version
-# Output: prompt-manager version 0.1.0
+poetry run prompt-unifier --version
+# Output: prompt-unifier version 0.1.0
 ```
 
 **Fichiers modifiés:**
-- `src/prompt_manager/cli/main.py`
+- `src/prompt_unifier/cli/main.py`
 
 **Tests:**
 - Aucun test spécifique ajouté (fonctionnalité simple testée manuellement)
@@ -37,17 +37,17 @@ poetry run prompt-manager --version
 
 **Problème initial:**
 ```bash
-poetry run prompt-manager init
-# Error: .prompt-manager/ directory already exists. Project is already initialized.
+poetry run prompt-unifier init
+# Error: .prompt-unifier/ directory already exists. Project is already initialized.
 # Exit code: 1
 ```
 
 **Comportement après modification:**
 ```bash
-poetry run prompt-manager init
+poetry run prompt-unifier init
 # ✓ Already initialized (all components exist)
-# Exists: /path/.prompt-manager
-# Exists: /path/.prompt-manager/config.yaml
+# Exists: /path/.prompt-unifier
+# Exists: /path/.prompt-unifier/config.yaml
 # Exit code: 0
 ```
 
@@ -73,7 +73,7 @@ poetry run prompt-manager init
 - Lecture du `storage_path` existant si le config existe déjà
 
 **Fichiers modifiés:**
-- `src/prompt_manager/cli/commands.py` (fonction `init()`)
+- `src/prompt_unifier/cli/commands.py` (fonction `init()`)
 
 **Tests modifiés:**
 - `tests/cli/test_git_commands.py::test_init_is_idempotent_when_already_exists`
@@ -111,7 +111,7 @@ poetry self update
 **Workarounds testés (mais non nécessaires après poetry self update):**
 - ❌ Filtrage des warnings dans le code Python
 - ❌ Variable d'environnement PYTHONWARNINGS
-- ❌ Script wrapper bin/prompt-manager
+- ❌ Script wrapper bin/prompt-unifier
 - ❌ Ajout de requests dans les dépendances du projet
 
 **Fichiers modifiés:**
@@ -130,7 +130,7 @@ poetry self update
 **Utilisation:**
 ```bash
 # Au lieu de
-poetry run prompt-manager --version
+poetry run prompt-unifier --version
 
 # On peut maintenant faire
 make run ARGS="--version"
@@ -154,9 +154,9 @@ make run ARGS="status"
 ```makefile
 .PHONY: install test lint typecheck format check clean run
 
-# Run prompt-manager CLI (use: make run ARGS="--version")
+# Run prompt-unifier CLI (use: make run ARGS="--version")
 run:
-	@poetry run prompt-manager $(ARGS)
+	@poetry run prompt-unifier $(ARGS)
 ```
 
 **Fichiers modifiés:**
@@ -258,8 +258,8 @@ Leçon : Toujours vérifier que les outils (Poetry, pip, etc.) sont à jour avan
 ## Fichiers Impactés
 
 ### Modifiés
-- `src/prompt_manager/cli/main.py` - Ajout callback version
-- `src/prompt_manager/cli/commands.py` - Init idempotent
+- `src/prompt_unifier/cli/main.py` - Ajout callback version
+- `src/prompt_unifier/cli/commands.py` - Init idempotent
 - `Makefile` - Ajout cible run
 - `agent-os/specs/2025-11-11-git-integration-repository-management/spec.md` - Mise à jour spec
 - `tests/cli/test_git_commands.py` - Test init idempotent

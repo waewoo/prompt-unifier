@@ -23,30 +23,30 @@ install:
 	poetry install
 
 
-# Run prompt-manager CLI (use: make run ARGS="--version")
+# Run prompt-unifier CLI (use: make run ARGS="--version")
 run:
-	@poetry run prompt-manager $(ARGS)
+	@poetry run prompt-unifier $(ARGS)
 
 
 # Run pytest test suite with coverage reporting
 test:
-	poetry run pytest --cov=src/prompt_manager --cov-report=term-missing --cov-report=html
+	poetry run pytest --cov=src/prompt_unifier --cov-report=term-missing --cov-report=html
 	@# Clean test artifacts from storage
-	@rm -f ~/.prompt-manager/storage/prompts/test-prompt.md 2>/dev/null || true
-	@rm -f ~/.prompt-manager/storage/rules/test-rule.md 2>/dev/null || true
-	@rm -f ~/.prompt-manager/storage/prompts/main-prompt.md 2>/dev/null || true
-	@rm -f ~/.prompt-manager/storage/rules/main-rule.md 2>/dev/null || true
+	@rm -f ~/.prompt-unifier/storage/prompts/test-prompt.md 2>/dev/null || true
+	@rm -f ~/.prompt-unifier/storage/rules/test-rule.md 2>/dev/null || true
+	@rm -f ~/.prompt-unifier/storage/prompts/main-prompt.md 2>/dev/null || true
+	@rm -f ~/.prompt-unifier/storage/rules/main-rule.md 2>/dev/null || true
 
 
 # Run tests in GitLab CI environment locally (with Docker)
 test-ci:
 	@echo "Running tests in GitLab CI environment (Docker)..."
 	@# Create Docker volumes for cache if they don't exist
-	@docker volume create prompt-manager-venv 2>/dev/null || true
-	@docker volume create prompt-manager-pip-cache 2>/dev/null || true
+	@docker volume create prompt-unifier-venv 2>/dev/null || true
+	@docker volume create prompt-unifier-pip-cache 2>/dev/null || true
 	@gitlab-ci-local test \
-		--volume prompt-manager-venv:/builds/$$(basename $$(pwd))/.venv \
-		--volume prompt-manager-pip-cache:/builds/$$(basename $$(pwd))/.cache/pip
+		--volume prompt-unifier-venv:/builds/$$(basename $$(pwd))/.venv \
+		--volume prompt-unifier-pip-cache:/builds/$$(basename $$(pwd))/.cache/pip
 
 
 # Run tests locally with shell executor (faster, less accurate)
@@ -74,8 +74,8 @@ test-ci-list:
 # Clean GitLab CI local cache and volumes
 clean-ci:
 	@echo "Cleaning GitLab CI local volumes..."
-	@docker volume rm prompt-manager-venv 2>/dev/null || true
-	@docker volume rm prompt-manager-pip-cache 2>/dev/null || true
+	@docker volume rm prompt-unifier-venv 2>/dev/null || true
+	@docker volume rm prompt-unifier-pip-cache 2>/dev/null || true
 	@echo "GitLab CI cache cleaned."
 
 
@@ -157,4 +157,4 @@ help:
 	@echo "  make clean            - Remove build artifacts and caches"
 	@echo "  make changelog        - Generate changelog"
 	@echo "  make release VERSION_BUMP=<type> - Create and push a new release (patch/minor/major)"
-	@echo "  make run ARGS='<args>' - Run prompt-manager CLI with arguments"
+	@echo "  make run ARGS='<args>' - Run prompt-unifier CLI with arguments"

@@ -4,6 +4,6 @@ This module provides Git-related functionality including repository cloning,
 prompt extraction, and commit tracking using GitPython library.
 """
 
-from prompt_manager.git.service import GitService
+from prompt_unifier.git.service import GitService
 
 __all__ = ["GitService"]

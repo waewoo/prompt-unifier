@@ -11,7 +11,7 @@ tags:
 - gitops
 - application
 - generator
-author: prompt-manager
+author: prompt-unifier
 language: yaml
 ---
 You are an expert in GitOps and ArgoCD. Your mission is to generate a complete ArgoCD `Application` YAML manifest based on the user's deployment requirements.

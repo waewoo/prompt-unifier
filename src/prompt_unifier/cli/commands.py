@@ -10,19 +10,19 @@ from pathlib import Path
 import typer
 from rich.console import Console
 
-from prompt_manager.config.manager import ConfigManager
-from prompt_manager.core.batch_validator import BatchValidator
-from prompt_manager.core.content_parser import ContentFileParser
-from prompt_manager.git.service import GitService
-from prompt_manager.handlers.continue_handler import ContinueToolHandler
-from prompt_manager.handlers.registry import ToolHandlerRegistry
-from prompt_manager.models.git_config import GitConfig
-from prompt_manager.models.prompt import PromptFrontmatter
-from prompt_manager.models.rule import RuleFrontmatter
-from prompt_manager.output.json_formatter import JSONFormatter
-from prompt_manager.output.rich_formatter import RichFormatter
-from prompt_manager.utils.formatting import format_timestamp
-from prompt_manager.utils.path_helpers import expand_env_vars
+from prompt_unifier.config.manager import ConfigManager
+from prompt_unifier.core.batch_validator import BatchValidator
+from prompt_unifier.core.content_parser import ContentFileParser
+from prompt_unifier.git.service import GitService
+from prompt_unifier.handlers.continue_handler import ContinueToolHandler
+from prompt_unifier.handlers.registry import ToolHandlerRegistry
+from prompt_unifier.models.git_config import GitConfig
+from prompt_unifier.models.prompt import PromptFrontmatter
+from prompt_unifier.models.rule import RuleFrontmatter
+from prompt_unifier.output.json_formatter import JSONFormatter
+from prompt_unifier.output.rich_formatter import RichFormatter
+from prompt_unifier.utils.formatting import format_timestamp
+from prompt_unifier.utils.path_helpers import expand_env_vars
 
 # Initialize Rich Console for formatted output
 console = Console()
@@ -88,32 +88,32 @@ def validate(
 
     Examples:
         # Validate everything (prompts + rules)
-        prompt-manager validate
+        prompt-unifier validate
 
         # Validate only prompts
-        prompt-manager validate --type prompts
+        prompt-unifier validate --type prompts
 
         # Validate only rules
-        prompt-manager validate --type rules
+        prompt-unifier validate --type rules
 
         # Validate specific directory
-        prompt-manager validate ./prompts
+        prompt-unifier validate ./prompts
 
         # Validate with JSON output
-        prompt-manager validate ./prompts --json
+        prompt-unifier validate ./prompts --json
 
         # Validate with verbose progress
-        prompt-manager validate --verbose
+        prompt-unifier validate --verbose
     """
     # If no directory provided, use storage path from config
     if directory is None:
         cwd = Path.cwd()
-        config_path = cwd / ".prompt-manager" / "config.yaml"
+        config_path = cwd / ".prompt-unifier" / "config.yaml"
 
         if not config_path.exists():
             typer.echo(
                 "Error: No directory specified and configuration not found.\n"
-                "Either provide a directory path or run 'prompt-manager init' first.",
+                "Either provide a directory path or run 'prompt-unifier init' first.",
                 err=True,
             )
             raise typer.Exit(code=1)
@@ -124,7 +124,7 @@ def validate(
         if config is None or config.storage_path is None:
             typer.echo(
                 "Error: Storage path not configured.\n"
-                "Either provide a directory path or run 'prompt-manager init' to set up storage.",
+                "Either provide a directory path or run 'prompt-unifier init' to set up storage.",
                 err=True,
             )
             raise typer.Exit(code=1)
@@ -210,13 +210,13 @@ def validate(
 def init(storage_path: str | None = None) -> None:
     """Initialize Prompt Manager in the current directory.
 
-    Creates the .prompt-manager/ directory and config.yaml in the
+    Creates the .prompt-unifier/ directory and config.yaml in the
     current working directory. This must be run before using other
     commands.
 
     Args:
         storage_path: Optional custom storage directory path. If not provided,
-                     uses ~/.prompt-manager/storage or existing config value.
+                     uses ~/.prompt-unifier/storage or existing config value.
 
     Exit codes:
         0: Initialization successful (including when already initialized)
@@ -224,17 +224,17 @@ def init(storage_path: str | None = None) -> None:
 
     Examples:
         # Initialize with default storage location
-        prompt-manager init
+        prompt-unifier init
 
         # Initialize with custom storage location
-        prompt-manager init --storage-path /custom/path/storage
+        prompt-unifier init --storage-path /custom/path/storage
     """
     try:
         # Get current working directory
         cwd = Path.cwd()
 
-        # Create .prompt-manager/ directory
-        prompt_manager_dir = cwd / ".prompt-manager"
+        # Create .prompt-unifier/ directory
+        prompt_unifier_dir = cwd / ".prompt-unifier"
 
         # Track what was created vs what already existed
         created_items = []
@@ -245,26 +245,26 @@ def init(storage_path: str | None = None) -> None:
             storage_dir = Path(storage_path).expanduser().resolve()
         else:
             # Try to read from existing config if available
-            config_path = prompt_manager_dir / "config.yaml"
+            config_path = prompt_unifier_dir / "config.yaml"
             if config_path.exists():
                 config_manager = ConfigManager()
                 existing_config = config_manager.load_config(config_path)
                 if existing_config and existing_config.storage_path:
                     storage_dir = Path(existing_config.storage_path).expanduser().resolve()
                 else:
-                    storage_dir = Path.home() / ".prompt-manager" / "storage"
+                    storage_dir = Path.home() / ".prompt-unifier" / "storage"
             else:
-                storage_dir = Path.home() / ".prompt-manager" / "storage"
+                storage_dir = Path.home() / ".prompt-unifier" / "storage"
 
-        # Create .prompt-manager/ directory if it doesn't exist
-        if not prompt_manager_dir.exists():
-            prompt_manager_dir.mkdir(parents=True, exist_ok=True)
-            created_items.append(f"Created: {prompt_manager_dir}")
+        # Create .prompt-unifier/ directory if it doesn't exist
+        if not prompt_unifier_dir.exists():
+            prompt_unifier_dir.mkdir(parents=True, exist_ok=True)
+            created_items.append(f"Created: {prompt_unifier_dir}")
         else:
-            existing_items.append(f"Exists: {prompt_manager_dir}")
+            existing_items.append(f"Exists: {prompt_unifier_dir}")
 
         # Create config.yaml if it doesn't exist
-        config_path = prompt_manager_dir / "config.yaml"
+        config_path = prompt_unifier_dir / "config.yaml"
         if not config_path.exists():
             config_manager = ConfigManager()
             empty_config = GitConfig(
@@ -399,23 +399,23 @@ def sync(repo: str | None = None, storage_path: str | None = None) -> None:
 
     Examples:
         # First sync with repository URL
-        prompt-manager sync --repo https://github.com/example/prompts.git
+        prompt-unifier sync --repo https://github.com/example/prompts.git
 
         # Subsequent syncs (reads URL from config)
-        prompt-manager sync
+        prompt-unifier sync
 
         # Sync with custom storage path
-        prompt-manager sync --storage-path /custom/path/storage
+        prompt-unifier sync --storage-path /custom/path/storage
     """
     try:
         # Get current working directory
         cwd = Path.cwd()
 
         # Validate that init has been run
-        config_path = cwd / ".prompt-manager" / "config.yaml"
+        config_path = cwd / ".prompt-unifier" / "config.yaml"
         if not config_path.exists():
             typer.echo(
-                "Error: Configuration not found. Run 'prompt-manager init' first.",
+                "Error: Configuration not found. Run 'prompt-unifier init' first.",
                 err=True,
             )
             raise typer.Exit(code=1)
@@ -427,7 +427,7 @@ def sync(repo: str | None = None, storage_path: str | None = None) -> None:
         if config is None:
             typer.echo(
                 "Error: Failed to load configuration. "
-                "Config file may be corrupted. Run 'prompt-manager init' again.",
+                "Config file may be corrupted. Run 'prompt-unifier init' again.",
                 err=True,
             )
             raise typer.Exit(code=1)
@@ -455,7 +455,7 @@ def sync(repo: str | None = None, storage_path: str | None = None) -> None:
             storage_dir = Path(config.storage_path).expanduser().resolve()
         else:
             # Use default storage path
-            storage_dir = Path.home() / ".prompt-manager" / "storage"
+            storage_dir = Path.home() / ".prompt-unifier" / "storage"
 
         # Display sync start message
         console.print()
@@ -529,17 +529,17 @@ def status() -> None:
 
     Examples:
         # Check sync status
-        prompt-manager status
+        prompt-unifier status
     """
     try:
         # Get current working directory
         cwd = Path.cwd()
 
         # Validate that init has been run
-        config_path = cwd / ".prompt-manager" / "config.yaml"
+        config_path = cwd / ".prompt-unifier" / "config.yaml"
         if not config_path.exists():
             typer.echo(
-                "Error: Configuration not found. Run 'prompt-manager init' first.",
+                "Error: Configuration not found. Run 'prompt-unifier init' first.",
                 err=True,
             )
             raise typer.Exit(code=1)
@@ -551,7 +551,7 @@ def status() -> None:
         if config is None:
             typer.echo(
                 "Error: Failed to load configuration. "
-                "Config file may be corrupted. Run 'prompt-manager init' again.",
+                "Config file may be corrupted. Run 'prompt-unifier init' again.",
                 err=True,
             )
             raise typer.Exit(code=1)
@@ -567,7 +567,7 @@ def status() -> None:
             console.print(f"Storage: {storage_dir}")
         else:
             # Default storage path
-            storage_dir = Path.home() / ".prompt-manager" / "storage"
+            storage_dir = Path.home() / ".prompt-unifier" / "storage"
             console.print(f"Storage: {storage_dir} [dim](default)[/dim]")
 
         # Display repository URL
@@ -576,7 +576,7 @@ def status() -> None:
         else:
             console.print("Repository: [yellow]Not configured[/yellow]")
             console.print()
-            console.print("[dim]Run 'prompt-manager sync --repo <git-url>' to configure[/dim]")
+            console.print("[dim]Run 'prompt-unifier sync --repo <git-url>' to configure[/dim]")
             console.print()
             return
 
@@ -611,7 +611,7 @@ def status() -> None:
                 console.print("[yellow]⚠ Updates available[/yellow]")
                 if commit_count:
                     console.print(f"[dim]{commit_count} new commit(s) available[/dim]")
-                console.print("[dim]Run 'prompt-manager sync' to update[/dim]")
+                console.print("[dim]Run 'prompt-unifier sync' to update[/dim]")
             else:
                 console.print("[green]✓ Up to date[/green]")
         except Exception:
@@ -648,9 +648,9 @@ def deploy(
     try:
         # Load configuration
         cwd = Path.cwd()
-        config_path = cwd / ".prompt-manager" / "config.yaml"
+        config_path = cwd / ".prompt-unifier" / "config.yaml"
         if not config_path.exists():
-            typer.echo("Error: Configuration not found. Run 'prompt-manager init' first.", err=True)
+            typer.echo("Error: Configuration not found. Run 'prompt-unifier init' first.", err=True)
             raise typer.Exit(code=1)
 
         config_manager = ConfigManager()

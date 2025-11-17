@@ -15,7 +15,7 @@ Extend the Prompt Manager CLI to fully support rules/context files alongside pro
 
 **Current State:**
 - Item 3.6 (Rules Directory Synchronization) successfully syncs rules/ from Git
-- Rules are stored in `~/.prompt-manager/storage/rules/`
+- Rules are stored in `~/.prompt-unifier/storage/rules/`
 - No validation or CLI support for rules beyond sync
 
 **Why This Feature:**
@@ -112,7 +112,7 @@ Predefined categories for better organization:
 **New Model: `RuleFile`**
 
 ```python
-# src/prompt_manager/models/rule_file.py
+# src/prompt_unifier/models/rule_file.py
 from typing import Literal
 from pydantic import BaseModel, Field, field_validator
 
@@ -199,7 +199,7 @@ class RuleFile(BaseModel):
 **Unified Type: `ContentFile`**
 
 ```python
-# src/prompt_manager/models/__init__.py
+# src/prompt_unifier/models/__init__.py
 from typing import Union
 from .prompt_file import PromptFile
 from .rule_file import RuleFile
@@ -212,7 +212,7 @@ ContentFile = Union[PromptFile, RuleFile]
 **Extend existing parser to detect type:**
 
 ```python
-# src/prompt_manager/validation/parser.py
+# src/prompt_unifier/validation/parser.py
 
 def parse_content_file(file_path: Path) -> ContentFile:
     """
@@ -292,16 +292,16 @@ def parse_content_file(file_path: Path) -> ContentFile:
 
 ```bash
 # Validate everything (prompts + rules)
-prompt-manager validate
+prompt-unifier validate
 
 # Validate only prompts
-prompt-manager validate --type prompts
+prompt-unifier validate --type prompts
 
 # Validate only rules
-prompt-manager validate --type rules
+prompt-unifier validate --type rules
 
 # Validate specific file
-prompt-manager validate path/to/rule.md
+prompt-unifier validate path/to/rule.md
 ```
 
 **Output:**
@@ -393,27 +393,27 @@ def validate(
 
 ```bash
 # List everything
-prompt-manager list
+prompt-unifier list
 
 # List only prompts
-prompt-manager list --type prompts
+prompt-unifier list --type prompts
 
 # List only rules
-prompt-manager list --type rules
+prompt-unifier list --type rules
 
 # Filter rules by category
-prompt-manager list --type rules --category coding-standards
+prompt-unifier list --type rules --category coding-standards
 
 # Filter by tags
-prompt-manager list --tags python,fastapi
+prompt-unifier list --tags python,fastapi
 
 # Search by name/description
-prompt-manager list --search "api"
+prompt-unifier list --search "api"
 
 # Output formats
-prompt-manager list --format table  # Rich table (default)
-prompt-manager list --format json   # JSON output
-prompt-manager list --format simple # Simple text list
+prompt-unifier list --format table  # Rich table (default)
+prompt-unifier list --format json   # JSON output
+prompt-unifier list --format simple # Simple text list
 ```
 
 **Output (table format - default):**
@@ -444,7 +444,7 @@ Total: 9 files (5 prompts, 4 rules)
 **Output (JSON format):**
 
 ```bash
-$ prompt-manager list --format json
+$ prompt-unifier list --format json
 ```
 
 ```json
@@ -457,7 +457,7 @@ $ prompt-manager list --format json
       "tools": ["continue", "cursor"],
       "tags": ["python", "review"],
       "version": "1.0.0",
-      "file_path": "~/.prompt-manager/storage/prompts/code-review.md"
+      "file_path": "~/.prompt-unifier/storage/prompts/code-review.md"
     }
   ],
   "rules": [
@@ -468,7 +468,7 @@ $ prompt-manager list --format json
       "category": "coding-standards",
       "tags": ["python", "pep8", "style"],
       "version": "1.0.0",
-      "file_path": "~/.prompt-manager/storage/rules/python-style.md"
+      "file_path": "~/.prompt-unifier/storage/rules/python-style.md"
     }
   ],
   "summary": {
@@ -519,7 +519,7 @@ def list(
 **Service Layer:**
 
 ```python
-# src/prompt_manager/services/content_loader.py
+# src/prompt_unifier/services/content_loader.py
 
 from pathlib import Path
 from typing import Literal
@@ -612,7 +612,7 @@ class ContentLoader:
 **Display functions:**
 
 ```python
-# src/prompt_manager/ui/display.py
+# src/prompt_unifier/ui/display.py
 
 from rich.console import Console
 from rich.table import Table
@@ -742,18 +742,18 @@ def display_validation_results(
 
 **1. Invalid filter type:**
 ```bash
-$ prompt-manager list --type invalid
+$ prompt-unifier list --type invalid
 ```
 ```
 ❌ Error: Invalid type 'invalid'
   Valid types: prompts, rules
 
-  Usage: prompt-manager list --type [prompts|rules]
+  Usage: prompt-unifier list --type [prompts|rules]
 ```
 
 **2. Category filter on prompts:**
 ```bash
-$ prompt-manager list --type prompts --category coding-standards
+$ prompt-unifier list --type prompts --category coding-standards
 ```
 ```
 ⚠ Warning: --category filter only applies to rules
@@ -762,13 +762,13 @@ $ prompt-manager list --type prompts --category coding-standards
 
 **3. No storage directory:**
 ```bash
-$ prompt-manager list
+$ prompt-unifier list
 ```
 ```
 ❌ Error: Storage directory not found
 
-  Run 'prompt-manager init' first to initialize storage
-  Or run 'prompt-manager sync --repo <url>' to sync from repository
+  Run 'prompt-unifier init' first to initialize storage
+  Or run 'prompt-unifier sync --repo <url>' to sync from repository
 ```
 
 ## Success Metrics
@@ -834,5 +834,5 @@ $ prompt-manager list
 - [Rich Documentation](https://rich.readthedocs.io/)
 - [Typer Documentation](https://typer.tiangolo.com/)
 - Item 3.6: Rules Directory Synchronization (completed)
-- Existing PromptFile model: `src/prompt_manager/models/prompt_file.py`
-- Existing validation: `src/prompt_manager/validation/`
+- Existing PromptFile model: `src/prompt_unifier/models/prompt_file.py`
+- Existing validation: `src/prompt_unifier/validation/`

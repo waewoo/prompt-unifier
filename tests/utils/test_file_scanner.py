@@ -4,7 +4,7 @@ from pathlib import Path
 
 import pytest
 
-from prompt_manager.utils.file_scanner import FileScanner
+from prompt_unifier.utils.file_scanner import FileScanner
 
 
 class TestFileScanner:

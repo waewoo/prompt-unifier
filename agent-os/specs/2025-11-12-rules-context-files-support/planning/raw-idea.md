@@ -2,7 +2,7 @@
 
 ## Context
 
-Actuellement, le système synchronise les fichiers rules depuis le repository Git (item 3.6 complété), mais il ne les valide pas ni ne les gère dans les commandes comme `list` ou `validate`. Les rules sont simplement copiés dans `~/.prompt-manager/storage/rules/` sans validation de format.
+Actuellement, le système synchronise les fichiers rules depuis le repository Git (item 3.6 complété), mais il ne les valide pas ni ne les gère dans les commandes comme `list` ou `validate`. Les rules sont simplement copiés dans `~/.prompt-unifier/storage/rules/` sans validation de format.
 
 **État actuel:**
 - ✅ Git sync des rules/ fonctionne (item 3.6)
@@ -94,38 +94,38 @@ class RuleFile(BaseModel):
 
 **Avant:**
 ```bash
-prompt-manager validate  # Valide seulement prompts/
+prompt-unifier validate  # Valide seulement prompts/
 ```
 
 **Après:**
 ```bash
 # Valider tout (prompts + rules)
-prompt-manager validate
+prompt-unifier validate
 
 # Valider seulement les prompts
-prompt-manager validate --type prompts
+prompt-unifier validate --type prompts
 
 # Valider seulement les rules
-prompt-manager validate --type rules
+prompt-unifier validate --type rules
 ```
 
 #### 3.2 `list` Command (nouvelle)
 
 ```bash
 # Lister tout
-prompt-manager list
+prompt-unifier list
 
 # Lister seulement les prompts
-prompt-manager list --type prompts
+prompt-unifier list --type prompts
 
 # Lister seulement les rules
-prompt-manager list --type rules
+prompt-unifier list --type rules
 
 # Filtrer par catégorie (rules)
-prompt-manager list --type rules --category coding-standards
+prompt-unifier list --type rules --category coding-standards
 
 # Filtrer par tags
-prompt-manager list --tags python,pep8
+prompt-unifier list --tags python,pep8
 ```
 
 **Output example:**
@@ -149,7 +149,7 @@ api-design           REST API best practices    architecture
 ### 4. Structure de Répertoire
 
 ```
-~/.prompt-manager/storage/
+~/.prompt-unifier/storage/
 ├── prompts/
 │   ├── code-review.md
 │   ├── bug-fixer.md
@@ -245,6 +245,6 @@ ContentFile = Union[PromptFile, RuleFile]
 ## Références
 
 - Spec item 3.6 (Rules Directory Synchronization) - déjà implémenté
-- Modèles Pydantic existants dans `src/prompt_manager/models/`
-- Validation engine dans `src/prompt_manager/validation/`
-- CLI commands dans `src/prompt_manager/cli/commands.py`
+- Modèles Pydantic existants dans `src/prompt_unifier/models/`
+- Validation engine dans `src/prompt_unifier/validation/`
+- CLI commands dans `src/prompt_unifier/cli/commands.py`

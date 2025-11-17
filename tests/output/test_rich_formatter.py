@@ -11,7 +11,7 @@ from pathlib import Path
 import pytest
 from rich.console import Console
 
-from prompt_manager.models.validation import (
+from prompt_unifier.models.validation import (
     ErrorCode,
     ValidationIssue,
     ValidationResult,
@@ -19,7 +19,7 @@ from prompt_manager.models.validation import (
     ValidationSummary,
     WarningCode,
 )
-from prompt_manager.output.rich_formatter import RichFormatter
+from prompt_unifier.output.rich_formatter import RichFormatter
 
 
 def strip_ansi(text: str) -> str:

@@ -14,7 +14,7 @@ tags:
 - pythonoperator
 - xcom
 - connections
-author: prompt-manager
+author: prompt-unifier
 language: python
 ---
 # Airflow Operator Standards
