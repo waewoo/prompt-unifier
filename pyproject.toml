@@ -12,7 +12,7 @@
 name = "prompt-manager"
 version = "0.3.0"
 description = "CLI tool for managing AI prompt templates with YAML frontmatter"
-authors = ["Your Name <your.email@example.com>"]
+authors = ["Waewoo <waewoo@gmail.com>"]
 license = "MIT"
 readme = "README.md"
 packages = [{include = "prompt_manager", from = "src"}]

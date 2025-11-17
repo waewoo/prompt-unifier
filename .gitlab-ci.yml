@@ -14,16 +14,13 @@ variables:
   POETRY_VIRTUALENVS_IN_PROJECT: "true"
   POETRY_NO_INTERACTION: "1"
 
-# Default image for all jobs
 image: python:3.12
 
-# Pipeline stages (executed in order)
 stages:
-  - quality    # Fast checks (lint, typecheck, test) in parallel
-  - security   # Security scans
-  - release    # Manual version bump + automatic release creation
+  - quality
+  - security
+  - release
 
-# Cache Poetry to speed up execution
 cache:
   key:
     files:
@@ -33,21 +30,15 @@ cache:
     - .cache/pip
     - .poetry/
 
-# Install Poetry and dependencies before each job
 before_script:
   - pip install --quiet poetry
   - poetry install --no-interaction --no-ansi
-
-# ============================================================================
-# QUALITY JOBS - Fast feedback on code quality
-# ============================================================================
 
 lint:
   stage: quality
   script:
     - poetry run ruff check src/ tests/
   rules:
-    # Skip on tags (already tested on branch before bump)
     - if: '$CI_COMMIT_TAG'
       when: never
     - if: '$CI_PIPELINE_SOURCE == "merge_request_event"'
@@ -66,18 +57,20 @@ typecheck:
 test:
   stage: quality
   script:
-    - poetry run pytest --cov=src/prompt_manager --cov-report=term-missing --cov-report=xml --cov-report=html
-  coverage: '/(?i)total.*? (100(?:\.0+)?\%|[1-9]?\d(?:\.\d+)?\%)$/'
+    - poetry run pytest --junitxml=report.xml --cov=src/prompt_manager --cov-report=xml --cov-report=html
+  coverage: '/TOTAL\s+\d+\s+\d+\s+(\d+%)/'
   artifacts:
     when: always
     reports:
+      junit: report.xml
       coverage_report:
         coverage_format: cobertura
         path: coverage.xml
     paths:
       - htmlcov/
       - coverage.xml
-    expire_in: 30 days
+      - report.xml
+    expire_in: 1 week
   rules:
     - if: '$CI_COMMIT_TAG'
       when: never
@@ -179,17 +172,11 @@ auto-bump:
     - pip install --quiet poetry commitizen
     - poetry install --no-interaction --no-ansi
     - apt-get update && apt-get install -y git-core
-    
-    # Configure Git to allow commits
     - git config user.email "${GITLAB_USER_EMAIL}"
     - git config user.name "${GITLAB_USER_NAME}"
-    
-    # Configure authentication to push changes
     - git remote set-url origin "https://oauth2:${CI_PUSH_TOKEN}@${CI_SERVER_HOST}/${CI_PROJECT_PATH}.git"
   script:
     - git checkout -B "${CI_COMMIT_REF_NAME}"
-    
-    # Version bump with Commitizen
     - |
       echo "🚀 Running commitizen bump..."
       echo "This will:"
@@ -209,7 +196,6 @@ auto-bump:
       git push origin --tags
       echo "✅ Done! The new tag will trigger the create-release job."
   rules:
-    # Manual on main only, except for bump commits
     - if: '$CI_COMMIT_BRANCH == "main" && $CI_COMMIT_MESSAGE !~ /^bump:/'
       when: manual
       allow_failure: false
@@ -230,8 +216,6 @@ create-release:
   script:
     - echo "📦 Building distribution packages for release ${CI_COMMIT_TAG}..."
     - poetry build
-
-    # Générer les release notes directement avec Commitizen sur la version du tag
     - |
       VERSION="${CI_COMMIT_TAG#v}"
       poetry run cz changelog --dry-run --unreleased-version="$VERSION" > RELEASE_NOTES.md || {
@@ -239,7 +223,6 @@ create-release:
         echo "" >> RELEASE_NOTES.md
         echo "See [CHANGELOG.md](./CHANGELOG.md) for full details." >> RELEASE_NOTES.md
       }
-
     - echo ""
     - echo "📄 Release notes:"
     - echo "─────────────────────────────────────"
@@ -279,7 +262,6 @@ publish-pypi:
     - poetry build
     - poetry publish --username $PYPI_USER --password $PYPI_PASSWORD --no-interaction
   rules:
-    # Publie uniquement lors des releases taguées (vX.Y.Z) sur la branche main
     - if: '$CI_COMMIT_TAG =~ /^v\d+\.\d+\.\d+$/'
       when: on_success
   needs: []
