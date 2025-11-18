@@ -1,4 +1,4 @@
-# Prompt Manager CLI - Project Configuration
+# Prompt Unifier CLI - Project Configuration
 #
 # This pyproject.toml configures:
 # - [tool.poetry]: Package metadata and dependencies (Poetry)

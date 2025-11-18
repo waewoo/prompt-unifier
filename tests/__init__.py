@@ -1,1 +1,1 @@
-"""Test suite for Prompt Manager CLI."""
+"""Test suite for Prompt Unifier CLI."""

@@ -3,7 +3,7 @@
 ## Overview
 Total Tasks: 6 task groups with 29 sub-tasks
 
-This tasks list creates a complete, production-ready Python project structure for the Prompt Manager CLI with Poetry dependency management, TDD testing infrastructure, linting/type checking, and CI/CD automation.
+This tasks list creates a complete, production-ready Python project structure for the Prompt Unifier CLI with Poetry dependency management, TDD testing infrastructure, linting/type checking, and CI/CD automation.
 
 ## Task List
 
@@ -178,7 +178,7 @@ This tasks list creates a complete, production-ready Python project structure fo
 
 - [x] 6.0 Create project documentation
   - [x] 6.1 Create README.md with sections:
-    - Project title: "Prompt Manager CLI"
+    - Project title: "Prompt Unifier CLI"
     - One-sentence description: "A Python CLI tool for managing AI prompt templates with YAML frontmatter, enabling version control, validation, and deployment workflows"
     - Installation section:
       - Prerequisites: Python 3.12+, Poetry

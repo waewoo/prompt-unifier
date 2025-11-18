@@ -1,4 +1,4 @@
-# Makefile for Prompt Manager CLI
+# Makefile for Prompt Unifier CLI
 #
 # This Makefile provides convenient targets for common development tasks:
 # - install: Install dependencies via Poetry

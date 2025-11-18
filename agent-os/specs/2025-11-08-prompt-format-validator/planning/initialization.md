@@ -15,7 +15,7 @@ Prompt Format Specification & Validation Engine — Define and document the stan
 
 ## Project Context
 
-**Project:** Prompt Manager CLI
+**Project:** Prompt Unifier CLI
 
 **Working Directory:** /root/travail/prompt-unifier
 

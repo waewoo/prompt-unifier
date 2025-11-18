@@ -1,7 +1,7 @@
 # Architecture
 
 ## System Architecture
-Prompt Manager follows a layered architecture designed for separation of concerns, testability, and extensibility:
+Prompt Unifier follows a layered architecture designed for separation of concerns, testability, and extensibility:
 
 - **CLI Layer**: User interface and command parsing using Typer. Handles input validation, option processing, and output formatting.
 - **Core Layer**: Business logic including validation, Git operations, and deployment orchestration. Tool-agnostic and reusable.

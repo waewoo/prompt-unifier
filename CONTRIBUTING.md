@@ -1,450 +1,86 @@
-# Contributing to Prompt Manager
+# How to Contribute
 
-Thank you for your interest in contributing to Prompt Manager! This document provides guidelines and instructions for contributing.
+First off, thank you for considering contributing to `prompt-unifier`! Your help is greatly appreciated. This document provides guidelines to ensure a smooth and effective contribution process.
 
 ## Table of Contents
 
 - [Code of Conduct](#code-of-conduct)
-- [Getting Started](#getting-started)
-- [Development Setup](#development-setup)
-- [Making Changes](#making-changes)
-- [Coding Standards](#coding-standards)
-- [Testing](#testing)
-- [Submitting Changes](#submitting-changes)
-- [Adding New Handlers](#adding-new-handlers)
+- [Ways to Contribute](#ways-to-contribute)
+- [Submitting a Pull Request](#submitting-a-pull-request)
+- [Coding and Style Standards](#coding-and-style-standards)
+- [Commit Message Guidelines](#commit-message-guidelines)
+- [Development and Testing](#development-and-testing)
 
 ---
 
 ## Code of Conduct
 
-Please be respectful and constructive in all interactions. We aim to maintain a welcoming and inclusive community.
+This project and everyone participating in it is governed by a [Code of Conduct](CODE_OF_CONDUCT.md). By participating, you are expected to uphold this code. Please report unacceptable behavior.
 
----
+## Ways to Contribute
 
-## Getting Started
+- **Reporting Bugs**: If you find a bug, please open an issue and provide as much detail as possible, including steps to reproduce it.
+- **Suggesting Enhancements**: Have an idea for a new feature or an improvement? Open an issue with a clear description of your suggestion.
+- **Writing Documentation**: Good documentation is crucial. We welcome improvements to the README, docstrings, or other docs.
+- **Submitting Code**: Fix a bug or implement a new feature by submitting a Pull Request.
 
-### Prerequisites
+## Submitting a Pull Request
 
-- Python 3.11+ (Python 3.12+ recommended)
-- Poetry for dependency management
-- Git for version control
-- Basic understanding of Python, CLI tools, and YAML
+1.  **Fork & Clone**: Fork the repository and clone it locally.
+    ```bash
+    git clone https://gitlab.com/waewoo/prompt-unifier.git
+    cd prompt-unifier
+    ```
 
-### Fork and Clone
+2.  **Install Dependencies**: Set up your local environment.
+    ```bash
+    make install
+    poetry run pre-commit install
+    ```
 
-1. Fork the repository on GitHub
-2. Clone your fork locally:
+3.  **Create a Branch**: Create a new branch for your changes with a descriptive name.
+    ```bash
+    # Examples
+    git checkout -b fix/deploy-path-error
+    git checkout -b feat/add-cursor-handler
+    ```
 
-```bash
-git clone https://github.com/YOUR_USERNAME/prompt-unifier.git
-cd prompt-unifier
-```
+4.  **Make Your Changes**: Write your code and add corresponding tests.
 
-3. Add the upstream remote:
+5.  **Run Quality Checks**: Before committing, ensure all checks pass.
+    ```bash
+    make check
+    ```
 
-```bash
-git remote add upstream https://github.com/ORIGINAL_OWNER/prompt-unifier.git
-```
+6.  **Commit Your Changes**: Follow the [Commit Message Guidelines](#commit-message-guidelines).
 
----
+7.  **Push and Open a PR**: Push your branch to your fork and open a Pull Request against the `main` branch of the original repository. Provide a clear description of your changes.
 
-## Development Setup
+## Coding and Style Standards
 
-### Install Dependencies
+- **Formatting**: We use [Ruff](https://github.com/astral-sh/ruff) to format our code. Your code will be automatically formatted on commit if you have the pre-commit hooks installed. You can also run it manually with `make format`.
+- **Linting**: We use Ruff to check for style issues. Run `make lint` to check your code.
+- **Type Hinting**: All functions must have type hints. We use [mypy](http://mypy-lang.org/) in `strict` mode to enforce this. Run `make typecheck` to verify.
+- **Line Length**: Maximum line length is 100 characters.
 
-```bash
-# Install all dependencies including dev dependencies
-poetry install
+## Commit Message Guidelines
 
-# Install pre-commit hooks
-poetry run pre-commit install
-```
+We follow the **Conventional Commits** specification. This helps automate versioning and changelog generation.
 
-### Verify Installation
+Each commit message should have the format: `<type>(<scope>): <description>`
 
-```bash
-# Run tests
-make test
-
-# Run linter
-make lint
-
-# Run type checker
-make typecheck
-
-# Run all checks
-make check
-```
-
----
-
-## Making Changes
-
-### Branch Naming
-
-Create a descriptive branch for your changes:
-
-```bash
-git checkout -b feature/add-cursor-handler
-git checkout -b fix/deployment-path-bug
-git checkout -b docs/update-readme
-```
-
-**Branch prefixes:**
-- `feature/` - New features
-- `fix/` - Bug fixes
-- `docs/` - Documentation changes
-- `refactor/` - Code refactoring
-- `test/` - Test additions or fixes
-
-### Commit Messages
-
-Follow the conventional commits format:
-
-```
-<type>(<scope>): <subject>
-
-<body>
-
-<footer>
-```
+- **type**: `feat`, `fix`, `docs`, `style`, `refactor`, `test`, `chore`.
+- **scope** (optional): The part of the codebase you're changing (e.g., `deploy`, `handlers`, `config`).
+- **description**: A short, imperative-tense description of the change.
 
 **Examples:**
-
-```bash
-feat(handlers): Add Cursor handler implementation
-
-Implements ToolHandler for Cursor AI editor with subdirectory
-support and proper YAML formatting.
-
-Closes #123
+```
+feat(handlers): add support for the Cursor AI assistant
+fix(deploy): correctly resolve relative paths in nested directories
+docs(readme): add installation instructions from PyPI
+chore(release): bump version to 0.5.0
 ```
 
-```bash
-fix(deploy): Correctly calculate relative paths for nested files
+## Development and Testing
 
-The deploy command was not preserving subdirectory structure
-for files more than 2 levels deep.
-
-Fixes #456
-```
-
-**Types:**
-- `feat` - New feature
-- `fix` - Bug fix
-- `docs` - Documentation only
-- `style` - Code style changes (formatting, etc.)
-- `refactor` - Code refactoring
-- `test` - Adding or updating tests
-- `chore` - Maintenance tasks
-
----
-
-## Coding Standards
-
-### Python Style
-
-We use **Ruff** for linting and formatting:
-
-```bash
-# Check code style
-make lint
-
-# Auto-format code
-make format
-```
-
-**Key guidelines:**
-- Follow PEP 8
-- Maximum line length: 100 characters
-- Use type hints for all functions
-- Write docstrings for public APIs
-
-### Type Checking
-
-We use **mypy** in strict mode:
-
-```bash
-make typecheck
-```
-
-All code must pass type checking without errors.
-
-### Code Organization
-
-```
-src/prompt_unifier/
-├── cli/           # CLI commands and main entry point
-├── core/          # Core validation and parsing logic
-├── handlers/      # Tool handler implementations
-├── models/        # Pydantic models
-├── git/           # Git integration services
-├── config/        # Configuration management
-├── output/        # Output formatters
-└── utils/         # Utility functions
-
-tests/
-├── cli/           # CLI command tests
-├── core/          # Core logic tests
-├── handlers/      # Handler tests
-├── integration/   # End-to-end integration tests
-├── models/        # Model tests
-└── fixtures/      # Test fixtures
-```
-
-### Documentation
-
-- **Docstrings:** Use Google-style docstrings
-- **Type hints:** Required for all public functions
-- **Comments:** Explain "why", not "what"
-- **README:** Update for user-facing changes
-- **TEST.md:** Add tests for new features
-
-**Example docstring:**
-
-```python
-def deploy(
-    self,
-    content: Prompt | Rule,
-    base_path: Path,
-    relative_path: Path | None = None,
-) -> None:
-    """Deploy content to the handler's target directory.
-
-    Args:
-        content: The prompt or rule to deploy
-        base_path: Base deployment path (e.g., /home/user/.continue)
-        relative_path: Optional subdirectory path to preserve structure
-
-    Raises:
-        DeploymentError: If deployment fails
-        ValidationError: If content is invalid
-
-    Example:
-        >>> handler.deploy(prompt, Path.home() / ".continue", Path("backend/api"))
-    """
-```
-
----
-
-## Testing
-
-### Test Requirements
-
-- **Coverage:** Minimum 95% required
-- **All tests must pass:** `make test`
-- **No regressions:** Existing tests must continue to pass
-
-### Writing Tests
-
-```bash
-# Run all tests
-make test
-
-# Run specific test file
-poetry run pytest tests/handlers/test_continue_handler.py
-
-# Run with verbose output
-poetry run pytest -v
-
-# Run with coverage report
-poetry run pytest --cov=src/prompt_unifier --cov-report=html
-```
-
-### Test Structure
-
-```python
-def test_deploy_preserves_subdirectory_structure(tmp_path: Path) -> None:
-    """Test that subdirectory structure is preserved during deployment."""
-    # Arrange
-    handler = ContinueToolHandler()
-    prompt = create_test_prompt(title="api-prompt")
-    relative_path = Path("backend/api")
-
-    # Act
-    handler.deploy(prompt, tmp_path, relative_path)
-
-    # Assert
-    expected_path = tmp_path / ".continue/prompts/backend/api/api-prompt.md"
-    assert expected_path.exists()
-    assert "invokable: true" in expected_path.read_text()
-```
-
-### Test Categories
-
-1. **Unit Tests** - Test individual functions/methods
-2. **Integration Tests** - Test component interactions
-3. **End-to-End Tests** - Test complete workflows
-
----
-
-## Submitting Changes
-
-### Before Submitting
-
-Ensure all quality checks pass:
-
-```bash
-# Run all checks (linting, type checking, tests)
-make check
-```
-
-This runs:
-- `make lint` - Code style checks
-- `make typecheck` - Type checking
-- `make test` - All tests with coverage
-
-### Pull Request Process
-
-1. **Update your branch** with latest upstream:
-
-```bash
-git fetch upstream
-git rebase upstream/main
-```
-
-2. **Push your changes:**
-
-```bash
-git push origin feature/your-feature-name
-```
-
-3. **Create Pull Request** on GitHub with:
-   - Clear title describing the change
-   - Description of what changed and why
-   - Reference to related issues (e.g., "Closes #123")
-   - Screenshots/examples for UI changes
-
-4. **Wait for review:**
-   - Address reviewer feedback
-   - Keep the PR updated with upstream changes
-   - Ensure CI/CD checks pass
-
-### Pull Request Template
-
-```markdown
-## Description
-
-Brief description of changes made.
-
-## Type of Change
-
-- [ ] Bug fix (non-breaking change which fixes an issue)
-- [ ] New feature (non-breaking change which adds functionality)
-- [ ] Breaking change (fix or feature that would cause existing functionality to not work as expected)
-- [ ] Documentation update
-
-## How Has This Been Tested?
-
-- [ ] Unit tests
-- [ ] Integration tests
-- [ ] Manual testing
-
-## Checklist
-
-- [ ] My code follows the code style of this project
-- [ ] I have updated the documentation accordingly
-- [ ] I have added tests to cover my changes
-- [ ] All new and existing tests passed
-- [ ] `make check` passes without errors
-```
-
----
-
-## Adding New Handlers
-
-To add support for a new AI coding assistant:
-
-### 1. Create Handler Class
-
-Create a new file in `src/prompt_unifier/handlers/`:
-
-```python
-# src/prompt_unifier/handlers/cursor_handler.py
-
-from pathlib import Path
-from prompt_unifier.handlers.protocol import ToolHandler
-from prompt_unifier.models.prompt import Prompt
-from prompt_unifier.models.rule import Rule
-
-
-class CursorToolHandler(ToolHandler):
-    """Handler for Cursor AI editor."""
-
-    @property
-    def name(self) -> str:
-        return "cursor"
-
-    def deploy(
-        self,
-        content: Prompt | Rule,
-        base_path: Path,
-        relative_path: Path | None = None,
-    ) -> None:
-        """Deploy content to Cursor's configuration directory."""
-        # Implementation here
-        pass
-
-    def validate_installation(self, base_path: Path) -> tuple[bool, str | None]:
-        """Validate Cursor installation."""
-        # Implementation here
-        pass
-```
-
-### 2. Register Handler
-
-Add to `src/prompt_unifier/handlers/__init__.py`:
-
-```python
-from prompt_unifier.handlers.cursor_handler import CursorToolHandler
-from prompt_unifier.handlers.registry import register_handler
-
-register_handler(CursorToolHandler())
-```
-
-### 3. Add Tests
-
-Create `tests/handlers/test_cursor_handler.py`:
-
-```python
-import pytest
-from pathlib import Path
-from prompt_unifier.handlers.cursor_handler import CursorToolHandler
-
-
-def test_cursor_handler_deploys_prompt(tmp_path: Path) -> None:
-    """Test that Cursor handler deploys prompts correctly."""
-    # Test implementation
-    pass
-```
-
-### 4. Update Documentation
-
-- Add handler to README.md "Handlers" section
-- Add manual tests to TEST.md
-- Update roadmap.md
-
-### 5. Implementation Checklist
-
-- [ ] Implements `ToolHandler` protocol
-- [ ] Supports subdirectory structure preservation
-- [ ] Handles relative paths correctly
-- [ ] Creates backups before overwriting
-- [ ] Validates installation
-- [ ] Tests achieve ≥95% coverage
-- [ ] Documentation updated
-- [ ] All quality checks pass
-
----
-
-## Questions or Need Help?
-
-- **Issues:** Open a GitHub issue for bugs or feature requests
-- **Discussions:** Use GitHub Discussions for questions
-- **Documentation:** Check README.md and existing code
-
----
-
-## License
-
-By contributing, you agree that your contributions will be licensed under the MIT License.
+For a detailed guide on setting up the environment, running tests, and understanding the project architecture, please refer to the [**DEVELOPMENT.md**](DEVELOPMENT.md) file.

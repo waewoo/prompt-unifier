@@ -11,7 +11,7 @@ We release patches for security vulnerabilities for the following versions:
 
 ## Reporting a Vulnerability
 
-We take the security of Prompt Manager seriously. If you discover a security vulnerability, please follow these steps:
+We take the security of Prompt Unifier seriously. If you discover a security vulnerability, please follow these steps:
 
 ### How to Report
 

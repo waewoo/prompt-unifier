@@ -1,7 +1,7 @@
 # Specification: Rules/Context Files Support
 
 ## Goal
-Extend the Prompt Manager CLI to fully support rules/context files alongside prompts, using the same YAML frontmatter + >>> separator format, with complete validation, listing, and filtering capabilities to provide a unified experience for managing both prompts and coding rules.
+Extend the Prompt Unifier CLI to fully support rules/context files alongside prompts, using the same YAML frontmatter + >>> separator format, with complete validation, listing, and filtering capabilities to provide a unified experience for managing both prompts and coding rules.
 
 ## User Stories
 

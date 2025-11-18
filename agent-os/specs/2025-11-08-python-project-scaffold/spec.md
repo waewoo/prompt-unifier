@@ -1,7 +1,7 @@
 # Specification: Python Project Scaffold
 
 ## Goal
-Establish a complete, production-ready Python project structure for the Prompt Manager CLI with Poetry dependency management, TDD testing infrastructure, linting/type checking, and CI/CD automation following modern best practices.
+Establish a complete, production-ready Python project structure for the Prompt Unifier CLI with Poetry dependency management, TDD testing infrastructure, linting/type checking, and CI/CD automation following modern best practices.
 
 ## User Stories
 - As a developer, I want a well-organized project structure with clear separation of concerns so that I can quickly locate and modify code

@@ -1,7 +1,7 @@
 # Project Brief
 
 ## Core Requirements
-Prompt Manager is a CLI tool for centralizing, validating, and deploying AI prompts and coding rules across multiple tools (Continue, Cursor, Windsurf, Aider, Kilo Code). Key requirements:
+Prompt Unifier is a CLI tool for centralizing, validating, and deploying AI prompts and coding rules across multiple tools (Continue, Cursor, Windsurf, Aider, Kilo Code). Key requirements:
 - Git-based synchronization from central repositories (read-only).
 - Standardized format: YAML frontmatter + >>> separator for prompts and rules.
 - Validation engine with Pydantic models, error reporting (Rich/JSON).

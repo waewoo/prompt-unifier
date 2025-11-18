@@ -1,4 +1,4 @@
-# Manual Testing Guide - Prompt Manager
+# Manual Testing Guide - Prompt Unifier
 
 This guide details all manual tests to be performed to validate all features of the **prompt-unifier** application.
 

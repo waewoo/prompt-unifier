@@ -1,4 +1,4 @@
-"""Main CLI application for Prompt Manager.
+"""Main CLI application for Prompt Unifier.
 
 This module sets up the Typer application and registers all CLI commands.
 """
@@ -53,7 +53,7 @@ def main_callback(
         is_eager=True,
     ),
 ) -> None:
-    """Prompt Manager CLI - Manage and validate AI prompt templates."""
+    """Prompt Unifier CLI - Manage and validate AI prompt templates."""
     pass
 
 

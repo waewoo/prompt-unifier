@@ -1,4 +1,4 @@
-"""CLI commands for the Prompt Manager.
+"""CLI commands for the Prompt Unifier.
 
 This module contains the CLI commands implemented using Typer,
 including the validate command for prompt file validation and
@@ -208,7 +208,7 @@ def validate(
 
 
 def init(storage_path: str | None = None) -> None:
-    """Initialize Prompt Manager in the current directory.
+    """Initialize Prompt Unifier in the current directory.
 
     Creates the .prompt-unifier/ directory and config.yaml in the
     current working directory. This must be run before using other
@@ -581,7 +581,7 @@ def status() -> None:
 
         # Display status header
         console.print()
-        console.print("[bold]Prompt Manager Status[/bold]")
+        console.print("[bold]Prompt Unifier Status[/bold]")
         console.print("━" * 80)
 
         # Display storage path

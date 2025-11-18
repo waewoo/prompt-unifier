@@ -1,7 +1,7 @@
 # Tech Stack
 
 ## Overview
-Prompt Manager is a CLI-only Python application with no web interface, no centralized server, and no cloud database. All operations are local, Git-centric, and developer-focused.
+Prompt Unifier is a CLI-only Python application with no web interface, no centralized server, and no cloud database. All operations are local, Git-centric, and developer-focused.
 
 ## Language & Runtime
 

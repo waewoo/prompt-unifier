@@ -924,7 +924,7 @@ class TestMainModule:
         assert result.exit_code == 0
         assert (
             "prompt-unifier" in result.output
-            or "Prompt Manager" in result.output
+            or "Prompt Unifier" in result.output
             or "Usage:" in result.output
         )
 

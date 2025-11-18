@@ -2,7 +2,7 @@
 
 ## 1. Introduction
 
-This specification describes the design and implementation of an architecture based on the "Strategy" design pattern for managing "Tool Handlers" within the Prompt Manager CLI application. The main objective is to create a flexible and extensible system that allows for the addition of new AI tool handlers with minimal changes to the core application, while ensuring robust error handling and the ability to enable/disable these handlers.
+This specification describes the design and implementation of an architecture based on the "Strategy" design pattern for managing "Tool Handlers" within the Prompt Unifier CLI application. The main objective is to create a flexible and extensible system that allows for the addition of new AI tool handlers with minimal changes to the core application, while ensuring robust error handling and the ability to enable/disable these handlers.
 
 ## 2. Objectives
 
@@ -14,7 +14,7 @@ This specification describes the design and implementation of an architecture ba
 
 ## 3. Product Context
 
-Prompt Manager is a Python CLI tool designed to centralize and standardize the management of prompt templates and coding rules for various AI assistants (Continue, Cursor, Windsurf, Aider, Kilo Code). The strategy pattern architecture for tool handlers is a key step in achieving the goal of extensibility and multi-tool support, as described in the product roadmap (item 5).
+Prompt Unifier is a Python CLI tool designed to centralize and standardize the management of prompt templates and coding rules for various AI assistants (Continue, Cursor, Windsurf, Aider, Kilo Code). The strategy pattern architecture for tool handlers is a key step in achieving the goal of extensibility and multi-tool support, as described in the product roadmap (item 5).
 
 ## 4. Functional Requirements
 

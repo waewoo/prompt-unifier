@@ -1,7 +1,7 @@
 # Product Mission
 
 ## Pitch
-Prompt Manager is a Python CLI tool that helps developers and tech leads using multiple AI assistants (Continue, Cursor, Windsurf, Aider, Kilo Code) centralize and standardize their prompt management by providing a Git-centric, validated, and reproducible workflow for deploying prompts across all their AI tools.
+Prompt Unifier is a Python CLI tool that helps developers and tech leads using multiple AI assistants (Continue, Cursor, Windsurf, Aider, Kilo Code) centralize and standardize their prompt management by providing a Git-centric, validated, and reproducible workflow for deploying prompts across all their AI tools.
 
 ## Users
 
@@ -49,7 +49,7 @@ This results in wasted time troubleshooting AI behavior, inconsistent code gener
 ## Differentiators
 
 ### CLI-First, Developer-Centric Design
-Unlike GUI-based configuration tools or web dashboards, Prompt Manager is built as a pure CLI tool optimized for developers. This results in scriptable workflows, CI/CD integration, offline operation, and zero GUI overhead—perfect for terminal-oriented developers.
+Unlike GUI-based configuration tools or web dashboards, Prompt Unifier is built as a pure CLI tool optimized for developers. This results in scriptable workflows, CI/CD integration, offline operation, and zero GUI overhead—perfect for terminal-oriented developers.
 
 ### Git as the Single Source of Truth
 Unlike tools that use proprietary databases or cloud storage, we leverage Git's proven versioning capabilities. This provides battle-tested branching/merging, familiar code review workflows, built-in audit trails, and seamless team collaboration using existing VCS practices.
@@ -61,7 +61,7 @@ Unlike ad-hoc prompt files, we enforce a standardized format (YAML frontmatter +
 Unlike monolithic tools hardcoded for specific assistants, our Python Protocol-based architecture allows new AI tools to be added without modifying core logic. This future-proofs the tool and enables community contributions for emerging AI assistants.
 
 ### Quality-Focused TDD Development
-Unlike rapid prototypes, Prompt Manager follows strict TDD methodology with comprehensive test coverage, static type checking (mypy), automated linting (Ruff), and CI/CD validation. Local development environment equals CI environment, ensuring reliability and maintainability.
+Unlike rapid prototypes, Prompt Unifier follows strict TDD methodology with comprehensive test coverage, static type checking (mypy), automated linting (Ruff), and CI/CD validation. Local development environment equals CI environment, ensuring reliability and maintainability.
 
 ### Explicit Scope Boundaries
 We deliberately exclude features that dilute our core mission:

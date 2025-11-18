@@ -2,12 +2,12 @@
 
 ## Initial Description
 
-Initialize complete Python project structure for Prompt Manager CLI, including all directories (src/, tests/, docs/, scripts/) and standard files (README.md, Makefile, pyproject.toml, .gitignore, etc.), following recommended conventions (Poetry, TDD, lint, type checking, CI/CD, etc.).
+Initialize complete Python project structure for Prompt Unifier CLI, including all directories (src/, tests/, docs/, scripts/) and standard files (README.md, Makefile, pyproject.toml, .gitignore, etc.), following recommended conventions (Poetry, TDD, lint, type checking, CI/CD, etc.).
 
 **Objective**: Have a ready-to-use skeleton for developing, testing, and deploying the CLI.
 
 **Context**:
-- Project: Prompt Manager CLI
+- Project: Prompt Unifier CLI
 - Working Directory: /root/travail/prompt-unifier
 - Product Documentation: agent-os/product/
 - Initialization Date: 2025-11-08
