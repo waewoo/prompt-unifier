@@ -87,9 +87,9 @@ poetry run prompt-unifier init
 **Created config.yaml file:**
 
 ```yaml
-repo_url: null
+repos: null
 last_sync_timestamp: null
-last_sync_commit: null
+repo_metadata: null
 storage_path: /root/.prompt-unifier/storage
 ```
 
@@ -124,7 +124,7 @@ poetry run prompt-unifier sync --repo git@gitlab.com:waewoo/prompt-unifier-data.
 
 ✗ **Expected result:** Error "Configuration not found" (Code: 1)
 
-### Test 3.2: First synchronization
+### Test 3.2: First synchronization (single repository)
 
 ```bash
 cd /tmp/test-pm-1
@@ -133,19 +133,78 @@ poetry run prompt-unifier sync --repo git@gitlab.com:waewoo/prompt-unifier-data.
 
 ✓ **Expected result:**
 - Messages: "Syncing prompts..." → "Cloning repository..." → "Extracting prompts..." → "✓ Sync complete"
-- Config updated with `repo_url`, `last_sync_timestamp`, `last_sync_commit`
+- Config updated with `repos`, `last_sync_timestamp`, `repo_metadata`
 - Files in `~/.prompt-unifier/storage/prompts/`
+
+**Created config after sync:**
+
+```yaml
+repos:
+  - url: git@gitlab.com:waewoo/prompt-unifier-data.git
+    branch: main
+last_sync_timestamp: "2024-11-18T14:30:00Z"
+repo_metadata:
+  - url: git@gitlab.com:waewoo/prompt-unifier-data.git
+    branch: main
+    commit: abc1234
+    timestamp: "2024-11-18T14:30:00Z"
+storage_path: /root/.prompt-unifier/storage
+```
 
 ### Test 3.3: Subsequent synchronization (without URL)
 
 ```bash
 cd /tmp/test-pm-1
-poetry run prompt-unifier sync  # Read URL from config
+poetry run prompt-unifier sync  # Read URLs from config
 ```
 
-✓ **Expected result:** Successful sync using configured URL
+✓ **Expected result:** Successful sync using configured repository URLs
 
-### Test 3.4: Sync with invalid URL (error)
+### Test 3.4: Multi-repository synchronization
+
+```bash
+cd /tmp/test-pm-1
+poetry run prompt-unifier sync \
+  --repo git@gitlab.com:waewoo/prompt-unifier-data.git \
+  --repo git@gitlab.com:company/global-prompts.git \
+  --repo git@gitlab.com:team/team-prompts.git
+```
+
+✓ **Expected result:**
+- All three repositories synced successfully
+- Last-wins merge strategy: if multiple repos have the same file, last repo wins
+- Config updated with all three repositories in `repos` list
+- Each repository tracked separately in `repo_metadata` with individual commit hashes
+- Files from all repos merged in `~/.prompt-unifier/storage/prompts/`
+
+**Multi-repo config structure:**
+
+```yaml
+repos:
+  - url: git@gitlab.com:waewoo/prompt-unifier-data.git
+    branch: main
+  - url: git@gitlab.com:company/global-prompts.git
+    branch: main
+  - url: git@gitlab.com:team/team-prompts.git
+    branch: develop
+last_sync_timestamp: "2024-11-18T14:35:00Z"
+repo_metadata:
+  - url: git@gitlab.com:waewoo/prompt-unifier-data.git
+    branch: main
+    commit: abc1234
+    timestamp: "2024-11-18T14:35:00Z"
+  - url: git@gitlab.com:company/global-prompts.git
+    branch: main
+    commit: def5678
+    timestamp: "2024-11-18T14:35:00Z"
+  - url: git@gitlab.com:team/team-prompts.git
+    branch: develop
+    commit: ghi9012
+    timestamp: "2024-11-18T14:35:00Z"
+storage_path: /root/.prompt-unifier/storage
+```
+
+### Test 3.5: Sync with invalid URL (error)
 
 ```bash
 poetry run prompt-unifier sync --repo https://invalid-url.com/repo.git
@@ -179,7 +238,7 @@ poetry run prompt-unifier status
 - "Repository: Not configured"
 - Message suggesting to run `sync`
 
-### Test 4.3: Status after successful sync
+### Test 4.3: Status after successful sync (single repository)
 
 ```bash
 cd /tmp/test-pm-1
@@ -191,6 +250,22 @@ poetry run prompt-unifier status
 - Repository URL
 - "Last sync: X minutes ago"
 - "✓ Up to date" or "⚠ Updates available (X commits behind)"
+
+### Test 4.4: Status with multiple repositories
+
+```bash
+cd /tmp/test-pm-1
+poetry run prompt-unifier sync \
+  --repo git@gitlab.com:waewoo/prompt-unifier-data.git \
+  --repo git@gitlab.com:company/global-prompts.git
+poetry run prompt-unifier status
+```
+
+✓ **Expected result:**
+- Multiple repository URLs listed with individual commit info
+- Each repository shows its branch and last commit
+- "Last sync: X minutes ago" (overall sync timestamp)
+- Individual status for each repository if updates available
 
 ---
 
@@ -373,14 +448,17 @@ poetry run prompt-unifier deploy  # Without options - reads config
 
 ✓ **Expected result:** Only "python" tagged items deployed to continue (Code: 0)
 
-### Test 9.10: Deploy with --clean (cleanup orphans)
+### Test 9.10: Deploy with --clean (cleanup orphans and backups)
 
 ```bash
 # Deploy some files
 poetry run prompt-unifier deploy --tags python --handlers continue
 
-# Create an orphan file
+# Create an orphan file and backup files (including in subdirectories)
 echo "orphan" > ~/.continue/prompts/orphan.md
+echo "backup" > ~/.continue/prompts/old-backup.md.bak
+mkdir -p ~/.continue/prompts/subdir
+echo "nested backup" > ~/.continue/prompts/subdir/nested-backup.md.bak
 
 # Redeploy with --clean
 poetry run prompt-unifier deploy --tags python --handlers continue --clean
@@ -388,8 +466,9 @@ poetry run prompt-unifier deploy --tags python --handlers continue --clean
 
 ✓ **Expected result:**
 - Orphan file permanently deleted
-- Message "Cleaned X orphaned file(s)"
-- **NO** .bak files created (Code: 0)
+- All .bak files recursively deleted (including in subdirectories)
+- Message "Cleaned X orphaned file(s)" (includes both orphans and backups)
+- Clean operates recursively through all subdirectories (Code: 0)
 
 ---
 
@@ -457,15 +536,25 @@ poetry run prompt-unifier deploy --handlers continue
 # Deploy
 poetry run prompt-unifier deploy --tags backend --handlers continue
 
-# Create orphan in subdirectory
+# Create backup files in subdirectory (will be removed)
 mkdir -p ~/.continue/prompts/deprecated
-echo "old" > ~/.continue/prompts/deprecated/old.md
+echo "backup" > ~/.continue/prompts/deprecated/backup.md.bak
+
+# Create orphaned .md file in ROOT directory (will be removed)
+echo "old" > ~/.continue/prompts/old-prompt.md
+
+# Create .md file in subdirectory (will be PRESERVED - not cleaned)
+echo "nested" > ~/.continue/prompts/deprecated/nested.md
 
 # Redeploy with --clean
 poetry run prompt-unifier deploy --tags backend --handlers continue --clean
 ```
 
-✓ **Expected result:** Orphan file `deprecated/old.md` deleted (Code: 0)
+✓ **Expected result:**
+- Backup file `deprecated/backup.md.bak` deleted (recursive cleanup of .bak files)
+- Orphaned .md file `old-prompt.md` in root deleted
+- File `deprecated/nested.md` PRESERVED (orphaned .md in subdirectories preserved for tag filter compatibility)
+- Clean removes .bak files recursively but only removes orphaned .md files from root directory (Code: 0)
 
 ### Test 10.4: Deep nesting (4+ levels)
 
@@ -540,7 +629,7 @@ chmod 755 /tmp/no-write
 
 ## Complete Workflows
 
-### Test 8.1: Team workflow (new member)
+### Test 8.1: Team workflow (new member with single repository)
 
 ```bash
 mkdir -p /tmp/team-project && cd /tmp/team-project
@@ -548,7 +637,9 @@ mkdir -p /tmp/team-project && cd /tmp/team-project
 # Pre-existing configuration
 mkdir -p .prompt-unifier
 cat > .prompt-unifier/config.yaml << 'EOF'
-repo_url: git@gitlab.com:waewoo/prompt-unifier-data.git
+repos:
+  - url: git@gitlab.com:waewoo/prompt-unifier-data.git
+    branch: main
 storage_path: /root/.prompt-unifier/storage
 EOF
 
@@ -559,7 +650,33 @@ poetry run prompt-unifier status
 
 ✓ **Expected result:** Successful sync, config used (Code: 0)
 
-### Test 8.2: Daily update
+### Test 8.2: Team workflow with multiple repositories
+
+```bash
+mkdir -p /tmp/team-multi && cd /tmp/team-multi
+
+# Pre-existing configuration with multiple repos
+mkdir -p .prompt-unifier
+cat > .prompt-unifier/config.yaml << 'EOF'
+repos:
+  - url: git@gitlab.com:company/global-prompts.git
+    branch: main
+  - url: git@gitlab.com:team/team-prompts.git
+    branch: develop
+storage_path: /root/.prompt-unifier/storage
+EOF
+
+# New member syncs all repositories
+poetry run prompt-unifier sync
+poetry run prompt-unifier status
+```
+
+✓ **Expected result:**
+- Both repositories synced successfully
+- Files from both repos merged in storage (last-wins strategy)
+- Status shows both repositories with individual commit info (Code: 0)
+
+### Test 8.3: Daily update
 
 ```bash
 cd /tmp/test-pm-1
@@ -611,14 +728,16 @@ Init
 
 Sync
 ├─ [·] Test 3.1 - Sync without init (error)
-├─ [·] Test 3.2 - First sync
+├─ [·] Test 3.2 - First sync (single repo)
 ├─ [·] Test 3.3 - Subsequent sync
-└─ [·] Test 3.4 - Invalid URL (error)
+├─ [·] Test 3.4 - Multi-repository sync
+└─ [·] Test 3.5 - Invalid URL (error)
 
 Status
 ├─ [·] Test 4.1 - Status without init (error)
 ├─ [·] Test 4.2 - Status post-init
-└─ [·] Test 4.3 - Status post-sync
+├─ [·] Test 4.3 - Status post-sync (single repo)
+└─ [·] Test 4.4 - Status with multiple repos
 
 Validate
 ├─ [·] Test 5.1 - Validate prompts
@@ -652,8 +771,9 @@ Error Handling
 └─ [·] Test 6.2 - Network retry
 
 Workflows
-├─ [·] Test 8.1 - Team workflow
-└─ [·] Test 8.2 - Daily update
+├─ [·] Test 8.1 - Team workflow (single repo)
+├─ [·] Test 8.2 - Team workflow (multi-repo)
+└─ [·] Test 8.3 - Daily update
 
 Cleanup
 ├─ [·] Test directories
@@ -678,3 +798,5 @@ Cleanup
 | Storage not created | Permissions | Check home directory permissions |
 | Missing prompts | No prompts/ folder | Verify repository structure |
 | Corrupted config.yaml | Manual editing | Delete and re-initialize |
+| File conflicts in multi-repo | Multiple repos with same file | Last repo wins (last-wins strategy) |
+| Wrong file version displayed | Multi-repo sync order | Check repo order in config - last repo takes precedence |

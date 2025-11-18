@@ -183,7 +183,10 @@ class ContinueToolHandler(ToolHandler):
     def clean_orphaned_files(self, deployed_filenames: set[str]) -> int:
         """
         Remove files in prompts/rules directories that are not in the deployed set.
-        Also removes any .bak backup files.
+        Also removes any .bak backup files recursively (including in subdirectories).
+
+        Note: Orphaned .md files are only removed from the root directory to preserve
+        files from previous deployments with different tag filters.
 
         Args:
             deployed_filenames: Set of filenames that were just deployed.
@@ -193,33 +196,35 @@ class ContinueToolHandler(ToolHandler):
         """
         removed_count = 0
 
-        # Clean prompts directory
-        for file_path in self.prompts_dir.glob("*"):
-            if file_path.is_file():
-                # Remove .bak backup files
-                if file_path.suffix == ".bak":
-                    file_path.unlink()
-                    console.print(f"  [dim]Removed backup file: {file_path.name}[/dim]")
-                    removed_count += 1
-                # Remove orphaned .md files (not in deployed set)
-                elif file_path.suffix == ".md" and file_path.name not in deployed_filenames:
-                    file_path.unlink()
-                    console.print(f"  [yellow]Removed orphaned prompt: {file_path.name}[/yellow]")
-                    removed_count += 1
+        # Remove .bak files recursively in prompts directory (including subdirectories)
+        # glob("**/*.bak") only matches files, not directories
+        for file_path in self.prompts_dir.glob("**/*.bak"):
+            file_path.unlink()
+            console.print(f"  [dim]Removed backup file: {file_path.name}[/dim]")
+            removed_count += 1
 
-        # Clean rules directory
-        for file_path in self.rules_dir.glob("*"):
-            if file_path.is_file():
-                # Remove .bak backup files
-                if file_path.suffix == ".bak":
-                    file_path.unlink()
-                    console.print(f"  [dim]Removed backup file: {file_path.name}[/dim]")
-                    removed_count += 1
-                # Remove orphaned .md files (not in deployed set)
-                elif file_path.suffix == ".md" and file_path.name not in deployed_filenames:
-                    file_path.unlink()
-                    console.print(f"  [yellow]Removed orphaned rule: {file_path.name}[/yellow]")
-                    removed_count += 1
+        # Remove orphaned .md files ONLY in root prompts directory (not subdirectories)
+        # glob("*.md") only matches files, not directories
+        for file_path in self.prompts_dir.glob("*.md"):
+            if file_path.name not in deployed_filenames:
+                file_path.unlink()
+                console.print(f"  [yellow]Removed orphaned prompt: {file_path.name}[/yellow]")
+                removed_count += 1
+
+        # Remove .bak files recursively in rules directory (including subdirectories)
+        # glob("**/*.bak") only matches files, not directories
+        for file_path in self.rules_dir.glob("**/*.bak"):
+            file_path.unlink()
+            console.print(f"  [dim]Removed backup file: {file_path.name}[/dim]")
+            removed_count += 1
+
+        # Remove orphaned .md files ONLY in root rules directory (not subdirectories)
+        # glob("*.md") only matches files, not directories
+        for file_path in self.rules_dir.glob("*.md"):
+            if file_path.name not in deployed_filenames:
+                file_path.unlink()
+                console.print(f"  [yellow]Removed orphaned rule: {file_path.name}[/yellow]")
+                removed_count += 1
 
         return removed_count
 

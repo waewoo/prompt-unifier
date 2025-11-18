@@ -9,10 +9,15 @@ import shutil
 import tempfile
 import time
 from collections.abc import Callable
+from datetime import UTC, datetime
 from pathlib import Path
-from typing import TypeVar
+from typing import TYPE_CHECKING, TypeVar
 
 import git
+
+if TYPE_CHECKING:
+    from prompt_unifier.models.git_config import RepositoryConfig
+    from prompt_unifier.utils.repo_metadata import RepoMetadata
 
 T = TypeVar("T")
 
@@ -84,18 +89,26 @@ class GitService:
         7
     """
 
-    def clone_to_temp(self, repo_url: str) -> tuple[Path, git.Repo]:
+    def clone_to_temp(
+        self,
+        repo_url: str,
+        branch: str | None = None,
+        auth_config: dict[str, str] | None = None,
+    ) -> tuple[Path, git.Repo]:
         """Clone repository to temporary directory with retry logic.
 
         This method clones a Git repository to a temporary directory using
         tempfile.mkdtemp(). It implements retry logic with exponential backoff
-        for network resilience.
+        for network resilience. Optionally checks out a specific branch and
+        handles authentication.
 
         Note: The temporary directory is not automatically cleaned up. The caller
         should clean it up manually if needed, or rely on the OS to clean up /tmp.
 
         Args:
             repo_url: URL of the Git repository to clone
+            branch: Optional branch name to checkout after clone
+            auth_config: Optional authentication configuration dict
 
         Returns:
             Tuple containing:
@@ -110,6 +123,12 @@ class GitService:
             >>> repo_path, repo = service.clone_to_temp("https://github.com/example/prompts.git")
             >>> repo_path.exists()
             True
+
+            >>> # Clone with specific branch
+            >>> repo_path, repo = service.clone_to_temp(
+            ...     "https://github.com/example/prompts.git",
+            ...     branch="develop"
+            ... )
         """
         # Create temporary directory for clone
         temp_dir = Path(tempfile.mkdtemp())
@@ -151,6 +170,19 @@ class GitService:
                     ) from e
                 raise
 
+            # Checkout specific branch if requested
+            if branch:
+                try:
+                    repo.git.checkout(branch)
+                except git.exc.GitCommandError as e:
+                    raise ValueError(
+                        f"Failed to checkout branch '{branch}' in repository: {repo_url}\n\n"
+                        f"Error: {e}\n\n"
+                        "Please verify:\n"
+                        "- The branch name is correct\n"
+                        "- The branch exists in the repository"
+                    ) from e
+
             return temp_dir, repo
 
         except (git.exc.GitCommandError, ConnectionError, ValueError) as e:
@@ -159,7 +191,9 @@ class GitService:
                 shutil.rmtree(temp_dir, ignore_errors=True)
 
             # If it's already a ValueError with our message, re-raise it
-            if isinstance(e, ValueError) and "repository is empty" in str(e).lower():
+            if isinstance(e, ValueError) and (
+                "repository is empty" in str(e).lower() or "failed to checkout" in str(e).lower()
+            ):
                 raise
 
             # Provide clear error message based on error type
@@ -371,3 +405,224 @@ class GitService:
             # Clean up temporary directory
             if repo_path.exists():
                 shutil.rmtree(repo_path, ignore_errors=True)
+
+    def validate_repositories(self, repos: list["RepositoryConfig"]) -> None:
+        """Validate all repositories before syncing (fail-fast approach).
+
+        This method validates each repository in the list by checking:
+        - URL format is valid
+        - Repository is accessible via git ls-remote
+        - Repository contains a prompts/ directory
+
+        Validation stops at the first error encountered (fail-fast).
+
+        Args:
+            repos: List of RepositoryConfig objects to validate
+
+        Raises:
+            ValueError: If any repository fails validation, with descriptive error message
+
+        Examples:
+            >>> service = GitService()
+            >>> from prompt_unifier.models.git_config import RepositoryConfig
+            >>> repos = [
+            ...     RepositoryConfig(url="https://github.com/valid/repo.git"),
+            ...     RepositoryConfig(url="https://github.com/another/repo.git"),
+            ... ]
+            >>> service.validate_repositories(repos)
+        """
+        for idx, repo_config in enumerate(repos, 1):
+            url = repo_config.url
+            branch = repo_config.branch
+
+            try:
+                # Validate URL format and accessibility using git ls-remote
+                git_cmd = git.cmd.Git()
+
+                def ls_remote_operation(cmd: git.cmd.Git = git_cmd, repo_url: str = url) -> str:
+                    """Inner function for retry logic."""
+                    try:
+                        return str(cmd.ls_remote(repo_url, heads=True))
+                    except git.exc.GitCommandError as e:
+                        raise ConnectionError(f"Git ls-remote failed: {e}") from e
+
+                # Check repository accessibility
+                retry_with_backoff(ls_remote_operation, max_attempts=3)
+
+                # Clone to temp to verify prompts/ directory exists
+                temp_path, temp_repo = self.clone_to_temp(url, branch=branch)
+
+                try:
+                    # Check for prompts/ directory
+                    prompts_dir = temp_path / "prompts"
+                    if not prompts_dir.exists() or not prompts_dir.is_dir():
+                        raise ValueError(
+                            f"Repository {idx}/{len(repos)} validation failed: {url}\n\n"
+                            f"Repository does not contain a prompts/ directory.\n"
+                            f"Expected at: {prompts_dir}\n\n"
+                            "All repositories must have a prompts/ directory."
+                        )
+                finally:
+                    # Clean up temp directory
+                    if temp_path.exists():
+                        shutil.rmtree(temp_path, ignore_errors=True)
+
+            except (ValueError, ConnectionError, git.exc.GitCommandError) as e:
+                # Fail fast on first error
+                if isinstance(e, ValueError) and "does not contain a prompts/" in str(e):
+                    raise
+
+                raise ValueError(
+                    f"Repository {idx}/{len(repos)} validation failed: {url}\n\n"
+                    f"Error: {e}\n\n"
+                    "Please verify:\n"
+                    "- Repository URL is correct\n"
+                    "- You have access to the repository\n"
+                    "- Repository contains a prompts/ directory"
+                ) from e
+
+    def sync_multiple_repos(
+        self,
+        repos: list["RepositoryConfig"],
+        storage_path: Path,
+        clear_storage: bool = True,
+    ) -> "RepoMetadata":
+        """Sync multiple repositories with last-wins merge strategy.
+
+        This method orchestrates multi-repository sync by:
+        1. Validating all repositories (fail-fast)
+        2. Clearing storage directory if requested
+        3. Processing repositories in order
+        4. Applying last-wins merge (later repos override earlier ones)
+        5. Tracking conflicts and file-to-repo mappings
+
+        Args:
+            repos: List of RepositoryConfig objects to sync
+            storage_path: Path to centralized storage directory
+            clear_storage: Whether to clear storage before sync (default: True)
+
+        Returns:
+            RepoMetadata instance with complete file-to-repo mappings
+
+        Raises:
+            ValueError: If validation fails for any repository
+
+        Examples:
+            >>> service = GitService()
+            >>> from prompt_unifier.models.git_config import RepositoryConfig
+            >>> repos = [
+            ...     RepositoryConfig(url="https://github.com/repo1/prompts.git"),
+            ...     RepositoryConfig(url="https://github.com/repo2/prompts.git"),
+            ... ]
+            >>> metadata = service.sync_multiple_repos(repos, Path("/tmp/storage"))
+        """
+        from prompt_unifier.utils.path_filter import PathFilter
+        from prompt_unifier.utils.repo_metadata import RepoMetadata
+
+        # Step 1: Validate all repositories before starting sync (fail-fast)
+        print("Validating repositories...")
+        self.validate_repositories(repos)
+
+        # Step 2: Clear storage if requested
+        if clear_storage and storage_path.exists():
+            print(f"Clearing storage directory: {storage_path}")
+            shutil.rmtree(storage_path, ignore_errors=True)
+
+        # Ensure storage directory exists
+        storage_path.mkdir(parents=True, exist_ok=True)
+
+        # Step 3: Initialize metadata tracking
+        metadata = RepoMetadata()
+        file_sources: dict[str, str] = {}  # Track which repo each file came from (for conflicts)
+
+        # Step 4: Process each repository in order
+        for idx, repo_config in enumerate(repos, 1):
+            url = repo_config.url
+            branch = repo_config.branch
+            auth_config = repo_config.auth_config
+            include_patterns = repo_config.include_patterns
+            exclude_patterns = repo_config.exclude_patterns
+
+            print(f"\n[{idx}/{len(repos)}] Syncing: {url}")
+            if branch:
+                print(f"  Branch: {branch}")
+
+            # Clone repository
+            temp_path, repo = self.clone_to_temp(url, branch=branch, auth_config=auth_config)
+
+            try:
+                # Get commit info
+                commit_hash = self.get_latest_commit(repo)
+                timestamp = datetime.now(UTC).isoformat()
+
+                # Determine actual branch name
+                actual_branch = branch if branch else repo.active_branch.name
+
+                print(f"  Commit: {commit_hash}")
+
+                # Get list of files to sync before extracting
+                all_files: list[str] = []
+                for directory in ["prompts", "rules"]:
+                    source_dir = temp_path / directory
+                    if source_dir.exists():
+                        for file_path in source_dir.rglob("*"):
+                            if file_path.is_file():
+                                # Store relative path from temp_path
+                                rel_path = str(file_path.relative_to(temp_path))
+                                all_files.append(rel_path)
+
+                # Apply filters if specified
+                if include_patterns or exclude_patterns:
+                    filtered_files = PathFilter.apply_filters(
+                        all_files,
+                        include_patterns=include_patterns,
+                        exclude_patterns=exclude_patterns,
+                    )
+                    print(f"  Files: {len(filtered_files)} (filtered from {len(all_files)})")
+                else:
+                    filtered_files = all_files
+                    print(f"  Files: {len(filtered_files)}")
+
+                # Extract to storage (this will overwrite existing files - last-wins)
+                self.extract_prompts_dir(temp_path, storage_path)
+
+                # Track files and detect conflicts
+                for rel_path in filtered_files:
+                    # Check if file was already synced from another repo
+                    if rel_path in file_sources:
+                        previous_source = file_sources[rel_path]
+                        print(
+                            f"  ⚠️  Conflict: '{rel_path}' from "
+                            f"{previous_source} overridden by {url}"
+                        )
+
+                    # Update file source tracking
+                    file_sources[rel_path] = url
+
+                    # Add to metadata
+                    metadata.add_file(
+                        file_path=rel_path,
+                        source_url=url,
+                        branch=actual_branch,
+                        commit=commit_hash,
+                        timestamp=timestamp,
+                    )
+
+                # Add repository to metadata
+                metadata.add_repository(
+                    url=url,
+                    branch=actual_branch,
+                    commit=commit_hash,
+                    timestamp=timestamp,
+                )
+
+            finally:
+                # Clean up temp directory
+                if temp_path.exists():
+                    shutil.rmtree(temp_path, ignore_errors=True)
+
+        # Step 5: Save metadata to storage
+        print(f"\nSaving metadata to {storage_path / '.repo-metadata.json'}")
+        metadata.save_to_file(storage_path)
+
+        return metadata

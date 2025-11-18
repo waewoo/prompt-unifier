@@ -140,6 +140,19 @@ class TestValidateCommand:
             assert result.exit_code == 1
             assert "Neither prompts/ nor rules/ directory exists" in result.output
 
+    def test_validate_no_storage_path_in_config(self):
+        """Test validate fails when storage_path is not in config."""
+        with runner.isolated_filesystem():
+            # Create a config file without storage_path
+            config_dir = Path.cwd() / ".prompt-unifier"
+            config_dir.mkdir()
+            config_file = config_dir / "config.yaml"
+            config_file.write_text("repos:\n  - url: https://example.com/repo.git\n")
+
+            result = runner.invoke(app, ["validate"])
+            assert result.exit_code == 1
+            assert "Storage path not configured" in result.output
+
     @patch("prompt_unifier.core.batch_validator.BatchValidator.validate_directory")
     def test_validate_failure_exit_code(self, mock_validate):
         """Test that validate returns code 1 when validation fails."""
@@ -266,9 +279,9 @@ class TestSyncCommand:
             assert "Failed to load configuration" in result.output
 
     def test_sync_no_repo_url_configured(self):
-        """Test sync without configured repository URL."""
+        """Test sync without configured repository URLs."""
         with runner.isolated_filesystem():
-            # Create config without repo_url
+            # Create config without repos
             config_dir = Path.cwd() / ".prompt-unifier"
             config_dir.mkdir()
             config_file = config_dir / "config.yaml"
@@ -276,7 +289,7 @@ class TestSyncCommand:
 
             result = runner.invoke(app, ["sync"])
             assert result.exit_code == 1
-            assert "No repository URL configured" in result.output
+            assert "No repository URLs configured" in result.output
 
     def test_sync_storage_path_flag_updates_config(self):
         """Test that --storage-path flag updates the config."""
@@ -308,17 +321,17 @@ storage_path: {original_storage}
                         # Test mainly verifies command doesn't crash
                         # Exact behavior verification would require more mocking
 
-    @patch("prompt_unifier.git.service.GitService.clone_to_temp")
-    def test_sync_permission_error(self, mock_clone):
+    @patch("prompt_unifier.git.service.GitService.sync_multiple_repos")
+    def test_sync_permission_error(self, mock_sync):
         """Test sync with PermissionError."""
-        mock_clone.side_effect = PermissionError("Permission denied")
+        mock_sync.side_effect = PermissionError("Permission denied")
 
         with runner.isolated_filesystem():
-            # Create valid config
+            # Create valid config with repos
             config_dir = Path.cwd() / ".prompt-unifier"
             config_dir.mkdir()
             config_file = config_dir / "config.yaml"
-            config_file.write_text("repo_url: https://example.com/repo.git")
+            config_file.write_text("repos:\n  - url: https://example.com/repo.git\n")
 
             result = runner.invoke(app, ["sync"])
             assert result.exit_code == 1
@@ -437,19 +450,19 @@ class TestStatusCommand:
     def test_status_never_synced(self):
         """Test status when never synchronized."""
         with runner.isolated_filesystem():
-            # Create config with repo but without sync
+            # Create config with repos but without sync
             config_dir = Path.cwd() / ".prompt-unifier"
             config_dir.mkdir()
             config_file = config_dir / "config.yaml"
             config_file.write_text("""
-repo_url: https://example.com/repo.git
+repos:
+  - url: https://example.com/repo.git
 storage_path: /tmp/storage
 """)
 
             result = runner.invoke(app, ["status"])
             assert result.exit_code == 0
             assert "Never" in result.output
-            assert "Unknown" in result.output
 
     @patch("prompt_unifier.git.service.GitService.check_remote_updates")
     def test_status_update_check_fails(self, mock_check_updates):

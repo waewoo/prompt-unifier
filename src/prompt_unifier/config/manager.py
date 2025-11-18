@@ -15,16 +15,17 @@ class ConfigManager:
     """Manages Git configuration file operations.
 
     This class handles all interactions with the .prompt-unifier/config.yaml
-    file, including loading, saving, and updating sync metadata. It follows
-    YAML handling patterns from core/yaml_parser.py using safe_load/safe_dump.
+    file, including loading, saving, and updating sync metadata for both
+    single and multi-repository configurations. It follows YAML handling
+    patterns from core/yaml_parser.py using safe_load/safe_dump.
 
     Examples:
         >>> from pathlib import Path
         >>> manager = ConfigManager()
-        >>> config = GitConfig(repo_url=None, last_sync_timestamp=None, last_sync_commit=None)
+        >>> config = GitConfig(repos=None, last_sync_timestamp=None, repo_metadata=None)
         >>> manager.save_config(Path("config.yaml"), config)
         >>> loaded = manager.load_config(Path("config.yaml"))
-        >>> loaded.repo_url is None
+        >>> loaded.repos is None
         True
     """
 
@@ -44,7 +45,7 @@ class ConfigManager:
             >>> manager = ConfigManager()
             >>> config = manager.load_config(Path(".prompt-unifier/config.yaml"))
             >>> if config:
-            ...     print(config.repo_url)
+            ...     print(config.repos)
         """
         # Check if file exists
         if not config_path.exists():
@@ -84,11 +85,13 @@ class ConfigManager:
             config: GitConfig instance to save
 
         Examples:
+            >>> from prompt_unifier.models.git_config import RepositoryConfig
             >>> manager = ConfigManager()
             >>> config = GitConfig(
-            ...     repo_url="https://github.com/example/prompts.git",
-            ...     last_sync_timestamp="2024-11-11T14:30:00Z",
-            ...     last_sync_commit="abc1234"
+            ...     repos=[
+            ...         RepositoryConfig(url="https://github.com/example/prompts.git")
+            ...     ],
+            ...     last_sync_timestamp="2024-11-18T14:30:00Z"
             ... )
             >>> manager.save_config(Path("config.yaml"), config)
         """
@@ -107,24 +110,40 @@ class ConfigManager:
                 sort_keys=False,  # Preserve field order
             )
 
-    def update_sync_info(self, config_path: Path, repo_url: str, commit_hash: str) -> None:
-        """Update sync information in existing config or create new config.
+    def update_multi_repo_sync_info(
+        self,
+        config_path: Path,
+        repo_metadata_list: list[dict[str, str]],
+    ) -> None:
+        """Update sync information for multi-repository configuration.
 
-        This method updates the repository URL, commit hash, and timestamp
-        in the configuration file. If the file doesn't exist, it creates
-        a new configuration.
+        This method updates the repo_metadata list and last_sync_timestamp
+        in the configuration file after a multi-repo sync completes.
 
         Args:
             config_path: Path to the config.yaml file
-            repo_url: Git repository URL to store
-            commit_hash: Commit hash (SHA) from the sync
+            repo_metadata_list: List of repository metadata dicts containing
+                url, branch, commit, and timestamp for each synced repository
 
         Examples:
             >>> manager = ConfigManager()
-            >>> manager.update_sync_info(
+            >>> metadata = [
+            ...     {
+            ...         "url": "https://github.com/repo1/prompts.git",
+            ...         "branch": "main",
+            ...         "commit": "abc123",
+            ...         "timestamp": "2024-11-18T10:00:00Z",
+            ...     },
+            ...     {
+            ...         "url": "https://github.com/repo2/prompts.git",
+            ...         "branch": "dev",
+            ...         "commit": "def456",
+            ...         "timestamp": "2024-11-18T10:01:00Z",
+            ...     },
+            ... ]
+            >>> manager.update_multi_repo_sync_info(
             ...     Path(".prompt-unifier/config.yaml"),
-            ...     "https://github.com/example/prompts.git",
-            ...     "abc1234"
+            ...     metadata
             ... )
         """
         # Load existing config or create new one
@@ -133,14 +152,13 @@ class ConfigManager:
         if config is None:
             # Create new config if loading failed or file doesn't exist
             config = GitConfig(
-                repo_url=repo_url,
+                repos=None,
                 last_sync_timestamp=None,
-                last_sync_commit=None,
+                repo_metadata=None,
             )
 
         # Update with new sync information
-        config.repo_url = repo_url
-        config.last_sync_commit = commit_hash
+        config.repo_metadata = repo_metadata_list
 
         # Generate current timestamp in ISO 8601 format
         config.last_sync_timestamp = datetime.now(UTC).isoformat()

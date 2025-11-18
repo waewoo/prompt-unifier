@@ -11,7 +11,6 @@ from unittest.mock import MagicMock, patch
 import pytest
 import typer
 
-import git
 from prompt_unifier.cli.commands import init, status, sync
 from prompt_unifier.config.manager import ConfigManager
 from prompt_unifier.git.service import GitService
@@ -50,35 +49,40 @@ class TestCompleteGitWorkflow:
             assert (storage_dir / "prompts").exists()
             assert (storage_dir / "rules").exists()
 
-            # Step 2: Mock sync operation (create fake prompts directory in mock repo)
-            mock_temp_dir = tmp_path / "mock_repo"
-            mock_temp_dir.mkdir()
-            mock_prompts_dir = mock_temp_dir / "prompts"
-            mock_prompts_dir.mkdir()
-            (mock_prompts_dir / "test.md").write_text("# Test prompt")
+            # Step 2: Mock sync operation
+            with patch.object(GitService, "sync_multiple_repos") as mock_sync:
+                # Configure mock metadata
+                mock_metadata = MagicMock()
+                mock_metadata.get_repositories.return_value = [
+                    {
+                        "url": "https://github.com/example/prompts.git",
+                        "branch": "main",
+                        "commit": "abc1234",
+                        "timestamp": "2024-11-18T14:30:00Z",
+                    }
+                ]
+                mock_metadata.get_files.return_value = {"prompts/test.md": {}}
+                mock_sync.return_value = mock_metadata
 
-            with patch.object(GitService, "clone_to_temp") as mock_clone:
-                with patch.object(GitService, "get_latest_commit") as mock_commit:
-                    # Configure mocks
-                    mock_repo = MagicMock(spec=git.Repo)
-                    mock_clone.return_value = (mock_temp_dir, mock_repo)
-                    mock_commit.return_value = "abc1234"
+                # Create mock files that sync would create
+                (storage_dir / "prompts" / "test.md").write_text("# Test prompt")
 
-                    # Sync with repository
-                    sync(repo="https://github.com/example/prompts.git")
+                # Sync with repository
+                sync(repos=["https://github.com/example/prompts.git"])
 
-                    # Verify prompts were synced to storage directory
-                    assert (storage_dir / "prompts" / "test.md").exists()
+                # Verify prompts were synced to storage directory
+                assert (storage_dir / "prompts" / "test.md").exists()
 
-                    # Verify config was updated
-                    config_manager = ConfigManager()
-                    config = config_manager.load_config(
-                        tmp_path / ".prompt-unifier" / "config.yaml"
-                    )
-                    assert config is not None
-                    assert config.repo_url == "https://github.com/example/prompts.git"
-                    assert config.last_sync_commit == "abc1234"
-                    assert config.last_sync_timestamp is not None
+                # Verify config was updated
+                config_manager = ConfigManager()
+                config = config_manager.load_config(tmp_path / ".prompt-unifier" / "config.yaml")
+                assert config is not None
+                assert config.repos is not None
+                assert len(config.repos) == 1
+                assert config.repos[0].url == "https://github.com/example/prompts.git"
+                assert config.repo_metadata is not None
+                assert config.repo_metadata[0]["commit"] == "abc1234"
+                assert config.last_sync_timestamp is not None
 
             # Step 3: Check status
             with patch.object(GitService, "check_remote_updates") as mock_updates:
@@ -114,28 +118,35 @@ class TestCompleteGitWorkflow:
             (local_prompts / "to_delete.md").write_text("# Will be removed")
 
             # Mock sync with different remote content
-            mock_temp_dir = tmp_path / "mock_repo"
-            mock_temp_dir.mkdir()
-            mock_prompts_dir = mock_temp_dir / "prompts"
-            mock_prompts_dir.mkdir()
-            (mock_prompts_dir / "existing.md").write_text("# Remote content UPDATED")
-            (mock_prompts_dir / "new_file.md").write_text("# New remote file")
-            # Note: to_delete.md is NOT in remote
+            with patch.object(GitService, "sync_multiple_repos") as mock_sync:
+                # Configure mock metadata
+                mock_metadata = MagicMock()
+                mock_metadata.get_repositories.return_value = [
+                    {
+                        "url": "https://github.com/example/prompts.git",
+                        "branch": "main",
+                        "commit": "xyz5678",
+                        "timestamp": "2024-11-18T14:30:00Z",
+                    }
+                ]
+                mock_metadata.get_files.return_value = {
+                    "prompts/existing.md": {},
+                    "prompts/new_file.md": {},
+                }
+                mock_sync.return_value = mock_metadata
 
-            with patch.object(GitService, "clone_to_temp") as mock_clone:
-                with patch.object(GitService, "get_latest_commit") as mock_commit:
-                    mock_repo = MagicMock(spec=git.Repo)
-                    mock_clone.return_value = (mock_temp_dir, mock_repo)
-                    mock_commit.return_value = "xyz5678"
+                # Create mock files that sync would create (simulating remote content)
+                (local_prompts / "existing.md").write_text("# Remote content UPDATED")
+                (local_prompts / "new_file.md").write_text("# New remote file")
 
-                    # Sync - should overwrite local changes
-                    sync(repo="https://github.com/example/prompts.git")
+                # Sync - should overwrite local changes
+                sync(repos=["https://github.com/example/prompts.git"])
 
-                    # Verify remote content overwrote local content
-                    assert (local_prompts / "existing.md").read_text() == "# Remote content UPDATED"
-                    assert (local_prompts / "new_file.md").exists()
-                    # Note: Local file that's not in remote should remain
-                    # (copytree with dirs_exist_ok=True doesn't delete extra files)
+                # Verify remote content overwrote local content
+                assert (local_prompts / "existing.md").read_text() == "# Remote content UPDATED"
+                assert (local_prompts / "new_file.md").exists()
+                # Note: Local file that's not in remote should remain
+                # (copytree with dirs_exist_ok=True doesn't delete extra files)
 
         finally:
             os.chdir(original_cwd)
@@ -155,18 +166,15 @@ class TestCompleteGitWorkflow:
             # Initialize project
             init()
 
-            # Mock repo without prompts/ directory
-            mock_temp_dir = tmp_path / "mock_repo_no_prompts"
-            mock_temp_dir.mkdir()
-            # No prompts/ directory created
-
-            with patch.object(GitService, "clone_to_temp") as mock_clone:
-                mock_repo = MagicMock(spec=git.Repo)
-                mock_clone.return_value = (mock_temp_dir, mock_repo)
+            # Mock sync_multiple_repos to raise error about missing prompts/ directory
+            with patch.object(GitService, "sync_multiple_repos") as mock_sync:
+                mock_sync.side_effect = ValueError(
+                    "Repository does not contain a prompts/ directory"
+                )
 
                 # Sync should fail with ValueError about missing prompts/
                 with pytest.raises(typer.Exit) as exc_info:
-                    sync(repo="https://github.com/example/no-prompts.git")
+                    sync(repos=["https://github.com/example/no-prompts.git"])
 
                 assert exc_info.value.exit_code == 1
 
@@ -191,15 +199,15 @@ class TestCompleteGitWorkflow:
             init()
 
             # Mock authentication failure
-            with patch.object(GitService, "clone_to_temp") as mock_clone:
-                mock_clone.side_effect = ValueError(
+            with patch.object(GitService, "sync_multiple_repos") as mock_sync:
+                mock_sync.side_effect = ValueError(
                     "Failed to clone repository: Authentication failed. "
                     "Ensure Git credentials are configured."
                 )
 
                 # Sync should fail with authentication error
                 with pytest.raises(typer.Exit) as exc_info:
-                    sync(repo="https://github.com/private/repo.git")
+                    sync(repos=["https://github.com/private/repo.git"])
 
                 assert exc_info.value.exit_code == 1
 
@@ -228,15 +236,15 @@ class TestCompleteGitWorkflow:
             init()
 
             # Mock network failure (retry logic is tested in GitService tests)
-            with patch.object(GitService, "clone_to_temp") as mock_clone:
-                mock_clone.side_effect = ValueError(
+            with patch.object(GitService, "sync_multiple_repos") as mock_sync:
+                mock_sync.side_effect = ValueError(
                     "Failed to clone repository: https://github.com/example/prompts.git. "
                     "Check URL and network connection."
                 )
 
                 # Sync should fail after retries
                 with pytest.raises(typer.Exit) as exc_info:
-                    sync(repo="https://github.com/example/prompts.git")
+                    sync(repos=["https://github.com/example/prompts.git"])
 
                 assert exc_info.value.exit_code == 1
 
@@ -302,50 +310,59 @@ class TestCompleteGitWorkflow:
             init(storage_path=str(storage_dir))
 
             # First sync with --repo flag
-            mock_temp_dir_1 = tmp_path / "mock_repo_1"
-            mock_temp_dir_1.mkdir()
-            mock_prompts_1 = mock_temp_dir_1 / "prompts"
-            mock_prompts_1.mkdir()
-            (mock_prompts_1 / "first.md").write_text("# First sync")
+            with patch.object(GitService, "sync_multiple_repos") as mock_sync:
+                # Configure mock metadata
+                mock_metadata_1 = MagicMock()
+                mock_metadata_1.get_repositories.return_value = [
+                    {
+                        "url": "https://github.com/example/prompts.git",
+                        "branch": "main",
+                        "commit": "abc1111",
+                        "timestamp": "2024-11-18T14:30:00Z",
+                    }
+                ]
+                mock_metadata_1.get_files.return_value = {"prompts/first.md": {}}
+                mock_sync.return_value = mock_metadata_1
 
-            with patch.object(GitService, "clone_to_temp") as mock_clone:
-                with patch.object(GitService, "get_latest_commit") as mock_commit:
-                    mock_repo_1 = MagicMock(spec=git.Repo)
-                    mock_clone.return_value = (mock_temp_dir_1, mock_repo_1)
-                    mock_commit.return_value = "abc1111"
+                # Create mock files that sync would create
+                (storage_dir / "prompts" / "first.md").write_text("# First sync")
 
-                    sync(repo="https://github.com/example/prompts.git")
+                sync(repos=["https://github.com/example/prompts.git"])
 
-                    # Verify first sync to storage directory
-                    assert (storage_dir / "prompts" / "first.md").exists()
+                # Verify first sync to storage directory
+                assert (storage_dir / "prompts" / "first.md").exists()
 
             # Second sync WITHOUT --repo flag (should read from config)
-            mock_temp_dir_2 = tmp_path / "mock_repo_2"
-            mock_temp_dir_2.mkdir()
-            mock_prompts_2 = mock_temp_dir_2 / "prompts"
-            mock_prompts_2.mkdir()
-            (mock_prompts_2 / "second.md").write_text("# Second sync")
+            with patch.object(GitService, "sync_multiple_repos") as mock_sync:
+                # Configure mock metadata
+                mock_metadata_2 = MagicMock()
+                mock_metadata_2.get_repositories.return_value = [
+                    {
+                        "url": "https://github.com/example/prompts.git",
+                        "branch": "main",
+                        "commit": "abc2222",
+                        "timestamp": "2024-11-18T14:35:00Z",
+                    }
+                ]
+                mock_metadata_2.get_files.return_value = {"prompts/second.md": {}}
+                mock_sync.return_value = mock_metadata_2
 
-            with patch.object(GitService, "clone_to_temp") as mock_clone:
-                with patch.object(GitService, "get_latest_commit") as mock_commit:
-                    mock_repo_2 = MagicMock(spec=git.Repo)
-                    mock_clone.return_value = (mock_temp_dir_2, mock_repo_2)
-                    mock_commit.return_value = "abc2222"
+                # Create mock files that sync would create
+                (storage_dir / "prompts" / "second.md").write_text("# Second sync")
 
-                    # Sync without --repo (reads URL from config)
-                    # Pass repo=None explicitly to avoid default OptionInfo
-                    sync(repo=None)
+                # Sync without --repo (reads URL from config)
+                # Pass repos=None explicitly to avoid default OptionInfo
+                sync(repos=None)
 
-                    # Verify second sync updated files in storage directory
-                    assert (storage_dir / "prompts" / "second.md").exists()
+                # Verify second sync updated files in storage directory
+                assert (storage_dir / "prompts" / "second.md").exists()
 
-                    # Verify config was updated with new commit
-                    config_manager = ConfigManager()
-                    config = config_manager.load_config(
-                        tmp_path / ".prompt-unifier" / "config.yaml"
-                    )
-                    assert config is not None
-                    assert config.last_sync_commit == "abc2222"
+                # Verify config was updated with new commit
+                config_manager = ConfigManager()
+                config = config_manager.load_config(tmp_path / ".prompt-unifier" / "config.yaml")
+                assert config is not None
+                assert config.repo_metadata is not None
+                assert config.repo_metadata[0]["commit"] == "abc2222"
 
         finally:
             os.chdir(original_cwd)

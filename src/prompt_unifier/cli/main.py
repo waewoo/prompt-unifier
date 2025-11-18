@@ -99,18 +99,23 @@ def init(
     init_command(storage_path=storage_path)
 
 
-@app.command(name="sync", help="Sync prompts from Git repository")
+@app.command(name="sync", help="Sync prompts from Git repositories")
 def sync(
-    repo: str | None = typer.Option(None, "--repo"),
-    storage_path: str | None = typer.Option(None, "--storage-path"),
+    repos: list[str] | None = typer.Option(  # noqa: B008
+        None, "--repo", help="Git repository URL (can be specified multiple times)"
+    ),
+    storage_path: str | None = typer.Option(None, "--storage-path"),  # noqa: B008
 ) -> None:
-    """Sync prompts from Git repository to centralized storage.
+    """Sync prompts from Git repositories to centralized storage.
+
+    Supports multiple repositories with last-wins merge strategy.
+    Later repositories override files from earlier ones if there are path conflicts.
 
     Args:
-        repo: Git repository URL (optional if already configured in config.yaml)
+        repos: Git repository URLs (can specify multiple times with --repo URL1 --repo URL2)
         storage_path: Override storage path for this sync
     """
-    sync_command(repo=repo, storage_path=storage_path)
+    sync_command(repos=repos, storage_path=storage_path)
 
 
 @app.command(name="status", help="Display sync status and check for updates")

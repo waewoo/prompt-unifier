@@ -17,13 +17,22 @@ class TestConfigManager:
 
     def test_save_config_creates_valid_yaml_file(self, tmp_path: Path) -> None:
         """Test that save_config creates a properly formatted YAML file with all required fields."""
+        from prompt_unifier.models.git_config import RepositoryConfig
+
         manager = ConfigManager()
         config_path = tmp_path / "config.yaml"
 
         config = GitConfig(
-            repo_url="https://github.com/example/prompts.git",
+            repos=[RepositoryConfig(url="https://github.com/example/prompts.git")],
             last_sync_timestamp="2024-11-11T14:30:00Z",
-            last_sync_commit="abc1234",
+            repo_metadata=[
+                {
+                    "url": "https://github.com/example/prompts.git",
+                    "branch": "main",
+                    "commit": "abc1234",
+                    "timestamp": "2024-11-11T14:30:00Z",
+                }
+            ],
         )
 
         manager.save_config(config_path, config)
@@ -35,9 +44,13 @@ class TestConfigManager:
         with open(config_path, encoding="utf-8") as f:
             data = yaml.safe_load(f)
 
-        assert data["repo_url"] == "https://github.com/example/prompts.git"
+        assert data["repos"] is not None
+        assert len(data["repos"]) == 1
+        assert data["repos"][0]["url"] == "https://github.com/example/prompts.git"
         assert data["last_sync_timestamp"] == "2024-11-11T14:30:00Z"
-        assert data["last_sync_commit"] == "abc1234"
+        assert data["repo_metadata"] is not None
+        assert len(data["repo_metadata"]) == 1
+        assert data["repo_metadata"][0]["commit"] == "abc1234"
 
     def test_load_config_from_valid_yaml_file(self, tmp_path: Path) -> None:
         """Test that load_config successfully loads valid YAML configuration."""
@@ -46,9 +59,16 @@ class TestConfigManager:
 
         # Create a valid config file
         config_data = {
-            "repo_url": "https://github.com/example/prompts.git",
+            "repos": [{"url": "https://github.com/example/prompts.git"}],
             "last_sync_timestamp": "2024-11-11T14:30:00Z",
-            "last_sync_commit": "abc1234",
+            "repo_metadata": [
+                {
+                    "url": "https://github.com/example/prompts.git",
+                    "branch": "main",
+                    "commit": "abc1234",
+                    "timestamp": "2024-11-11T14:30:00Z",
+                }
+            ],
         }
         with open(config_path, "w", encoding="utf-8") as f:
             yaml.safe_dump(config_data, f, default_flow_style=False)
@@ -57,9 +77,13 @@ class TestConfigManager:
         config = manager.load_config(config_path)
 
         assert config is not None
-        assert config.repo_url == "https://github.com/example/prompts.git"
+        assert config.repos is not None
+        assert len(config.repos) == 1
+        assert config.repos[0].url == "https://github.com/example/prompts.git"
         assert config.last_sync_timestamp == "2024-11-11T14:30:00Z"
-        assert config.last_sync_commit == "abc1234"
+        assert config.repo_metadata is not None
+        assert len(config.repo_metadata) == 1
+        assert config.repo_metadata[0]["commit"] == "abc1234"
 
     def test_load_config_returns_none_for_missing_file(self, tmp_path: Path) -> None:
         """Test that load_config returns None and handles FileNotFoundError gracefully."""
@@ -87,30 +111,49 @@ class TestConfigManager:
         assert config is None
 
     def test_update_sync_info_updates_existing_config(self, tmp_path: Path) -> None:
-        """Test that update_sync_info updates timestamp and commit hash in existing config."""
+        """Test that update_multi_repo_sync_info updates timestamp and repo metadata.
+
+        Tests that existing config is properly updated with new metadata.
+        """
+        from prompt_unifier.models.git_config import RepositoryConfig
+
         manager = ConfigManager()
         config_path = tmp_path / "config.yaml"
 
         # Create initial config
         initial_config = GitConfig(
-            repo_url="https://github.com/example/prompts.git",
+            repos=[RepositoryConfig(url="https://github.com/example/prompts.git")],
             last_sync_timestamp="2024-11-10T10:00:00Z",
-            last_sync_commit="old1234",
+            repo_metadata=[
+                {
+                    "url": "https://github.com/example/prompts.git",
+                    "branch": "main",
+                    "commit": "old1234",
+                    "timestamp": "2024-11-10T10:00:00Z",
+                }
+            ],
         )
         manager.save_config(config_path, initial_config)
 
-        # Update sync info
-        new_repo_url = "https://github.com/example/prompts.git"
-        new_commit_hash = "new5678"
-        manager.update_sync_info(config_path, new_repo_url, new_commit_hash)
+        # Update sync info with new metadata
+        new_metadata = [
+            {
+                "url": "https://github.com/example/prompts.git",
+                "branch": "main",
+                "commit": "new5678",
+                "timestamp": "2024-11-11T14:30:00Z",
+            }
+        ]
+        manager.update_multi_repo_sync_info(config_path, new_metadata)
 
         # Load and verify update
         updated_config = manager.load_config(config_path)
 
         assert updated_config is not None
-        assert updated_config.repo_url == new_repo_url
-        assert updated_config.last_sync_commit == new_commit_hash
-        # Timestamp should be updated (just verify it's different and valid ISO format)
+        assert updated_config.repo_metadata is not None
+        assert len(updated_config.repo_metadata) == 1
+        assert updated_config.repo_metadata[0]["commit"] == "new5678"
+        # Timestamp should be updated
         assert updated_config.last_sync_timestamp != "2024-11-10T10:00:00Z"
         assert "T" in updated_config.last_sync_timestamp  # ISO 8601 format check
 
@@ -120,7 +163,7 @@ class TestConfigManager:
         config_path = tmp_path / "config.yaml"
 
         # Create config with None values (like after init command)
-        config = GitConfig(repo_url=None, last_sync_timestamp=None, last_sync_commit=None)
+        config = GitConfig(repos=None, last_sync_timestamp=None, repo_metadata=None)
 
         manager.save_config(config_path, config)
 
@@ -131,9 +174,9 @@ class TestConfigManager:
             data = yaml.safe_load(f)
 
         # YAML represents None as null
-        assert data["repo_url"] is None
+        assert data["repos"] is None
         assert data["last_sync_timestamp"] is None
-        assert data["last_sync_commit"] is None
+        assert data["repo_metadata"] is None
 
     def test_load_config_validates_yaml_is_dictionary(self, tmp_path: Path) -> None:
         """Test that load_config validates the YAML file contains a dictionary structure."""
@@ -151,14 +194,20 @@ class TestConfigManager:
         assert config is None
 
     def test_update_sync_info_creates_config_if_missing(self, tmp_path: Path) -> None:
-        """Test that update_sync_info creates new config if file doesn't exist."""
+        """Test that update_multi_repo_sync_info creates new config if file doesn't exist."""
         manager = ConfigManager()
         config_path = tmp_path / "new_config.yaml"
 
         # Update sync info on non-existent file (should create it)
-        repo_url = "https://github.com/example/prompts.git"
-        commit_hash = "abc1234"
-        manager.update_sync_info(config_path, repo_url, commit_hash)
+        repo_metadata = [
+            {
+                "url": "https://github.com/example/prompts.git",
+                "branch": "main",
+                "commit": "abc1234",
+                "timestamp": "2024-11-18T14:30:00Z",
+            }
+        ]
+        manager.update_multi_repo_sync_info(config_path, repo_metadata)
 
         # Verify file was created
         assert config_path.exists()
@@ -167,19 +216,29 @@ class TestConfigManager:
         config = manager.load_config(config_path)
 
         assert config is not None
-        assert config.repo_url == repo_url
-        assert config.last_sync_commit == commit_hash
+        assert config.repo_metadata is not None
+        assert len(config.repo_metadata) == 1
+        assert config.repo_metadata[0]["commit"] == "abc1234"
         assert config.last_sync_timestamp is not None
 
     def test_save_config_with_deploy_fields(self, tmp_path: Path) -> None:
         """Test that save_config handles deploy_tags and target_handlers fields."""
+        from prompt_unifier.models.git_config import RepositoryConfig
+
         manager = ConfigManager()
         config_path = tmp_path / "config.yaml"
 
         config = GitConfig(
-            repo_url="https://github.com/example/prompts.git",
+            repos=[RepositoryConfig(url="https://github.com/example/prompts.git")],
             last_sync_timestamp="2024-11-11T14:30:00Z",
-            last_sync_commit="abc1234",
+            repo_metadata=[
+                {
+                    "url": "https://github.com/example/prompts.git",
+                    "branch": "main",
+                    "commit": "abc1234",
+                    "timestamp": "2024-11-11T14:30:00Z",
+                }
+            ],
             deploy_tags=["python", "review"],
             target_handlers=["continue", "cursor"],
         )
@@ -193,7 +252,8 @@ class TestConfigManager:
         with open(config_path, encoding="utf-8") as f:
             data = yaml.safe_load(f)
 
-        assert data["repo_url"] == "https://github.com/example/prompts.git"
+        assert data["repos"] is not None
+        assert data["repos"][0]["url"] == "https://github.com/example/prompts.git"
         assert data["deploy_tags"] == ["python", "review"]
         assert data["target_handlers"] == ["continue", "cursor"]
 
@@ -204,9 +264,16 @@ class TestConfigManager:
 
         # Create a valid config file with deploy fields
         config_data = {
-            "repo_url": "https://github.com/example/prompts.git",
+            "repos": [{"url": "https://github.com/example/prompts.git"}],
             "last_sync_timestamp": "2024-11-11T14:30:00Z",
-            "last_sync_commit": "abc1234",
+            "repo_metadata": [
+                {
+                    "url": "https://github.com/example/prompts.git",
+                    "branch": "main",
+                    "commit": "abc1234",
+                    "timestamp": "2024-11-11T14:30:00Z",
+                }
+            ],
             "deploy_tags": ["python", "api"],
             "target_handlers": ["continue"],
         }
@@ -217,7 +284,8 @@ class TestConfigManager:
         config = manager.load_config(config_path)
 
         assert config is not None
-        assert config.repo_url == "https://github.com/example/prompts.git"
+        assert config.repos is not None
+        assert config.repos[0].url == "https://github.com/example/prompts.git"
         assert config.deploy_tags == ["python", "api"]
         assert config.target_handlers == ["continue"]
 
@@ -313,9 +381,16 @@ class TestConfigManager:
 
         # Create a config file without handlers section (backward compatibility)
         config_data = {
-            "repo_url": "https://github.com/example/prompts.git",
+            "repos": [{"url": "https://github.com/example/prompts.git"}],
             "last_sync_timestamp": "2024-11-11T14:30:00Z",
-            "last_sync_commit": "abc1234",
+            "repo_metadata": [
+                {
+                    "url": "https://github.com/example/prompts.git",
+                    "branch": "main",
+                    "commit": "abc1234",
+                    "timestamp": "2024-11-11T14:30:00Z",
+                }
+            ],
         }
         with open(config_path, "w", encoding="utf-8") as f:
             yaml.safe_dump(config_data, f, default_flow_style=False)
@@ -324,19 +399,29 @@ class TestConfigManager:
         config = manager.load_config(config_path)
 
         assert config is not None
-        assert config.repo_url == "https://github.com/example/prompts.git"
+        assert config.repos is not None
+        assert config.repos[0].url == "https://github.com/example/prompts.git"
         assert config.handlers is None  # Should default to None
 
     def test_save_config_preserves_handlers_section(self, tmp_path: Path) -> None:
         """Test that save_config preserves handlers section on update."""
+        from prompt_unifier.models.git_config import RepositoryConfig
+
         manager = ConfigManager()
         config_path = tmp_path / "config.yaml"
 
         # Create initial config with handlers
         initial_config = GitConfig(
-            repo_url="https://github.com/example/prompts.git",
+            repos=[RepositoryConfig(url="https://github.com/example/prompts.git")],
             last_sync_timestamp="2024-11-15T10:30:00Z",
-            last_sync_commit="abc1234",
+            repo_metadata=[
+                {
+                    "url": "https://github.com/example/prompts.git",
+                    "branch": "main",
+                    "commit": "abc1234",
+                    "timestamp": "2024-11-15T10:30:00Z",
+                }
+            ],
             handlers={
                 "continue": HandlerConfig(base_path="$PWD/.continue"),
                 "cursor": HandlerConfig(base_path="$HOME/.cursor"),
@@ -347,7 +432,7 @@ class TestConfigManager:
         # Load, modify, and save again
         loaded_config = manager.load_config(config_path)
         assert loaded_config is not None
-        loaded_config.last_sync_commit = "def5678"
+        loaded_config.repo_metadata[0]["commit"] = "def5678"
         manager.save_config(config_path, loaded_config)
 
         # Verify handlers section is still present
@@ -404,15 +489,24 @@ class TestConfigManager:
         assert data["handlers"] is None
 
     def test_update_sync_info_preserves_handlers_section(self, tmp_path: Path) -> None:
-        """Test that update_sync_info preserves handlers configuration."""
+        """Test that update_multi_repo_sync_info preserves handlers configuration."""
+        from prompt_unifier.models.git_config import RepositoryConfig
+
         manager = ConfigManager()
         config_path = tmp_path / "config.yaml"
 
         # Create initial config with handlers
         initial_config = GitConfig(
-            repo_url="https://github.com/example/prompts.git",
+            repos=[RepositoryConfig(url="https://github.com/example/prompts.git")],
             last_sync_timestamp="2024-11-15T10:30:00Z",
-            last_sync_commit="abc1234",
+            repo_metadata=[
+                {
+                    "url": "https://github.com/example/prompts.git",
+                    "branch": "main",
+                    "commit": "abc1234",
+                    "timestamp": "2024-11-15T10:30:00Z",
+                }
+            ],
             handlers={
                 "continue": HandlerConfig(base_path="$PWD/.continue"),
                 "cursor": HandlerConfig(base_path="$HOME/.cursor"),
@@ -420,12 +514,16 @@ class TestConfigManager:
         )
         manager.save_config(config_path, initial_config)
 
-        # Update sync info
-        manager.update_sync_info(
-            config_path,
-            "https://github.com/example/prompts.git",
-            "new5678",
-        )
+        # Update sync info with new metadata
+        new_metadata = [
+            {
+                "url": "https://github.com/example/prompts.git",
+                "branch": "main",
+                "commit": "new5678",
+                "timestamp": "2024-11-16T14:30:00Z",
+            }
+        ]
+        manager.update_multi_repo_sync_info(config_path, new_metadata)
 
         # Verify handlers section is preserved
         updated_config = manager.load_config(config_path)
@@ -433,4 +531,4 @@ class TestConfigManager:
         assert updated_config.handlers is not None
         assert "continue" in updated_config.handlers
         assert updated_config.handlers["continue"].base_path == "$PWD/.continue"
-        assert updated_config.last_sync_commit == "new5678"
+        assert updated_config.repo_metadata[0]["commit"] == "new5678"

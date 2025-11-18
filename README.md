@@ -249,26 +249,33 @@ prompt-unifier init --storage-path /custom/storage
 
 ### sync - Synchronize from Git
 
-Synchronize prompts and rules from a Git repository to local storage.
+Synchronize prompts and rules from one or multiple Git repositories to local storage.
 
 ```bash
 prompt-unifier sync [OPTIONS]
 ```
 
 **Options:**
-- `--repo TEXT` - Git repository URL (saved to config for future syncs)
+- `--repo TEXT` - Git repository URL (can be specified multiple times for multi-repo sync)
 - `--storage-path TEXT` - Override storage location
 
 **How it works:**
-1. Clones repository to temporary directory
+1. Clones each repository to temporary directory
 2. Extracts `prompts/` (required) and `rules/` (optional) directories
-3. Copies to centralized storage (overwrites local files)
-4. Updates config with sync timestamp and commit hash
+3. Merges files to centralized storage with **last-wins strategy** (later repos override earlier ones)
+4. Updates config with sync timestamp and commit hash for each repository
+
+**Multi-Repository Support:**
+- ✅ Sync from multiple repositories simultaneously
+- ✅ Last-wins merge strategy for conflicting files
+- ✅ Fail-fast validation (stops on first invalid repository)
+- ✅ Individual commit tracking per repository
 
 **Common Use Cases:**
 - 🔄 **Daily updates**: `prompt-unifier sync` (team gets latest prompts)
 - 🆕 **New team member**: Clone project → `prompt-unifier sync` → instant setup
 - 🔀 **Switch projects**: Different repos per project, auto-configured
+- 🎯 **Multi-repo sync**: Combine company-wide + team-specific prompts
 
 **Authentication for Private Repositories:**
 
@@ -291,13 +298,18 @@ prompt-unifier sync --repo https://username:TOKEN@github.com/username/repo.git
 **Examples:**
 
 ```bash
-# First sync with repository URL
+# First sync with single repository URL
 prompt-unifier sync --repo git@github.com:team/prompts.git
 
-# Subsequent syncs (uses URL from config)
+# Subsequent syncs (uses repos from config)
 prompt-unifier sync
 
-# Override repository URL
+# Multi-repository sync (last repo wins on conflicts)
+prompt-unifier sync \
+  --repo git@github.com:company/global-prompts.git \
+  --repo git@github.com:team/team-prompts.git
+
+# Override repositories
 prompt-unifier sync --repo git@github.com:other-team/prompts.git
 ```
 
@@ -453,10 +465,26 @@ Items are deployed if they contain **at least one** of the specified tags.
 The `.prompt-unifier/config.yaml` file stores project configuration:
 
 ```yaml
-# Git synchronization
-repo_url: https://github.com/example/prompts.git
+# Git synchronization (single repository)
+repos:
+  - url: https://github.com/example/prompts.git
+    branch: main  # optional
+
+# Or multi-repository configuration
+repos:
+  - url: https://github.com/company/global-prompts.git
+    branch: main
+  - url: https://github.com/team/team-prompts.git
+    branch: develop
+
+# Repository metadata (managed automatically)
+repo_metadata:
+  - url: https://github.com/example/prompts.git
+    branch: main
+    commit: abc1234
+    timestamp: "2024-11-18T14:30:00Z"
+
 last_sync_timestamp: 2024-11-11T14:30:00+00:00
-last_sync_commit: abc1234
 storage_path: /home/user/.prompt-unifier/storage
 
 # Deployment filters (optional)
@@ -476,9 +504,9 @@ handlers:
 ### Configuration Fields
 
 **Synchronization (managed automatically):**
-- `repo_url` - Git repository URL
-- `last_sync_timestamp` - ISO 8601 timestamp
-- `last_sync_commit` - Short SHA hash
+- `repos` - List of Git repositories with URLs and optional branches
+- `repo_metadata` - Per-repository sync metadata (commit hash, branch, timestamp)
+- `last_sync_timestamp` - ISO 8601 timestamp of last sync
 - `storage_path` - Centralized storage path
 
 **Deployment (user-configurable):**
@@ -634,20 +662,32 @@ prompt-unifier deploy  # Ready to use Continue with team prompts
 # Done! Prompts available in Continue
 ```
 
-### Example 2: Multi-Project Workflow
+### Example 2: Multi-Repository Workflow
+
+```bash
+# Combine company-wide and team-specific prompts
+prompt-unifier sync \
+  --repo git@github.com:company/global-standards.git \
+  --repo git@github.com:backend-team/backend-prompts.git
+
+# Later repos override earlier ones on conflicts
+# backend-prompts.git files will override global-standards.git files with same paths
+```
+
+### Example 3: Multi-Project Workflow
 
 ```bash
 # Each project has its own prompt config
 cd ~/projects/api-service
-prompt-unifier sync  # Uses API-specific prompts
+prompt-unifier sync  # Uses API-specific repos from config
 
 cd ~/projects/frontend-app
-prompt-unifier sync  # Uses frontend-specific prompts
+prompt-unifier sync  # Uses frontend-specific repos from config
 
-# Each project's `.prompt-unifier/config.yaml` stores its own repo_url
+# Each project's `.prompt-unifier/config.yaml` stores its own repos list
 ```
 
-### Example 3: Testing New Prompts
+### Example 4: Testing New Prompts
 
 ```bash
 # Create test branch in prompts repo
@@ -662,7 +702,7 @@ prompt-unifier deploy
 # Test the new prompt in Continue
 ```
 
-### Example 4: Tag-Based Deployment
+### Example 5: Tag-Based Deployment
 
 ```bash
 # Deploy only Python-related prompts to Continue
@@ -675,7 +715,7 @@ prompt-unifier deploy --tags python,review
 prompt-unifier deploy
 ```
 
-### Example 5: Custom Deployment Location
+### Example 6: Custom Deployment Location
 
 ```bash
 # Deploy to project-specific .continue directory
@@ -890,7 +930,15 @@ This will show:
 <details>
 <summary><b>Q: Can I use multiple Git repositories for prompts?</b></summary>
 
-A: Yes! Each project can have its own `.prompt-unifier/config.yaml` pointing to different repositories. Switch between projects and run `prompt-unifier sync` to load project-specific prompts.
+A: Yes! The prompt-unifier supports multi-repository synchronization. You can sync from multiple repos simultaneously:
+
+```bash
+prompt-unifier sync \
+  --repo git@github.com:company/global-prompts.git \
+  --repo git@github.com:team/team-prompts.git
+```
+
+Files from later repositories override files from earlier ones (last-wins strategy). Each project can also have its own `.prompt-unifier/config.yaml` pointing to different repository combinations.
 </details>
 
 <details>

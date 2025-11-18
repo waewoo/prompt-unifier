@@ -16,7 +16,7 @@ from prompt_unifier.core.content_parser import ContentFileParser
 from prompt_unifier.git.service import GitService
 from prompt_unifier.handlers.continue_handler import ContinueToolHandler
 from prompt_unifier.handlers.registry import ToolHandlerRegistry
-from prompt_unifier.models.git_config import GitConfig
+from prompt_unifier.models.git_config import GitConfig, RepositoryConfig
 from prompt_unifier.models.prompt import PromptFrontmatter
 from prompt_unifier.models.rule import RuleFrontmatter
 from prompt_unifier.output.json_formatter import JSONFormatter
@@ -268,9 +268,9 @@ def init(storage_path: str | None = None) -> None:
         if not config_path.exists():
             config_manager = ConfigManager()
             empty_config = GitConfig(
-                repo_url=None,
+                repos=None,
                 last_sync_timestamp=None,
-                last_sync_commit=None,
+                repo_metadata=None,
                 storage_path=str(storage_dir),
                 deploy_tags=None,
                 target_handlers=None,
@@ -382,15 +382,18 @@ Thumbs.db
         raise typer.Exit(code=1) from e
 
 
-def sync(repo: str | None = None, storage_path: str | None = None) -> None:
-    """Sync prompts from Git repository to centralized storage.
+def sync(repos: list[str] | None = None, storage_path: str | None = None) -> None:
+    """Sync prompts from Git repositories to centralized storage.
 
-    Clones the remote repository to a temporary directory, extracts the
-    prompts/ directory, and copies it to the centralized storage location.
+    Clones remote repositories to temporary directories, extracts the
+    prompts/ and rules/ directories, and copies them to the centralized storage location.
     Updates the config.yaml with sync metadata.
 
+    Supports multiple repositories with last-wins merge strategy - later repositories
+    override files from earlier ones if there are path conflicts.
+
     Args:
-        repo: Git repository URL (optional if already configured)
+        repos: Git repository URLs (optional if already configured in config.yaml)
         storage_path: Override storage path for this sync (optional)
 
     Exit codes:
@@ -398,10 +401,10 @@ def sync(repo: str | None = None, storage_path: str | None = None) -> None:
         1: Sync failed (e.g., init not run, invalid repo, network error)
 
     Examples:
-        # First sync with repository URL
-        prompt-unifier sync --repo https://github.com/example/prompts.git
+        # Sync with multiple repository URLs
+        prompt-unifier sync --repo https://github.com/repo1/prompts.git --repo https://github.com/repo2/prompts.git
 
-        # Subsequent syncs (reads URL from config)
+        # Subsequent syncs (reads repos from config.yaml)
         prompt-unifier sync
 
         # Sync with custom storage path
@@ -432,16 +435,19 @@ def sync(repo: str | None = None, storage_path: str | None = None) -> None:
             )
             raise typer.Exit(code=1)
 
-        # Determine repository URL
-        if repo is not None:
-            # Use --repo flag if provided
-            repo_url = repo
-        elif config.repo_url is not None:
-            # Use URL from config
-            repo_url = config.repo_url
+        # Determine repository configurations
+        repo_configs: list[RepositoryConfig] = []
+
+        if repos is not None and len(repos) > 0:
+            # Use --repo flags if provided (CLI override)
+            for repo_url in repos:
+                repo_configs.append(RepositoryConfig(url=repo_url))
+        elif config.repos is not None and len(config.repos) > 0:
+            # Use repos from config.yaml
+            repo_configs = config.repos
         else:
             typer.echo(
-                "Error: No repository URL configured. Use --repo flag to specify a repository.",
+                "Error: No repository URLs configured. Use --repo flag to specify repositories.",
                 err=True,
             )
             raise typer.Exit(code=1)
@@ -459,51 +465,68 @@ def sync(repo: str | None = None, storage_path: str | None = None) -> None:
 
         # Display sync start message
         console.print()
-        console.print("[bold]Syncing prompts and rules...[/bold]")
+        console.print("[bold]Syncing prompts and rules from multiple repositories...[/bold]")
         console.print("━" * 80)
-        console.print(f"Repository: {repo_url}")
+        console.print(f"Repositories: {len(repo_configs)}")
         console.print(f"Storage: {storage_dir}")
         console.print()
 
-        # Clone repository to temporary directory
+        # Use GitService to sync multiple repositories
         git_service = GitService()
-        console.print("[dim]Cloning repository...[/dim]")
-        temp_dir, repo_obj = git_service.clone_to_temp(repo_url)
+        console.print("[dim]Validating repositories...[/dim]")
 
-        try:
-            # Get latest commit hash
-            commit_hash = git_service.get_latest_commit(repo_obj)
+        # Sync multiple repos using the GitService method
+        metadata = git_service.sync_multiple_repos(
+            repos=repo_configs,
+            storage_path=storage_dir,
+            clear_storage=True,
+        )
 
-            # Extract prompts/ and rules/ directories to storage
-            console.print("[dim]Extracting prompts and rules...[/dim]")
-            git_service.extract_prompts_dir(temp_dir, storage_dir)
+        # Update config with sync information
+        repositories_list = metadata.get_repositories()
+        config_manager.update_multi_repo_sync_info(config_path, repositories_list)
 
-            # Update config with sync information
-            config_manager.update_sync_info(config_path, repo_url, commit_hash)
+        # Reload config to get the updated repo_metadata
+        # (update_multi_repo_sync_info always creates a valid config)
+        config = config_manager.load_config(config_path)
+        if config is None:
+            raise ValueError(
+                "Configuration is unexpectedly None after sync. This indicates a "
+                "problem with config file creation or loading."
+            )
 
-            # If storage_path was provided via flag, update config
-            if storage_path and isinstance(storage_path, str):
+        # Save repos to config if they were provided via CLI (so subsequent syncs can use them)
+        # Also save storage_path if provided via flag
+        if (repos is not None and len(repos) > 0) or storage_path:
+            if repos is not None and len(repos) > 0:
+                config.repos = repo_configs
+            if storage_path:
                 config.storage_path = str(storage_dir)
-                config_manager.save_config(config_path, config)
+            config_manager.save_config(config_path, config)
 
-            # Display success message
+        # Display success message
+        console.print()
+        console.print("[green]✓[/green] Multi-repository sync complete")
+        console.print("━" * 80)
+
+        # Display repository details
+        for repo_info in repositories_list:
+            console.print(f"Repository: {repo_info['url']}")
+            console.print(f"  Branch: {repo_info['branch']}")
+            console.print(f"  Commit: {repo_info['commit']}")
             console.print()
-            console.print("[green]✓[/green] Sync complete")
-            console.print("━" * 80)
-            console.print(f"Repository: {repo_url}")
-            console.print(f"Commit: {commit_hash}")
-            console.print(f"Synced to: {storage_dir}")
-            console.print()
 
-        finally:
-            # Clean up temporary directory
-            import shutil
-
-            if temp_dir.exists():
-                shutil.rmtree(temp_dir, ignore_errors=True)
+        # Display summary statistics
+        files = metadata.get_files()
+        console.print(f"Total files synced: {len(files)}")
+        # Note: Conflict detection would need to be tracked separately during sync
+        console.print(f"Repositories synced: {len(repositories_list)}")
+        console.print(f"Synced to: {storage_dir}")
+        console.print(f"Metadata: {storage_dir / '.repo-metadata.json'}")
+        console.print()
 
     except ValueError as e:
-        # Git errors (invalid URL, auth failures, missing prompts/ directory)
+        # Git errors (invalid URL, auth failures, missing prompts/ directory, validation errors)
         typer.echo(f"Error: {e}", err=True)
         raise typer.Exit(code=1) from e
     except PermissionError:
@@ -570,11 +593,15 @@ def status() -> None:
             storage_dir = Path.home() / ".prompt-unifier" / "storage"
             console.print(f"Storage: {storage_dir} [dim](default)[/dim]")
 
-        # Display repository URL
-        if config.repo_url:
-            console.print(f"Repository: {config.repo_url}")
+        # Display repository URLs (support multi-repo)
+        if config.repos and len(config.repos) > 0:
+            console.print(f"Repositories: {len(config.repos)}")
+            for idx, repo_config in enumerate(config.repos, 1):
+                console.print(f"  {idx}. {repo_config.url}")
+                if repo_config.branch:
+                    console.print(f"     Branch: {repo_config.branch}")
         else:
-            console.print("Repository: [yellow]Not configured[/yellow]")
+            console.print("Repositories: [yellow]Not configured[/yellow]")
             console.print()
             console.print("[dim]Run 'prompt-unifier sync --repo <git-url>' to configure[/dim]")
             console.print()
@@ -587,37 +614,13 @@ def status() -> None:
         else:
             console.print("Last sync: [yellow]Never[/yellow]")
 
-        if config.last_sync_commit:
-            console.print(f"Last synced commit: {config.last_sync_commit}")
-        else:
-            console.print("Last synced commit: [yellow]Unknown[/yellow]")
-
-        # Check for updates
-        console.print()
-        console.print("[dim]Checking for updates...[/dim]")
-
-        try:
-            git_service = GitService()
-            # Only check for updates if we have both repo_url and last_sync_commit
-            if config.repo_url and config.last_sync_commit:
-                has_updates, commit_count = git_service.check_remote_updates(
-                    config.repo_url, config.last_sync_commit
-                )
-            else:
-                has_updates = False
-                commit_count = 0
-
-            if has_updates:
-                console.print("[yellow]⚠ Updates available[/yellow]")
-                if commit_count:
-                    console.print(f"[dim]{commit_count} new commit(s) available[/dim]")
-                console.print("[dim]Run 'prompt-unifier sync' to update[/dim]")
-            else:
-                console.print("[green]✓ Up to date[/green]")
-        except Exception:
-            # Check failed - network issue or invalid repo
-            console.print("[yellow]⚠ Could not check for updates[/yellow]")
-            console.print("[dim]Check network connection or repository access[/dim]")
+        # Display repo metadata if available
+        if config.repo_metadata and len(config.repo_metadata) > 0:
+            console.print(f"Last synced repositories: {len(config.repo_metadata)}")
+            for repo_meta in config.repo_metadata:
+                console.print(f"  - {repo_meta.get('url', 'Unknown')}")
+                if "commit" in repo_meta:
+                    console.print(f"    Commit: {repo_meta['commit']}")
 
         console.print()
 

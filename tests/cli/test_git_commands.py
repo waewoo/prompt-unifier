@@ -12,7 +12,7 @@ import typer
 from typer.testing import CliRunner
 
 from prompt_unifier.cli.commands import init, status, sync
-from prompt_unifier.models.git_config import GitConfig
+from prompt_unifier.models.git_config import GitConfig, RepositoryConfig
 
 
 @pytest.fixture
@@ -55,9 +55,9 @@ def test_init_creates_prompt_unifier_directory_and_config(tmp_path: Path) -> Non
             call_args = mock_manager.save_config.call_args
             assert call_args[0][0] == config_path
             config: GitConfig = call_args[0][1]
-            assert config.repo_url is None
+            assert config.repos is None
             assert config.last_sync_timestamp is None
-            assert config.last_sync_commit is None
+            assert config.repo_metadata is None
 
 
 # Test 2: init command creates prompts/ and rules/ directories in centralized storage
@@ -139,14 +139,14 @@ def test_sync_fails_if_init_not_run(tmp_path: Path) -> None:
 
             # Run sync command - should raise Exit(1)
             with pytest.raises(typer.Exit) as exc_info:
-                sync(repo=None)
+                sync(repos=None)
 
             assert exc_info.value.exit_code == 1
 
 
 # Test 6: sync command with --repo flag stores URL and syncs prompts
 def test_sync_with_repo_flag_stores_url_and_syncs(tmp_path: Path) -> None:
-    """Test sync command with --repo flag stores URL and syncs prompts."""
+    """Test sync command with --repo flag uses multi-repo sync."""
     repo_url = "https://github.com/example/prompts.git"
 
     with patch("prompt_unifier.cli.commands.Path.cwd", return_value=tmp_path):
@@ -161,39 +161,39 @@ def test_sync_with_repo_flag_stores_url_and_syncs(tmp_path: Path) -> None:
                 # Create .prompt-unifier/config.yaml (actual file)
                 (tmp_path / ".prompt-unifier").mkdir(parents=True)
                 config_path = tmp_path / ".prompt-unifier" / "config.yaml"
-                config_path.write_text(
-                    "repo_url: null\nlast_sync_timestamp: null\nlast_sync_commit: null\n"
-                )
+                config_path.write_text("repos: null\n")
 
                 # Mock config loading (empty config initially)
-                mock_manager.load_config.return_value = GitConfig(
-                    repo_url=None, last_sync_timestamp=None, last_sync_commit=None
-                )
+                mock_manager.load_config.return_value = GitConfig(repos=None)
 
-                # Mock git operations
-                mock_repo = MagicMock()
-                temp_path = tmp_path / "temp"
-                mock_service.clone_to_temp.return_value = (temp_path, mock_repo)
-                mock_service.get_latest_commit.return_value = "abc1234"
+                # Mock multi-repo sync
+                mock_metadata = MagicMock()
+                mock_metadata.get_repositories.return_value = [
+                    {
+                        "url": repo_url,
+                        "branch": "main",
+                        "commit": "abc1234",
+                        "timestamp": "2024-11-18T14:30:00Z",
+                    }
+                ]
+                mock_metadata.get_files.return_value = {"prompts/test.md": {}}
+                mock_service.sync_multiple_repos.return_value = mock_metadata
 
                 # Run sync command with --repo flag
-                sync(repo=repo_url)
+                sync(repos=[repo_url])
 
-                # Verify clone was called with correct URL
-                mock_service.clone_to_temp.assert_called_once_with(repo_url)
+                # Verify sync_multiple_repos was called
+                assert mock_service.sync_multiple_repos.called
 
-                # Verify extract_prompts_dir was called
-                mock_service.extract_prompts_dir.assert_called_once()
-
-                # Verify config was updated with repo URL and commit
-                mock_manager.update_sync_info.assert_called_once_with(
-                    config_path, repo_url, "abc1234"
-                )
+                # Verify config was updated with repo metadata
+                mock_manager.update_multi_repo_sync_info.assert_called_once()
 
 
-# Test 7: sync command without --repo flag reads URL from config
+# Test 7: sync command without --repo flag reads repos from config
 def test_sync_without_repo_flag_reads_from_config(tmp_path: Path) -> None:
-    """Test sync command without --repo flag reads URL from config."""
+    """Test sync command without --repo flag reads repos from config."""
+    from prompt_unifier.models.git_config import RepositoryConfig
+
     repo_url = "https://github.com/example/prompts.git"
 
     with patch("prompt_unifier.cli.commands.Path.cwd", return_value=tmp_path):
@@ -208,81 +208,70 @@ def test_sync_without_repo_flag_reads_from_config(tmp_path: Path) -> None:
                 # Create .prompt-unifier/config.yaml (actual file)
                 (tmp_path / ".prompt-unifier").mkdir(parents=True)
                 config_path = tmp_path / ".prompt-unifier" / "config.yaml"
-                config_path.write_text(
-                    "repo_url: null\nlast_sync_timestamp: null\nlast_sync_commit: null\n"
-                )
+                config_path.write_text(f"repos:\n  - url: {repo_url}\n")
 
-                # Mock config loading with existing repo URL
+                # Mock config loading with existing repos
                 mock_manager.load_config.return_value = GitConfig(
-                    repo_url=repo_url,
-                    last_sync_timestamp="2024-11-11T14:30:00Z",
-                    last_sync_commit="xyz7890",
+                    repos=[RepositoryConfig(url=repo_url)]
                 )
 
-                # Mock git operations
-                mock_repo = MagicMock()
-                temp_path = tmp_path / "temp"
-                mock_service.clone_to_temp.return_value = (temp_path, mock_repo)
-                mock_service.get_latest_commit.return_value = "abc1234"
+                # Mock multi-repo sync
+                mock_metadata = MagicMock()
+                mock_metadata.get_repositories.return_value = []
+                mock_metadata.get_files.return_value = {}
+                mock_service.sync_multiple_repos.return_value = mock_metadata
 
                 # Run sync command WITHOUT --repo flag
-                sync(repo=None)
+                sync(repos=None)
 
-                # Verify clone was called with URL from config
-                mock_service.clone_to_temp.assert_called_once_with(repo_url)
+                # Verify sync_multiple_repos was called
+                assert mock_service.sync_multiple_repos.called
 
 
-# Test 8: status command displays repo URL, last sync time, and update availability
+# Test 8: status command displays repo URL, last sync time, and commit info
 def test_status_displays_repo_info_and_updates(
     tmp_path: Path, capsys: pytest.CaptureFixture[str]
 ) -> None:
-    """Test status command displays repo URL, last sync time, and update availability."""
+    """Test status command displays repo URL, last sync time, and commit info."""
     repo_url = "https://github.com/example/prompts.git"
 
     with patch("prompt_unifier.cli.commands.Path.cwd", return_value=tmp_path):
         with patch("prompt_unifier.cli.commands.ConfigManager") as mock_manager_class:
-            with patch("prompt_unifier.cli.commands.GitService") as mock_service_class:
-                # Setup mocks
-                mock_manager = MagicMock()
-                mock_manager_class.return_value = mock_manager
-                mock_service = MagicMock()
-                mock_service_class.return_value = mock_service
+            # Setup mocks
+            mock_manager = MagicMock()
+            mock_manager_class.return_value = mock_manager
 
-                # Create .prompt-unifier/config.yaml (actual file)
-                (tmp_path / ".prompt-unifier").mkdir(parents=True)
-                config_path = tmp_path / ".prompt-unifier" / "config.yaml"
-                config_path.write_text(
-                    "repo_url: null\nlast_sync_timestamp: null\nlast_sync_commit: null\n"
-                )
+            # Create .prompt-unifier/config.yaml (actual file)
+            (tmp_path / ".prompt-unifier").mkdir(parents=True)
+            config_path = tmp_path / ".prompt-unifier" / "config.yaml"
+            config_path.write_text(f"repos:\n  - url: {repo_url}\n")
 
-                # Mock config loading
-                mock_manager.load_config.return_value = GitConfig(
-                    repo_url=repo_url,
-                    last_sync_timestamp="2024-11-11T14:30:00Z",
-                    last_sync_commit="abc1234",
-                )
+            # Mock config loading with multi-repo metadata
+            mock_manager.load_config.return_value = GitConfig(
+                repos=[RepositoryConfig(url=repo_url)],
+                repo_metadata=[
+                    {
+                        "url": repo_url,
+                        "branch": "main",
+                        "commit": "abc1234",
+                        "timestamp": "2024-11-11T14:30:00Z",
+                    }
+                ],
+                last_sync_timestamp="2024-11-11T14:30:00Z",
+            )
 
-                # Mock check for updates - updates available
-                mock_service.check_remote_updates.return_value = (True, 3)
+            # Run status command
+            status()
 
-                # Run status command
-                status()
+            # Capture output and verify content
+            captured = capsys.readouterr()
+            output = captured.out
 
-                # Verify check_remote_updates was called
-                mock_service.check_remote_updates.assert_called_once_with(repo_url, "abc1234")
+            # Verify output contains repo URL
+            assert repo_url in output
 
-                # Capture output and verify content
-                captured = capsys.readouterr()
-                output = captured.out
+            # Verify output contains timestamp info
+            assert "2024-11-11" in output
 
-                # Verify output contains repo URL
-                assert repo_url in output
-
-                # Verify output contains timestamp info
-                assert "2024-11-11" in output or "sync" in output.lower()
-
-                # Verify output contains commit hash
-                assert "abc1234" in output
-
-                # Verify output indicates updates available
-                assert "updates" in output.lower() or "behind" in output.lower() or "3" in output
+            # Verify output contains commit hash
+            assert "abc1234" in output

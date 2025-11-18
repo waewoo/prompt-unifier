@@ -834,11 +834,14 @@ class TestCleanOrphanedFiles:
         # Deployed file should still exist
         assert (continue_handler.prompts_dir / f"{mock_prompt.title}.md").exists()
 
-    def test_clean_ignores_subdirectories(
+    def test_clean_removes_backup_files_recursively_but_preserves_md_in_subdirectories(
         self, continue_handler: ContinueToolHandler, mock_prompt: PromptFrontmatter
     ):
-        """Test that clean ignores subdirectories and only processes files."""
-        # Deploy a prompt
+        """Test that clean recursively removes .bak files but preserves .md in subdirectories.
+
+        This behavior preserves files from previous deployments with different tag filters.
+        """
+        # Deploy a prompt (in root directory)
         continue_handler.deploy(mock_prompt, "prompt", "Body")
 
         # Create subdirectories in prompts and rules dirs
@@ -847,20 +850,33 @@ class TestCleanOrphanedFiles:
         subdir_prompts.mkdir()
         subdir_rules.mkdir()
 
-        # Create files in subdirectories
+        # Create .md files in subdirectories (should be preserved)
         (subdir_prompts / "nested.md").write_text("nested content")
         (subdir_rules / "nested-rule.md").write_text("nested rule")
 
-        # Clean with the deployed file
+        # Create backup files in subdirectories (should be removed)
+        (subdir_prompts / "backup.md.bak").write_text("backup")
+        (subdir_rules / "backup-rule.md.bak").write_text("backup rule")
+
+        # Create orphaned .md file in root (should be removed)
+        (continue_handler.prompts_dir / "orphan.md").write_text("orphan")
+
+        # Clean with the deployed file (only root level file)
         deployed = {f"{mock_prompt.title}.md"}
         removed = continue_handler.clean_orphaned_files(deployed)
 
-        # Subdirectories and their files should be ignored (not counted as removed)
-        assert removed == 0
-        assert subdir_prompts.exists()
-        assert subdir_rules.exists()
+        # Should remove: 2 .bak files in subdirs + 1 orphaned .md in root = 3 files
+        assert removed == 3
+        assert subdir_prompts.exists()  # Directory remains
+        assert subdir_rules.exists()  # Directory remains
+        # .md files in subdirectories are PRESERVED (for tag filter compatibility)
         assert (subdir_prompts / "nested.md").exists()
         assert (subdir_rules / "nested-rule.md").exists()
+        # .bak files in subdirectories are REMOVED
+        assert not (subdir_prompts / "backup.md.bak").exists()
+        assert not (subdir_rules / "backup-rule.md.bak").exists()
+        # Orphaned .md in root is REMOVED
+        assert not (continue_handler.prompts_dir / "orphan.md").exists()
 
     def test_clean_ignores_non_md_and_non_bak_files(
         self, continue_handler: ContinueToolHandler, mock_prompt: PromptFrontmatter

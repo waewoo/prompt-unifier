@@ -14,50 +14,73 @@ class TestGitConfig:
 
     def test_git_config_accepts_all_none_values(self) -> None:
         """Test that GitConfig can be created with all None values (for init command)."""
-        config = GitConfig(repo_url=None, last_sync_timestamp=None, last_sync_commit=None)
+        config = GitConfig(repos=None, last_sync_timestamp=None, repo_metadata=None)
 
-        assert config.repo_url is None
+        assert config.repos is None
         assert config.last_sync_timestamp is None
-        assert config.last_sync_commit is None
+        assert config.repo_metadata is None
 
     def test_git_config_accepts_valid_values(self) -> None:
-        """Test that GitConfig accepts valid string values for all fields."""
+        """Test that GitConfig accepts valid values for all fields."""
+        from prompt_unifier.models.git_config import RepositoryConfig
+
         config = GitConfig(
-            repo_url="https://github.com/example/prompts.git",
+            repos=[RepositoryConfig(url="https://github.com/example/prompts.git")],
             last_sync_timestamp="2024-11-11T14:30:00Z",
-            last_sync_commit="abc1234",
+            repo_metadata=[
+                {
+                    "url": "https://github.com/example/prompts.git",
+                    "branch": "main",
+                    "commit": "abc1234",
+                    "timestamp": "2024-11-11T14:30:00Z",
+                }
+            ],
         )
 
-        assert config.repo_url == "https://github.com/example/prompts.git"
+        assert config.repos is not None
+        assert len(config.repos) == 1
+        assert config.repos[0].url == "https://github.com/example/prompts.git"
         assert config.last_sync_timestamp == "2024-11-11T14:30:00Z"
-        assert config.last_sync_commit == "abc1234"
+        assert config.repo_metadata is not None
+        assert config.repo_metadata[0]["commit"] == "abc1234"
 
     def test_git_config_validates_field_types(self) -> None:
         """Test that GitConfig validates field types correctly."""
         # Should raise validation error for invalid types
         with pytest.raises(ValidationError):
             GitConfig(
-                repo_url=123,  # type: ignore[arg-type]  # Invalid: should be str or None
+                repos="invalid",  # type: ignore[arg-type]  # Invalid: should be list or None
                 last_sync_timestamp=None,
-                last_sync_commit=None,
+                repo_metadata=None,
             )
 
     def test_git_config_model_dump_includes_all_fields(self) -> None:
         """Test that model_dump includes all fields for serialization."""
+        from prompt_unifier.models.git_config import RepositoryConfig
+
         config = GitConfig(
-            repo_url="https://github.com/example/prompts.git",
+            repos=[RepositoryConfig(url="https://github.com/example/prompts.git")],
             last_sync_timestamp="2024-11-11T14:30:00Z",
-            last_sync_commit="abc1234",
+            repo_metadata=[
+                {
+                    "url": "https://github.com/example/prompts.git",
+                    "branch": "main",
+                    "commit": "abc1234",
+                    "timestamp": "2024-11-11T14:30:00Z",
+                }
+            ],
         )
 
         data = config.model_dump()
 
-        assert "repo_url" in data
+        assert "repos" in data
         assert "last_sync_timestamp" in data
-        assert "last_sync_commit" in data
-        assert data["repo_url"] == "https://github.com/example/prompts.git"
+        assert "repo_metadata" in data
+        assert data["repos"] is not None
+        assert len(data["repos"]) == 1
+        assert data["repos"][0]["url"] == "https://github.com/example/prompts.git"
         assert data["last_sync_timestamp"] == "2024-11-11T14:30:00Z"
-        assert data["last_sync_commit"] == "abc1234"
+        assert data["repo_metadata"][0]["commit"] == "abc1234"
 
 
 class TestHandlerConfig:
