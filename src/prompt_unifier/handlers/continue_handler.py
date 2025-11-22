@@ -1,14 +1,31 @@
+from dataclasses import dataclass
 from pathlib import Path
 from typing import Any
 
 import yaml
 from rich.console import Console
+from rich.table import Table
 
 from prompt_unifier.handlers.protocol import ToolHandler
 from prompt_unifier.models.prompt import PromptFrontmatter
 from prompt_unifier.models.rule import RuleFrontmatter
 
 console = Console()
+
+# Color constants matching RichFormatter patterns
+ERROR_COLOR = "red"
+WARNING_COLOR = "yellow"
+SUCCESS_COLOR = "green"
+
+
+@dataclass
+class VerificationResult:
+    """Data class for storing verification result details."""
+
+    file_name: str
+    content_type: str
+    status: str  # "passed", "failed", "warning"
+    details: str
 
 
 class ContinueToolHandler(ToolHandler):
@@ -333,19 +350,255 @@ class ContinueToolHandler(ToolHandler):
                 return False  # Invalid YAML
         return True
 
+    def verify_deployment_with_details(
+        self, content_name: str, content_type: str, file_name: str
+    ) -> VerificationResult:
+        """
+        Verifies if a specific content item has been deployed correctly and returns
+        detailed result information.
+
+        Args:
+            content_name: The name/title of the content item (used for display).
+            content_type: Type of content ("prompt" or "rule").
+            file_name: The actual filename of the deployed file (used for lookup).
+
+        Returns:
+            VerificationResult with status and details.
+        """
+        # Ensure file_name has .md extension
+        actual_file_name = file_name if file_name.endswith(".md") else f"{file_name}.md"
+
+        if content_type == "prompt":
+            target_file_path = self.prompts_dir / actual_file_name
+        elif content_type == "rule":
+            target_file_path = self.rules_dir / actual_file_name
+        else:
+            return VerificationResult(
+                file_name=file_name,
+                content_type=content_type,
+                status="failed",
+                details=f"Unsupported content type: {content_type}",
+            )
+
+        if not target_file_path.exists():
+            return VerificationResult(
+                file_name=file_name,
+                content_type=content_type,
+                status="failed",
+                details=f"File does not exist: {target_file_path}",
+            )
+
+        # Basic content verification
+        try:
+            deployed_content = target_file_path.read_text(encoding="utf-8")
+        except (OSError, UnicodeDecodeError) as e:
+            return VerificationResult(
+                file_name=file_name,
+                content_type=content_type,
+                status="failed",
+                details=f"Cannot read file: {e}",
+            )
+
+        # For prompts, check if invokable: true is present in frontmatter
+        if content_type == "prompt":
+            # Extract frontmatter
+            parts = deployed_content.split("---", 2)
+            if len(parts) < 3:
+                return VerificationResult(
+                    file_name=file_name,
+                    content_type=content_type,
+                    status="failed",
+                    details="Invalid format: missing frontmatter delimiters",
+                )
+
+            frontmatter_str = parts[1].strip()
+            try:
+                frontmatter = yaml.safe_load(frontmatter_str)
+                if not isinstance(frontmatter, dict):
+                    return VerificationResult(
+                        file_name=file_name,
+                        content_type=content_type,
+                        status="failed",
+                        details="Invalid frontmatter: not a dictionary",
+                    )
+                if not frontmatter.get("invokable"):
+                    return VerificationResult(
+                        file_name=file_name,
+                        content_type=content_type,
+                        status="failed",
+                        details="Missing or false 'invokable' field in frontmatter",
+                    )
+            except yaml.YAMLError as e:
+                return VerificationResult(
+                    file_name=file_name,
+                    content_type=content_type,
+                    status="failed",
+                    details=f"Invalid YAML frontmatter: {e}",
+                )
+
+        return VerificationResult(
+            file_name=file_name,
+            content_type=content_type,
+            status="passed",
+            details="File verified successfully",
+        )
+
+    def aggregate_verification_results(self, results: list[VerificationResult]) -> dict[str, int]:
+        """
+        Aggregates verification results into summary counts.
+
+        Args:
+            results: List of VerificationResult objects.
+
+        Returns:
+            Dictionary with counts for passed, failed, warnings, and total.
+        """
+        summary = {
+            "passed": 0,
+            "failed": 0,
+            "warnings": 0,
+            "total": len(results),
+        }
+
+        for result in results:
+            if result.status == "passed":
+                summary["passed"] += 1
+            elif result.status == "failed":
+                summary["failed"] += 1
+            elif result.status == "warning":
+                summary["warnings"] += 1
+
+        return summary
+
+    def display_verification_report(
+        self,
+        results: list[VerificationResult],
+        console: Console | None = None,
+    ) -> None:
+        """
+        Displays a Rich-formatted verification report.
+
+        Args:
+            results: List of VerificationResult objects to display.
+            console: Optional Console instance for output. Uses module console if None.
+        """
+        output_console = globals()["console"] if console is None else console
+
+        # Display header with handler name
+        output_console.print()
+        output_console.print(f"[bold]Verification Report: {self.name}[/bold]")
+        output_console.print("-" * 60)
+
+        # Build Rich table
+        table = Table(show_header=True, header_style="bold")
+        table.add_column("File", style="dim")
+        table.add_column("Type")
+        table.add_column("Status")
+        table.add_column("Details", style="dim")
+
+        for result in results:
+            # Determine status color
+            if result.status == "passed":
+                status_color = SUCCESS_COLOR
+                status_text = f"[{status_color}]PASSED[/{status_color}]"
+            elif result.status == "failed":
+                status_color = ERROR_COLOR
+                status_text = f"[{status_color}]FAILED[/{status_color}]"
+            else:  # warning
+                status_color = WARNING_COLOR
+                status_text = f"[{status_color}]WARNING[/{status_color}]"
+
+            table.add_row(
+                result.file_name,
+                result.content_type,
+                status_text,
+                result.details,
+            )
+
+        output_console.print(table)
+
+        # Display summary
+        summary = self.aggregate_verification_results(results)
+        output_console.print()
+        output_console.print("[bold]Summary:[/bold]")
+        output_console.print(f"  Total: {summary['total']}")
+        output_console.print(f"  Passed: [{SUCCESS_COLOR}]{summary['passed']}[/{SUCCESS_COLOR}]")
+        output_console.print(f"  Failed: [{ERROR_COLOR}]{summary['failed']}[/{ERROR_COLOR}]")
+        output_console.print(
+            f"  Warnings: [{WARNING_COLOR}]{summary['warnings']}[/{WARNING_COLOR}]"
+        )
+
+        # Show warning message if there are failures
+        if summary["failed"] > 0:
+            output_console.print()
+            output_console.print(
+                f"[{WARNING_COLOR}]Warning: {summary['failed']} verification(s) failed. "
+                f"Review the details above.[/{WARNING_COLOR}]"
+            )
+
+        output_console.print()
+
+    def _remove_empty_directories(self, base_dir: Path) -> None:
+        """
+        Removes empty directories within the base directory, walking bottom-up.
+
+        Args:
+            base_dir: The base directory to clean up empty subdirectories from.
+        """
+        # Walk the directory tree bottom-up to remove empty directories
+        # We need to collect all directories first, then sort them by depth (deepest first)
+        all_dirs = []
+        for dir_path in base_dir.rglob("*"):
+            if dir_path.is_dir():
+                all_dirs.append(dir_path)
+
+        # Sort by depth (deepest first) to ensure we remove nested empty dirs first
+        all_dirs.sort(key=lambda p: len(p.parts), reverse=True)
+
+        for dir_path in all_dirs:
+            try:
+                # Check if directory is empty
+                if not any(dir_path.iterdir()):
+                    dir_path.rmdir()
+                    console.print(f"[dim]Removed empty directory: {dir_path}[/dim]")
+            except OSError:
+                # Directory not empty or other issue, skip
+                pass
+
     def rollback(self) -> None:
         """
         Rolls back the deployment by restoring backup files.
-        """
-        # Restore backups if they exist
-        for backup_file in self.prompts_dir.glob("*.bak"):
-            original_path = backup_file.with_suffix("")
-            backup_path = self.prompts_dir / backup_file.name
-            backup_path.rename(original_path)
-            console.print(f"[yellow]Restored {original_path.name} from backup[/yellow]")
 
-        for backup_file in self.rules_dir.glob("*.bak"):
+        This method:
+        1. Recursively finds all .bak files in subdirectories using **/*.bak pattern
+        2. Restores each backup file to its original location
+        3. Removes empty directories after restoration
+        4. Logs warnings and continues if backup files are missing
+        """
+        # Restore backups in prompts directory recursively
+        for backup_file in self.prompts_dir.glob("**/*.bak"):
             original_path = backup_file.with_suffix("")
-            backup_path = self.rules_dir / backup_file.name
-            backup_path.rename(original_path)
-            console.print(f"[yellow]Restored {original_path.name} from backup[/yellow]")
+            try:
+                backup_file.rename(original_path)
+                console.print(f"[yellow]Restored {original_path.name} from backup[/yellow]")
+            except (OSError, FileNotFoundError) as e:
+                console.print(
+                    f"[yellow]Warning: Could not restore {backup_file.name}: {e}[/yellow]"
+                )
+                continue
+
+        # Restore backups in rules directory recursively
+        for backup_file in self.rules_dir.glob("**/*.bak"):
+            original_path = backup_file.with_suffix("")
+            try:
+                backup_file.rename(original_path)
+                console.print(f"[yellow]Restored {original_path.name} from backup[/yellow]")
+            except (OSError, FileNotFoundError) as e:
+                console.print(
+                    f"[yellow]Warning: Could not restore {backup_file.name}: {e}[/yellow]"
+                )
+                continue
+
+        # Clean up empty directories after restoration
+        self._remove_empty_directories(self.prompts_dir)
+        self._remove_empty_directories(self.rules_dir)

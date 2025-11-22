@@ -700,13 +700,7 @@ Other content
             config_dir = Path.cwd() / ".prompt-unifier"
             config_dir.mkdir()
             config_file = config_dir / "config.yaml"
-            config_file.write_text("""
-repo_url: https://example.com/repo.git
-storage_path: /nonexistent/path
-deploy_tags: ["python"]
-target_handlers: ["continue"]
-""")
-
+            config_file.write_text("storage_path: nonexistent/path")
             result = runner.invoke(app, ["deploy"])
             assert result.exit_code == 1
             assert "does not exist" in result.output

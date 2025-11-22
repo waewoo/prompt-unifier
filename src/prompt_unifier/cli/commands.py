@@ -6,15 +6,17 @@ Git integration commands (init, sync, status).
 """
 
 from pathlib import Path
+from typing import Any
 
 import typer
 from rich.console import Console
+from rich.table import Table
 
 from prompt_unifier.config.manager import ConfigManager
 from prompt_unifier.core.batch_validator import BatchValidator
 from prompt_unifier.core.content_parser import ContentFileParser
 from prompt_unifier.git.service import GitService
-from prompt_unifier.handlers.continue_handler import ContinueToolHandler
+from prompt_unifier.handlers.continue_handler import ContinueToolHandler, VerificationResult
 from prompt_unifier.handlers.registry import ToolHandlerRegistry
 from prompt_unifier.models.git_config import GitConfig, RepositoryConfig
 from prompt_unifier.models.prompt import PromptFrontmatter
@@ -63,6 +65,14 @@ DEFAULT_CLEAN_OPTION = typer.Option(
     help=(
         "Remove prompts/rules in destination that don't exist in source "
         "(creates backups before removal)"
+    ),
+)
+DEFAULT_DRY_RUN = False
+DEFAULT_DRY_RUN_OPTION = typer.Option(
+    DEFAULT_DRY_RUN,
+    "--dry-run",
+    help=(
+        "Preview deployment without executing any file operations " "(shows what would be deployed)"
     ),
 )
 
@@ -637,6 +647,7 @@ def deploy(
     handlers: list[str] | None = DEFAULT_HANDLERS_OPTION,
     base_path: Path | None = DEFAULT_BASE_PATH_OPTION,
     clean: bool = DEFAULT_CLEAN_OPTION,
+    dry_run: bool = DEFAULT_DRY_RUN_OPTION,
 ) -> None:
     """
     Deploys prompts and rules to the specified tool handlers based on configuration and CLI options.
@@ -806,9 +817,16 @@ def deploy(
             console.print("[yellow]No content files match the specified criteria.[/yellow]")
             return
 
+        # Handle dry-run mode
+        if dry_run:
+            _display_dry_run_preview(filtered_files, all_handlers, prompts_dir, rules_dir)
+            return
+
         # Deploy to handlers
         total_deployed = 0
         total_cleaned = 0
+        all_verification_results: list[VerificationResult] = []
+
         for handler in all_handlers:
             handler_name = handler.get_name()
             console.print(f"Deploying to {handler_name}...")
@@ -856,6 +874,16 @@ def deploy(
                     console.print(
                         f"  [green]✓[/green] Deployed {parsed_content.title} ({content_type})"
                     )
+
+                    # Call verification after successful deploy
+                    if hasattr(handler, "verify_deployment_with_details"):
+                        verification_result = handler.verify_deployment_with_details(
+                            parsed_content.title,
+                            content_type,
+                            source_filename or parsed_content.title,
+                        )
+                        all_verification_results.append(verification_result)
+
                 except Exception as e:
                     console.print(
                         f"  [red]✗[/red] Failed to deploy {parsed_content.title} "
@@ -888,6 +916,12 @@ def deploy(
             else:
                 console.print(f"[yellow]⚠ No items deployed to {handler_name}.[/yellow]")
 
+            # Display verification report for this handler if there are results
+            if all_verification_results and hasattr(handler, "display_verification_report"):
+                handler.display_verification_report(all_verification_results)
+                # Clear results for next handler
+                all_verification_results = []
+
         summary_parts = [f"{total_deployed} items deployed to {len(all_handlers)} handler(s)"]
         if clean and total_cleaned > 0:
             summary_parts.append(f"{total_cleaned} orphaned file(s) cleaned")
@@ -900,3 +934,89 @@ def deploy(
     except Exception as e:
         typer.echo(f"Error during deployment: {e}", err=True)
         raise typer.Exit(code=1) from e
+
+
+def _display_dry_run_preview(
+    filtered_files: list[tuple[Any, str, Path]],
+    all_handlers: list[Any],
+    prompts_dir: Path,
+    rules_dir: Path,
+) -> None:
+    """Display a dry-run preview of what would be deployed.
+
+    Args:
+        filtered_files: List of (parsed_content, content_type, file_path) tuples.
+        all_handlers: List of handler objects.
+        prompts_dir: Path to the prompts directory.
+        rules_dir: Path to the rules directory.
+    """
+    console.print()
+    console.print("[bold]Dry-run preview - No files will be modified[/bold]")
+    console.print("━" * 80)
+
+    for handler in all_handlers:
+        handler_name = handler.get_name()
+        console.print(f"\n[bold]Handler: {handler_name}[/bold]")
+
+        # Check if target directories exist
+        if hasattr(handler, "prompts_dir") and not handler.prompts_dir.exists():
+            console.print(
+                f"[yellow]Warning: Target prompts directory does not exist: "
+                f"{handler.prompts_dir}[/yellow]"
+            )
+        if hasattr(handler, "rules_dir") and not handler.rules_dir.exists():
+            console.print(
+                f"[yellow]Warning: Target rules directory does not exist: "
+                f"{handler.rules_dir}[/yellow]"
+            )
+
+        # Build preview table
+        table = Table(show_header=True, header_style="bold")
+        table.add_column("Source Path", style="dim")
+        table.add_column("Target Path", style="dim")
+        table.add_column("Type")
+        table.add_column("Title")
+
+        for parsed_content, content_type, file_path in filtered_files:
+            # Determine target path
+            source_filename = file_path.name
+
+            # Calculate relative path
+            relative_path = None
+            if content_type == "prompt" and prompts_dir:
+                try:
+                    relative_path = file_path.parent.relative_to(prompts_dir)
+                except ValueError:
+                    relative_path = None
+            elif content_type == "rule" and rules_dir:
+                try:
+                    relative_path = file_path.parent.relative_to(rules_dir)
+                except ValueError:
+                    relative_path = None
+
+            # Determine target path based on handler
+            if content_type == "prompt" and hasattr(handler, "prompts_dir"):
+                if relative_path and str(relative_path) != ".":
+                    target_path = handler.prompts_dir / relative_path / source_filename
+                else:
+                    target_path = handler.prompts_dir / source_filename
+            elif content_type == "rule" and hasattr(handler, "rules_dir"):
+                if relative_path and str(relative_path) != ".":
+                    target_path = handler.rules_dir / relative_path / source_filename
+                else:
+                    target_path = handler.rules_dir / source_filename
+            else:
+                target_path = Path("N/A")
+
+            table.add_row(
+                str(file_path),
+                str(target_path),
+                content_type,
+                parsed_content.title,
+            )
+
+        console.print(table)
+
+    console.print()
+    console.print(f"[bold]Total:[/bold] {len(filtered_files)} file(s) would be deployed")
+    console.print()

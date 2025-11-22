@@ -149,6 +149,11 @@ def deploy(
         "--clean",
         help="Remove orphaned prompts/rules in destination (creates backups)",
     ),
+    dry_run: bool = typer.Option(
+        False,
+        "--dry-run",
+        help="Preview deployment without executing any file operations",
+    ),
 ) -> None:
     """Deploy prompts and rules to the specified tool handlers.
 
@@ -161,6 +166,9 @@ def deploy(
 
     With --clean flag, files in the destination that don't exist in the source
     will be removed (backups are created before removal).
+
+    With --dry-run flag, shows a preview of what would be deployed without
+    actually executing any file operations.
     """
     tag_list = tags.split(",") if tags else None
     handler_list = handlers.split(",") if handlers else None
@@ -171,6 +179,7 @@ def deploy(
         handlers=handler_list,
         base_path=base_path_obj,
         clean=clean,
+        dry_run=dry_run,
     )
 
 
