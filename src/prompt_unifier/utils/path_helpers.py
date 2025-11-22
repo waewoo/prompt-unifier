@@ -1,12 +1,13 @@
-"""Path helper utilities for environment variable expansion.
+"""Path helper utilities for environment variable expansion and path normalization.
 
 This module provides utilities for expanding environment variables in path strings,
-supporting standard variables like $HOME, $USER, $PWD in both $VAR and ${VAR} syntaxes.
+supporting standard variables like $HOME, $USER, $PWD in both $VAR and ${VAR} syntaxes,
+as well as cross-platform path normalization for comparisons.
 """
 
 import os
 import re
-from pathlib import Path
+from pathlib import Path, PurePath
 
 
 def expand_env_vars(path: str) -> str:
@@ -53,3 +54,31 @@ def expand_env_vars(path: str) -> str:
     path = percent_pattern.sub(replace_percent, path)
     # Normalize path separators for the OS
     return os.path.normpath(path)
+
+
+def normalize_path_for_comparison(path: str | Path | PurePath) -> str:
+    """Normalize a path to POSIX format for cross-platform comparisons.
+
+    This function converts all path separators to forward slashes,
+    making it suitable for string comparisons in tests that need to
+    work on both Windows and Linux.
+
+    Args:
+        path: A path string, Path object, or PurePath object to normalize.
+
+    Returns:
+        A POSIX-style path string with forward slashes.
+
+    Examples:
+        >>> normalize_path_for_comparison("prompts\\\\test.md")
+        'prompts/test.md'
+        >>> normalize_path_for_comparison(Path("rules/example.md"))
+        'rules/example.md'
+    """
+    if isinstance(path, str):
+        if not path:
+            return "."
+        path = Path(path)
+
+    # PurePath and Path both have as_posix() method
+    return path.as_posix()

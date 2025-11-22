@@ -1,5 +1,6 @@
 """Tests for UTF-8 encoding validation logic."""
 
+import platform
 from pathlib import Path
 from unittest.mock import patch
 
@@ -522,6 +523,9 @@ class TestEncodingValidator:
             if test_file.exists():
                 test_file.unlink()
 
+    @pytest.mark.skipif(
+        platform.system() == "Windows", reason="Symlinks require elevated privileges on Windows"
+    )
     def test_encoding_with_symlink(self):
         """Test encoding with symbolic links."""
         validator = EncodingValidator()
