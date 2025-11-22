@@ -35,54 +35,117 @@ DEFAULT_PROMPT_NAME = None
 DEFAULT_TAGS = None
 DEFAULT_HANDLERS = None
 DEFAULT_BASE_PATH = None
+DEFAULT_CLEAN = False
+DEFAULT_DRY_RUN = False
+DEFAULT_INIT_STORAGE_PATH = None
+DEFAULT_SYNC_REPO = None
+DEFAULT_SYNC_STORAGE_PATH = None
+DEFAULT_VALIDATE_DIRECTORY = None
+DEFAULT_VALIDATE_JSON_OUTPUT = False
+DEFAULT_VALIDATE_VERBOSE = False
+DEFAULT_VALIDATE_CONTENT_TYPE = "all"
+DEFAULT_LIST_VERBOSE = False
+DEFAULT_LIST_TOOL = None
+DEFAULT_LIST_TAG = None
+DEFAULT_LIST_SORT = "name"
 
 DEFAULT_PROMPT_NAME_OPTION = typer.Option(
     DEFAULT_PROMPT_NAME,
     "--name",
-    help="Name of the prompt to deploy (optional, deploys all if not specified)",
+    help=("Deploy only a specific prompt or rule by name (defaults to all content)"),
 )
+
 DEFAULT_TAGS_OPTION = typer.Option(
     DEFAULT_TAGS,
     "--tags",
-    help="Tags to filter prompts and rules (optional, deploys all if not specified)",
+    help=("Filter content to deploy by tags (comma-separated, defaults to no filter)"),
 )
+
 DEFAULT_HANDLERS_OPTION = typer.Option(
     None,
     "--handlers",
-    help="Target handlers to deploy to (optional, deploys to all registered if not specified)",
+    help=(
+        "Specify target handlers for deployment (comma-separated, "
+        "defaults to 'continue'). Currently, only 'continue' is supported."
+    ),
 )
+
 DEFAULT_BASE_PATH_OPTION = typer.Option(
     DEFAULT_BASE_PATH,
     "--base-path",
     help=(
-        "Custom base path for handler deployment "
-        "(overrides config.yaml, works with --handlers flag)"
+        "Custom base path for handler deployment (overrides config.yaml, "
+        "defaults to current working directory)"
     ),
 )
-DEFAULT_CLEAN = False
 DEFAULT_CLEAN_OPTION = typer.Option(
     DEFAULT_CLEAN,
     "--clean",
-    help=(
-        "Remove prompts/rules in destination that don't exist in source "
-        "(creates backups before removal)"
-    ),
+    help="Remove orphaned prompts/rules in destination (creates backups, default: False)",
 )
-DEFAULT_DRY_RUN = False
 DEFAULT_DRY_RUN_OPTION = typer.Option(
     DEFAULT_DRY_RUN,
     "--dry-run",
+    help="Preview deployment without executing any file operations (default: False)",
+)
+DEFAULT_INIT_STORAGE_PATH_OPTION = typer.Option(
+    DEFAULT_INIT_STORAGE_PATH,
+    "--storage-path",
+    help="Optional custom storage directory path (defaults to ~/.prompt-unifier/storage/)",
+)
+DEFAULT_SYNC_REPOS_OPTION = typer.Option(
+    DEFAULT_SYNC_REPO, "--repo", help="Git repository URL (can be specified multiple times)"
+)
+DEFAULT_SYNC_STORAGE_PATH_OPTION = typer.Option(
+    DEFAULT_SYNC_STORAGE_PATH,
+    "--storage-path",
     help=(
-        "Preview deployment without executing any file operations (shows what would be deployed)"
+        "Override storage path for this sync (defaults to config value or "
+        "~/.prompt-unifier/storage/)"
     ),
+)
+DEFAULT_VALIDATE_DIRECTORY_ARG = typer.Argument(
+    DEFAULT_VALIDATE_DIRECTORY, help="Directory to validate (defaults to synchronized storage)"
+)
+DEFAULT_VALIDATE_JSON_OPTION = typer.Option(
+    DEFAULT_VALIDATE_JSON_OUTPUT,
+    "--json",
+    help="Output validation results in JSON format (default: False)",
+)
+DEFAULT_VALIDATE_VERBOSE_OPTION = typer.Option(
+    DEFAULT_VALIDATE_VERBOSE,
+    "--verbose",
+    "-v",
+    help="Show verbose output with detailed validation issues (default: False)",
+)
+DEFAULT_VALIDATE_CONTENT_TYPE_OPTION = typer.Option(
+    DEFAULT_VALIDATE_CONTENT_TYPE,
+    "--type",
+    "-t",
+    help="Content type to validate: all, prompts, or rules [default: all]",
+)
+DEFAULT_LIST_VERBOSE_OPTION = typer.Option(
+    DEFAULT_LIST_VERBOSE, "--verbose", "-v", help="Show full content preview (default: False)"
+)
+DEFAULT_LIST_TOOL_OPTION = typer.Option(
+    DEFAULT_LIST_TOOL,
+    "--tool",
+    "-t",
+    help="Filter content by target tool handler (default: no filter)",
+)
+DEFAULT_LIST_TAG_OPTION = typer.Option(
+    DEFAULT_LIST_TAG, "--tag", help="Filter content by a specific tag (default: no filter)"
+)
+DEFAULT_LIST_SORT_OPTION = typer.Option(
+    DEFAULT_LIST_SORT, "--sort", "-s", help="Sort content by 'name' (default) or 'date'"
 )
 
 
 def validate(
-    directory: Path | None = None,
-    json_output: bool = False,
-    verbose: bool = False,
-    content_type: str = "all",
+    directory: Path | None = DEFAULT_VALIDATE_DIRECTORY_ARG,
+    json_output: bool = DEFAULT_VALIDATE_JSON_OPTION,
+    verbose: bool = DEFAULT_VALIDATE_VERBOSE_OPTION,
+    content_type: str = DEFAULT_VALIDATE_CONTENT_TYPE_OPTION,
 ) -> None:
     """Validate prompt and rule files in a directory.
 
@@ -218,7 +281,9 @@ def validate(
             raise typer.Exit(code=1)
 
 
-def init(storage_path: str | None = None) -> None:
+def init(
+    storage_path: str | None = DEFAULT_INIT_STORAGE_PATH_OPTION,
+) -> None:
     """Initialize Prompt Unifier in the current directory.
 
     Creates the .prompt-unifier/ directory and config.yaml in the
@@ -393,7 +458,10 @@ Thumbs.db
         raise typer.Exit(code=1) from e
 
 
-def sync(repos: list[str] | None = None, storage_path: str | None = None) -> None:
+def sync(
+    repos: list[str] | None = DEFAULT_SYNC_REPOS_OPTION,
+    storage_path: str | None = DEFAULT_SYNC_STORAGE_PATH_OPTION,
+) -> None:
     """Sync prompts from Git repositories to centralized storage.
 
     Clones remote repositories to temporary directories, extracts the
@@ -770,10 +838,10 @@ def status() -> None:
 
 
 def list_content(
-    verbose: bool = typer.Option(False, "--verbose", "-v", help="Show full content preview"),
-    tool: str | None = typer.Option(None, "--tool", "-t", help="Filter by target tool"),
-    tag: str | None = typer.Option(None, "--tag", help="Filter by tag"),
-    sort: str = typer.Option("name", "--sort", "-s", help="Sort by 'name' or 'date'"),
+    verbose: bool = DEFAULT_LIST_VERBOSE_OPTION,
+    tool: str | None = DEFAULT_LIST_TOOL_OPTION,
+    tag: str | None = DEFAULT_LIST_TAG_OPTION,
+    sort: str = DEFAULT_LIST_SORT_OPTION,
 ) -> None:
     """List available prompts and rules.
 
@@ -1139,6 +1207,7 @@ def deploy(
                             parsed_content.title,
                             content_type,
                             source_filename or parsed_content.title,
+                            relative_path,  # Pass the relative_path
                         )
                         all_verification_results.append(verification_result)
 

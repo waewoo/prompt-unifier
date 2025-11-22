@@ -122,22 +122,33 @@ class TestCLIIntegration:
         self, valid_prompts_dir: Path, capsys: pytest.CaptureFixture[str]
     ) -> None:
         """Test CLI validation with valid directory."""
-        # Act - should not raise Exit
+        # Act
+        import typer  # Import typer here
+
         try:
-            validate(valid_prompts_dir, json_output=False, verbose=False)
-            success = True
-        except Exception:
-            success = False
+            validate(
+                directory=valid_prompts_dir, json_output=False, verbose=False, content_type="all"
+            )
+            # If no typer.Exit is raised, it's a success (implicitly exit code 0)
+            exit_code = 0
+        except typer.Exit as e:
+            exit_code = e.exit_code
 
         # Assert
-        assert success is True
+        assert exit_code == 0  # Ensure the exit code is 0 (success)
 
     def test_cli_json_output_is_valid_json(
         self, valid_prompts_dir: Path, capsys: pytest.CaptureFixture[str]
     ) -> None:
         """Test that CLI --json flag produces valid JSON output."""
         # Act
-        validate(valid_prompts_dir, json_output=True, verbose=False)
+        # Expect successful validation (exit code 0), so validate should not raise typer.Exit(1)
+        validate(
+            directory=valid_prompts_dir,
+            json_output=True,
+            verbose=False,
+            content_type="all",
+        )
         captured = capsys.readouterr()
 
         # Assert - should be valid JSON

@@ -186,7 +186,6 @@ prompt-unifier/
 │   ├── core/
 │   ├── integration/      # End-to-end tests
 │   └── fixtures/         # Test data and fixtures
-├── .github/              # GitHub-specific files (e.g., issue templates)
 ├── .gitlab-ci.yml        # GitLab CI/CD pipeline configuration
 ├── Makefile              # Makefile with development commands
 ├── pyproject.toml        # Project metadata and dependencies

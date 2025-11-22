@@ -352,7 +352,11 @@ class ContinueToolHandler(ToolHandler):
         return True
 
     def verify_deployment_with_details(
-        self, content_name: str, content_type: str, file_name: str
+        self,
+        content_name: str,
+        content_type: str,
+        file_name: str,
+        relative_path: Path | None = None,
     ) -> VerificationResult:
         """
         Verifies if a specific content item has been deployed correctly and returns
@@ -362,6 +366,7 @@ class ContinueToolHandler(ToolHandler):
             content_name: The name/title of the content item (used for display).
             content_type: Type of content ("prompt" or "rule").
             file_name: The actual filename of the deployed file (used for lookup).
+            relative_path: Relative subdirectory path where the file was deployed.
 
         Returns:
             VerificationResult with status and details.
@@ -370,9 +375,9 @@ class ContinueToolHandler(ToolHandler):
         actual_file_name = file_name if file_name.endswith(".md") else f"{file_name}.md"
 
         if content_type == "prompt":
-            target_file_path = self.prompts_dir / actual_file_name
+            base_dir = self.prompts_dir
         elif content_type == "rule":
-            target_file_path = self.rules_dir / actual_file_name
+            base_dir = self.rules_dir
         else:
             return VerificationResult(
                 file_name=file_name,
@@ -380,6 +385,13 @@ class ContinueToolHandler(ToolHandler):
                 status="failed",
                 details=f"Unsupported content type: {content_type}",
             )
+
+        # Construct target path with subdirectory structure if relative_path is provided
+        if relative_path and str(relative_path) != ".":
+            target_file_path = base_dir / relative_path / actual_file_name
+        else:
+            # Deploy to root directory
+            target_file_path = base_dir / actual_file_name
 
         if not target_file_path.exists():
             return VerificationResult(

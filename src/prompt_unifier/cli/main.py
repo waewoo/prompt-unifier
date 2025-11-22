@@ -88,7 +88,11 @@ def validate(
 
 @app.command(name="init", help="Initialize prompt-unifier in current directory")
 def init(
-    storage_path: str | None = typer.Option(None, "--storage-path"),
+    storage_path: str | None = typer.Option(
+        None,
+        "--storage-path",
+        help="Optional custom storage directory path (defaults to ~/.prompt-unifier/storage/)",
+    ),
 ) -> None:
     """Initialize prompt-unifier configuration.
 
@@ -107,7 +111,14 @@ def sync(
     repos: list[str] | None = typer.Option(  # noqa: B008
         None, "--repo", help="Git repository URL (can be specified multiple times)"
     ),
-    storage_path: str | None = typer.Option(None, "--storage-path"),  # noqa: B008
+    storage_path: str | None = typer.Option(
+        None,
+        "--storage-path",
+        help=(
+            "Override storage path for this sync (defaults to config value or "
+            "~/.prompt-unifier/storage/)"
+        ),
+    ),  # noqa: B008
 ) -> None:
     """Sync prompts from Git repositories to centralized storage.
 

@@ -20,6 +20,8 @@ VALID_CATEGORIES = [
     "performance",
     "deployment",
     "git",
+    "standards",
+    "infrastructure",
 ]
 
 

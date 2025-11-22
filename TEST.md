@@ -109,7 +109,7 @@ cd /tmp/test-pm-1
 poetry run prompt-unifier init  # Fails - already initialized
 ```
 
-✗ **Expected result:** Error "Project is already initialized" (Code: 1)
+✓ **Expected result:** Message "Already initialized (all components exist)" (Code: 0)
 
 ---
 
@@ -142,12 +142,12 @@ poetry run prompt-unifier sync --repo git@gitlab.com:waewoo/prompt-unifier-data.
 repos:
   - url: git@gitlab.com:waewoo/prompt-unifier-data.git
     branch: main
-last_sync_timestamp: "2024-11-18T14:30:00Z"
+last_sync_timestamp: "Dynamic ISO 8601 timestamp"
 repo_metadata:
   - url: git@gitlab.com:waewoo/prompt-unifier-data.git
     branch: main
     commit: abc1234
-    timestamp: "2024-11-18T14:30:00Z"
+    timestamp: "Dynamic ISO 8601 timestamp"
 storage_path: /root/.prompt-unifier/storage
 ```
 
@@ -187,20 +187,20 @@ repos:
     branch: main
   - url: git@gitlab.com:team/team-prompts.git
     branch: develop
-last_sync_timestamp: "2024-11-18T14:35:00Z"
+last_sync_timestamp: "Dynamic ISO 8601 timestamp"
 repo_metadata:
   - url: git@gitlab.com:waewoo/prompt-unifier-data.git
     branch: main
     commit: abc1234
-    timestamp: "2024-11-18T14:35:00Z"
+    timestamp: "Dynamic ISO 8601 timestamp"
   - url: git@gitlab.com:company/global-prompts.git
     branch: main
     commit: def5678
-    timestamp: "2024-11-18T14:35:00Z"
+    timestamp: "Dynamic ISO 8601 timestamp"
   - url: git@gitlab.com:team/team-prompts.git
     branch: develop
     commit: ghi9012
-    timestamp: "2024-11-18T14:35:00Z"
+    timestamp: "Dynamic ISO 8601 timestamp"
 storage_path: /root/.prompt-unifier/storage
 ```
 
@@ -250,6 +250,7 @@ poetry run prompt-unifier status
 - Repository URL
 - "Last sync: X minutes ago"
 - "✓ Up to date" or "⚠ Updates available (X commits behind)"
+- Displays deployment status for synced files
 
 ### Test 4.4: Status with multiple repositories
 
@@ -266,6 +267,7 @@ poetry run prompt-unifier status
 - Each repository shows its branch and last commit
 - "Last sync: X minutes ago" (overall sync timestamp)
 - Individual status for each repository if updates available
+- Displays deployment status for synced files
 
 ---
 
@@ -356,30 +358,130 @@ poetry run prompt-unifier validate /tmp/test-invalid
 
 ---
 
+## List Command
+
+### Test 7.1: List all content
+
+```bash
+cd /tmp/test-pm-1
+poetry run prompt-unifier sync --repo git@gitlab.com:waewoo/prompt-unifier-data.git
+poetry run prompt-unifier list
+```
+
+✓ **Expected result:** A table listing all synced prompts and rules, sorted by name.
+
+### Test 7.2: List content with --verbose
+
+```bash
+cd /tmp/test-pm-1
+poetry run prompt-unifier list --verbose
+```
+
+✓ **Expected result:** A table listing all synced prompts and rules, with detailed content previews.
+
+### Test 7.3: List content filtered by --tag
+
+```bash
+cd /tmp/test-pm-1
+poetry run prompt-unifier list --tag python
+```
+
+✓ **Expected result:** A table listing only prompts/rules tagged "python".
+
+### Test 7.4: List content filtered by --tool
+
+```bash
+cd /tmp/test-pm-1
+poetry run prompt-unifier list --tool continue
+```
+
+✓ **Expected result:** A table listing content relevant to the "continue" tool. (This will only work if the content has metadata linking it to a tool, which is not currently implemented in content models)
+
+### Test 7.5: List content sorted by --sort date
+
+```bash
+cd /tmp/test-pm-1
+poetry run prompt-unifier list --sort date
+```
+
+✓ **Expected result:** A table listing all synced prompts and rules, sorted by their last modification date.
+
+---
+
 ## Deploy Command
 
-### Test 9.1: Simple deployment of a prompt
+### Test 11.1: Deploy a specific prompt by name
 
 ```bash
 cd /tmp/test-pm-1
 poetry run prompt-unifier sync
-poetry run prompt-unifier deploy "code-review" --handlers continue
+poetry run prompt-unifier deploy --name "code-review" --handlers continue
 ```
 
 ✓ **Expected result:**
 - File `~/.continue/prompts/code-review.md` created with frontmatter (`name`, `description`, `invokable: true`)
 - Backup created if file existed (`.md.bak`)
 - Message "✓ Deployment to continue successful" (Code: 0)
+- "Verification Report" displayed, with the deployed file marked as "PASSED"
 
-### Test 9.2: Deployment of a rule
+### Test 11.2: Deploy to a specific handler
 
 ```bash
-poetry run prompt-unifier deploy "python-style" --handlers continue
+cd /tmp/test-pm-1
+poetry run prompt-unifier sync
+poetry run prompt-unifier deploy --name "code-review" --handlers continue
+```
+
+✓ **Expected result:** Same as Test 11.1, ensuring deployment to the specified 'continue' handler.
+
+### Test 11.3: Deploy to a custom base path
+
+```bash
+cd /tmp/test-pm-1
+poetry run prompt-unifier sync
+poetry run prompt-unifier deploy --name "code-review" --handlers continue --base-path /tmp/custom-continue-path
+```
+
+✓ **Expected result:**
+- File `/tmp/custom-continue-path/prompts/code-review.md` created.
+- "Verification Report" displayed, with the deployed file marked as "PASSED".
+
+### Test 11.4: Dry-run deployment
+
+```bash
+cd /tmp/test-pm-1
+poetry run prompt-unifier sync
+poetry run prompt-unifier deploy --name "code-review" --handlers continue --dry-run
+```
+
+✓ **Expected result:**
+- Message indicating "Dry-run preview - No files will be modified"
+- A preview table showing `code-review` would be deployed, but no actual files are created or modified in `~/.continue/` or `/tmp/custom-continue-path`.
+
+### Test 11.5 (was 9.1): Simple deployment of a prompt
+
+```bash
+cd /tmp/test-pm-1
+poetry run prompt-unifier sync
+poetry run prompt-unifier deploy --name "code-review" --handlers continue
+```
+
+✓ **Expected result:**
+- File `~/.continue/prompts/code-review.md` created with frontmatter (`name`, `description`, `invokable: true`)
+- Backup created if file existed (`.md.bak`)
+- Message "✓ Deployment to continue successful" (Code: 0)
+- "Verification Report" displayed, with the deployed file marked as "PASSED"
+
+### Test 11.6 (was 9.2): Deployment of a rule
+
+```bash
+poetry run prompt-unifier deploy --name "python-style" --handlers continue
 ```
 
 ✓ **Expected result:** File `~/.continue/rules/python-style.md` created (Code: 0)
+- "Verification Report" displayed, with the deployed file marked as "PASSED"
 
-### Test 9.3: Deploy with tag filtering
+### Test 11.7 (was 9.3): Deploy with tag filtering
 
 ```bash
 poetry run prompt-unifier deploy --tags python --handlers continue
@@ -388,54 +490,59 @@ poetry run prompt-unifier deploy --tags python --handlers continue
 ✓ **Expected result:**
 - Only prompts/rules with "python" tag deployed
 - Messages for each filtered item
+- "Verification Report" displayed, with the deployed files marked as "PASSED"
 
-### Test 9.4: Deploy all items
+### Test 11.8 (was 9.4): Deploy all items
 
 ```bash
 poetry run prompt-unifier deploy --handlers continue
 ```
 
 ✓ **Expected result:** All prompts AND rules from storage deployed (Code: 0)
+- "Verification Report" displayed, with all deployed files marked as "PASSED"
 
-### Test 9.5: Deploy non-existent prompt (error)
+### Test 11.9 (was 9.5): Deploy non-existent prompt (error)
 
 ```bash
-poetry run prompt-unifier deploy "non-existent" --handlers continue
+poetry run prompt-unifier deploy --name "non-existent" --handlers continue
 ```
 
 ✗ **Expected result:** Error "Prompt not found in storage" (Code: 1)
 
-### Test 9.6: Deploy with invalid handler (error)
+### Test 11.10 (was 9.6): Deploy with invalid handler (error)
 
 ```bash
-poetry run prompt-unifier deploy "code-review" --handlers invalid
+poetry run prompt-unifier deploy --name "code-review" --handlers invalid
 ```
 
-✗ **Expected result:** Error "ToolHandler not found" (Code: 1)
+✗ **Expected result:** Error "No matching handlers found for ['invalid']" (Code: 1)
 
-### Test 9.7: Backup verification
+### Test 11.11 (was 9.7): Backup verification
 
 ```bash
 echo "old content" > ~/.continue/prompts/code-review.md
-poetry run prompt-unifier deploy "code-review" --handlers continue
+poetry run prompt-unifier deploy --name "code-review" --handlers continue
 # Verify: old file in .bak, new one deployed
 ```
 
 ✓ **Expected result:** `.bak` file created with old content (Code: 0)
+- "Verification Report" displayed, with the deployed file marked as "PASSED"
 
-### Test 9.8: Deploy with no matches
+### Test 11.12 (was 9.8): Deploy with no matches
 
 ```bash
 poetry run prompt-unifier deploy --tags nonexistent --handlers continue
 ```
 
-✓ **Expected result:** Message "No content files match the specified criteria" (Code: 0)
+✓ **Expected result:** Message "No content files match the specified criteria." (Code: 0)
 
-### Test 9.9: Deploy with config.yaml configuration
+### Test 11.13 (was 9.9): Deploy with config.yaml configuration
 
 ```bash
 cat > .prompt-unifier/config.yaml << 'EOF'
-repo_url: git@gitlab.com:waewoo/prompt-unifier-data.git
+repos:
+  - url: git@gitlab.com:waewoo/prompt-unifier-data.git
+    branch: main
 storage_path: ~/.prompt-unifier/storage
 deploy_tags:
   - python
@@ -447,8 +554,9 @@ poetry run prompt-unifier deploy  # Without options - reads config
 ```
 
 ✓ **Expected result:** Only "python" tagged items deployed to continue (Code: 0)
+- "Verification Report" displayed, with the deployed files marked as "PASSED"
 
-### Test 9.10: Deploy with --clean (cleanup orphans and backups)
+### Test 11.14 (was 9.10): Deploy with --clean (cleanup orphans and backups)
 
 ```bash
 # Deploy some files
@@ -458,7 +566,8 @@ poetry run prompt-unifier deploy --tags python --handlers continue
 echo "orphan" > ~/.continue/prompts/orphan.md
 echo "backup" > ~/.continue/prompts/old-backup.md.bak
 mkdir -p ~/.continue/prompts/subdir
-echo "nested backup" > ~/.continue/prompts/subdir/nested-backup.md.bak
+echo "nested backup" > ~/.continue/prompts/subdir/nested-backup.md
+echo "backup nested" > ~/.continue/prompts/subdir/nested-backup.md.bak
 
 # Redeploy with --clean
 poetry run prompt-unifier deploy --tags python --handlers continue --clean
@@ -469,6 +578,7 @@ poetry run prompt-unifier deploy --tags python --handlers continue --clean
 - All .bak files recursively deleted (including in subdirectories)
 - Message "Cleaned X orphaned file(s)" (includes both orphans and backups)
 - Clean operates recursively through all subdirectories (Code: 0)
+- "Verification Report" displayed, with the deployed files marked as "PASSED"
 
 ---
 
@@ -505,6 +615,7 @@ poetry run prompt-unifier deploy --handlers continue
 ✓ **Expected result:**
 - All files discovered (root AND subdirectories)
 - Structure preserved: `~/.continue/prompts/backend/api/api-prompt.md`, etc.
+- "Verification Report" displayed, confirming deployed files found at nested paths and marked as "PASSED"
 
 ### Test 10.2: Duplicate title detection (error)
 
@@ -555,6 +666,7 @@ poetry run prompt-unifier deploy --tags backend --handlers continue --clean
 - Orphaned .md file `old-prompt.md` in root deleted
 - File `deprecated/nested.md` PRESERVED (orphaned .md in subdirectories preserved for tag filter compatibility)
 - Clean removes .bak files recursively but only removes orphaned .md files from root directory (Code: 0)
+- "Verification Report" displayed, with the deployed files marked as "PASSED"
 
 ### Test 10.4: Deep nesting (4+ levels)
 
@@ -623,7 +735,7 @@ chmod 755 /tmp/no-write
 # Delays: 1s → 2s → 4s between attempts
 ```
 
-✓ **Expected result:** 3 attempts, then final error (Code: 1)
+✓ **Expected result:** Immediate network error (Code: 1)
 
 ---
 
@@ -739,24 +851,35 @@ Status
 ├─ [·] Test 4.3 - Status post-sync (single repo)
 └─ [·] Test 4.4 - Status with multiple repos
 
-Validate
+## Validate Command
 ├─ [·] Test 5.1 - Validate prompts
 ├─ [·] Test 5.2 - Validate JSON
 ├─ [·] Test 5.3 - Invalid directory (error)
 ├─ [·] Test 5.4 - Validate rules
 └─ [·] Test 5.5 - Validation errors
 
+List Command
+├─ [·] Test 7.1 - List all content
+├─ [·] Test 7.2 - List content verbose
+├─ [·] Test 7.3 - List content by tag
+├─ [·] Test 7.4 - List content by tool
+└─ [·] Test 7.5 - List content sorted by date
+
 Deploy
-├─ [·] Test 9.1 - Deploy prompt
-├─ [·] Test 9.2 - Deploy rule
-├─ [·] Test 9.3 - Deploy + tags
-├─ [·] Test 9.4 - Deploy all items
-├─ [·] Test 9.5 - Deploy non-existent (error)
-├─ [·] Test 9.6 - Invalid handler (error)
-├─ [·] Test 9.7 - Backup verification
-├─ [·] Test 9.8 - No matches
-├─ [·] Test 9.9 - Config.yaml
-└─ [·] Test 9.10 - Deploy --clean
+├─ [·] Test 11.1 - Deploy by name
+├─ [·] Test 11.2 - Deploy to specific handler
+├─ [·] Test 11.3 - Deploy to custom base path
+├─ [·] Test 11.4 - Dry-run deployment
+├─ [·] Test 11.5 - Simple deploy prompt
+├─ [·] Test 11.6 - Deploy rule
+├─ [·] Test 11.7 - Deploy + tags
+├─ [·] Test 11.8 - Deploy all items
+├─ [·] Test 11.9 - Deploy non-existent (error)
+├─ [·] Test 11.10 - Invalid handler (error)
+├─ [·] Test 11.11 - Backup verification
+├─ [·] Test 11.12 - No matches
+├─ [·] Test 11.13 - Config.yaml
+└─ [·] Test 11.14 - Deploy --clean
 
 Recursive Discovery
 ├─ [·] Test 10.1 - Subdirectories
