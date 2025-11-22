@@ -20,23 +20,31 @@
 
 7. [x] Configurable Handler Base Paths — Add support for customizing tool handler base paths via config.yaml and CLI options. Allow users to specify custom deployment locations for each handler (e.g., deploy Continue to custom path instead of default ~/.continue/). Implement both config-based persistent configuration (handlers.continue.base_path in config.yaml) and CLI override option (--base-path flag). Support multiple configuration approaches: per-handler config in config.yaml, CLI override for one-time deployments, and maintain backward compatibility with default paths. Apply pattern to all existing and future handlers for consistency. Changed default base path from Path.home() to Path.cwd() for project-local tool installations. `S`
 
-8. [~] Deploy Command with Multi-Tool Support — Implement deploy command that orchestrates deployment across all configured tools, supports selective deployment (--tool flag), provides progress indicators and deployment summaries, handles rollback on failures, and validates successful deployment. **PARTIALLY IMPLEMENTED:** Core deploy command working with Continue handler, supports --tags and --handlers flags, includes backup/rollback, Rich console output. **NEW:** Added recursive file discovery (glob("**/*.md")) for prompts and rules in subdirectories, subdirectory structure preservation during deployment, and duplicate title detection across all files. Added extensive tests for subdirectory support in backup/rollback, verification reports, and dry-run. Remaining: Add other tool handlers (Windsurf, Cursor, Aider) to complete multi-tool support. `L`
+8. [x] Deploy Command with Multi-Tool Support — Implement deploy command that orchestrates deployment across all configured tools, supports selective deployment (--tool flag), provides progress indicators and deployment summaries, handles rollback on failures, and validates successful deployment. Core deploy command working with Continue handler, supports --tags and --handlers flags, includes backup/rollback, Rich console output, recursive file discovery, subdirectory structure preservation, duplicate title detection and extensive tests for subdirectory support. `L`
 
 9. [x] GitLab Release Automation — Implement automated Git tagging and GitLab Release creation in the CI/CD pipeline, including version bumping, changelog generation, and distribution package (sdist, wheel) publication. `High`
 
 10. [x] Multiple Source Repository Support — Allow users to specify multiple source repositories using multiple --repo flags or a list in config.yaml. Enable prompts/rules to be synchronized from multiple Git repositories simultaneously, merge content from all sources into the centralized storage, handle conflicts when multiple repos contain files with same paths, and provide clear feedback about which content came from which repository. Support both CLI (--repo URL1 --repo URL2) and configuration-based (repos: [URL1, URL2] in config.yaml) approaches. `M`
 
-11. [ ] List & Status Commands with Rich UI — Create list command showing all available prompts with metadata (name, description, tools, last modified), implement status command displaying deployment state per tool, add filtering/sorting options, and format output using Rich tables and syntax highlighting. `S`
+11. [ ] List & Status Commands with Rich UI — Create list command showing all available prompts with metadata (name, description, tools, last modified), implement status command displaying deployment state per tool, add filtering/sorting options, and format output using Rich tables and syntax highlighting. **Missing**: `list` command and advanced features for `status` command. `S`
 
-12. [ ] Configuration Management System — Implement user configuration file (~/.prompt-unifier/config.yaml) to store repository paths, enabled tools, deployment preferences, and validation rules. Support init-time configuration, runtime overrides via CLI flags, and config validation. `S`
+12. [ ] Configuration Management System — Implement user configuration file (~/.prompt-unifier/config.yaml) to store repository paths, enabled tools, deployment preferences, and validation rules. Support init-time configuration, runtime overrides via CLI flags, and config validation. **Missing**: Support for user-level config file. `S`
 
-13. [ ] Error Handling, Logging & User Feedback — Implement comprehensive error handling with user-friendly messages, add logging system for debugging (optional --verbose flag), create helpful suggestions for common errors, and ensure graceful degradation when tools are not installed. `S`
+13. [~] Error Handling, Logging & User Feedback — `S`
+    - [x] Implement comprehensive error handling with user-friendly messages and graceful degradation.
+    - [ ] Add a centralized logging system and a global --verbose flag for debugging.
 
-14. [ ] Documentation & Onboarding — Write comprehensive README with quickstart guide, create detailed CLI help text for all commands, document prompt format specification, provide examples of valid prompts, and create contributing guide for adding new tool handlers. `M`
+14. [~] Documentation & Onboarding — `M`
+    - [x] Create comprehensive user-facing documentation (README, CLI help, examples).
+    - [ ] Write a guide for adding new tool handlers.
 
-15. [ ] Tool Handler Implementation: Kilo Code — Complete remaining tool handlers for Kilo Code following the established pattern, with full deployment logic, configuration file handling, and validation that prompts are correctly placed in each tool's expected location. `M`
+15. [ ] Tool Handler Implementation: Kilo Code — Complete tool handler for Kilo Code following the established pattern, with full deployment logic, configuration file handling, and validation that prompts are correctly placed in the tool's expected location. `M`
 
-16. [ ] Tool Handler Implementation: Windsurf, Cursor, Aider — Complete remaining tool handlers for Windsurf, Aider, Cursor following the established pattern, with full deployment logic, configuration file handling, and validation that prompts are correctly placed in each tool's expected location. `M`
+16. [ ] Tool Handler Implementation: Windsurf — Complete tool handler for Windsurf following the established pattern, with full deployment logic, configuration file handling, and validation that prompts are correctly placed in the tool's expected location. `M`
+
+17. [ ] Tool Handler Implementation: Cursor — Complete tool handler for Cursor following the established pattern, with full deployment logic, configuration file handling, and validation that prompts are correctly placed in the tool's expected location. `M`
+
+18. [ ] Tool Handler Implementation: Aider — Complete tool handler for Aider following the established pattern, with full deployment logic, configuration file handling, and validation that prompts are correctly placed in the tool's expected location. `M`
 
 > Notes
 > - Order items by technical dependencies and product architecture
@@ -44,4 +52,5 @@
 > - Items 1-4 establish foundation (CLI framework, validation engine, Git integration, rules support)
 > - Items 5-7 build extensible tool handler system
 > - Items 8-10 complete core user-facing features
-> - Items 11-13 ensure production quality and usability
+> - Items 11-14 ensure production quality and usability
+> - Items 15-18 expand the tool ecosystem
