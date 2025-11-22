@@ -14,6 +14,7 @@ This document provides technical details for developers working on the `prompt-u
 - [Release Process](#release-process)
 - [Project Structure](#project-structure)
 - [Architecture](#architecture)
+- [Logging System](#logging-system)
 
 ---
 
@@ -215,3 +216,71 @@ The data flows from your Git repositories to a central storage location on your 
 │                          │      │                           │
 └──────────────────────────┘      └───────────────────────────┘
 ```
+
+---
+
+## Logging System
+
+The project uses a centralized logging system based on Python's built-in `logging` module with Rich integration for colored terminal output.
+
+### Configuration
+
+Logging is configured globally via CLI flags:
+
+```bash
+# Default: WARNING level only
+prompt-unifier validate
+
+# INFO level (-v)
+prompt-unifier -v sync --repo https://example.com/repo.git
+
+# DEBUG level (-vv)
+prompt-unifier -vv deploy --handlers continue
+
+# With file logging
+prompt-unifier -vv --log-file debug.log validate
+```
+
+### Using Logging in Code
+
+When adding logging to a module, follow this pattern:
+
+```python
+import logging
+
+logger = logging.getLogger(__name__)
+
+def my_function():
+    logger.debug("Detailed tracing info")  # -vv
+    logger.info("Progress information")     # -v
+    logger.warning("Important warnings")    # default
+    logger.error("Error messages")          # always shown
+```
+
+### Log Levels
+
+| Level   | Verbosity | Use Case                                      |
+|---------|-----------|-----------------------------------------------|
+| WARNING | Default   | Important issues, deprecations                |
+| INFO    | `-v`      | Progress info, file counts, operation status  |
+| DEBUG   | `-vv`     | Detailed tracing, variable values, full paths |
+
+### Implementation Details
+
+- **Console output**: Uses `rich.logging.RichHandler` writing to stderr (keeps stdout clean for JSON/piping)
+- **File output**: Plain text format with timestamps for parsing
+- **Module**: `src/prompt_unifier/utils/logging_config.py`
+
+### Adding Logging to New Modules
+
+1. Import logging and create a logger:
+   ```python
+   import logging
+   logger = logging.getLogger(__name__)
+   ```
+
+2. Use appropriate log levels:
+   - `logger.debug()` for detailed tracing
+   - `logger.info()` for progress/status
+   - `logger.warning()` for issues that don't stop execution
+   - `logger.error()` for errors (usually followed by exception handling)

@@ -60,7 +60,7 @@ class TestListCommand:
             mock_manager.load_config.return_value = mock_config
             mock_manager_cls.return_value = mock_manager
 
-            list_content(verbose=False, tool=None, tag=None, sort="name")
+            list_content(tool=None, tag=None, sort="name")
 
             # Verify table was printed
             assert mock_console.print.called
@@ -79,7 +79,7 @@ class TestListCommand:
             mock_manager_cls.return_value = mock_manager
 
             # Filter by tag1 (only prompt1 has it)
-            list_content(verbose=False, tool=None, tag="tag1", sort="name")
+            list_content(tool=None, tag="tag1", sort="name")
 
             assert mock_console.print.called
 
@@ -93,7 +93,7 @@ class TestListCommand:
             mock_manager.load_config.return_value = mock_config
             mock_manager_cls.return_value = mock_manager
 
-            list_content(verbose=True, tool=None, tag=None, sort="name")
+            list_content(tool=None, tag=None, sort="name")
 
             # Should print more details (Syntax objects)
             assert mock_console.print.called
@@ -108,7 +108,7 @@ class TestListCommand:
             mock_manager.load_config.return_value = mock_config
             mock_manager_cls.return_value = mock_manager
 
-            list_content(verbose=False, tool=None, tag=None, sort="name")
+            list_content(tool=None, tag=None, sort="name")
 
             # Should print a message about no content
             assert mock_console.print.called
@@ -123,7 +123,7 @@ class TestListCommand:
             mock_manager.load_config.return_value = mock_config
             mock_manager_cls.return_value = mock_manager
 
-            list_content(verbose=False, tool=None, tag=None, sort="date")
+            list_content(tool=None, tag=None, sort="date")
 
             # Verify table was printed
             assert mock_console.print.called
@@ -139,6 +139,6 @@ class TestListCommand:
             mock_manager_cls.return_value = mock_manager
 
             # Filter by tool - currently a placeholder
-            list_content(verbose=False, tool="continue", tag=None, sort="name")
+            list_content(tool="continue", tag=None, sort="name")
 
             assert mock_console.print.called

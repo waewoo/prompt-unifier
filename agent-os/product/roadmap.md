@@ -28,13 +28,13 @@
 
 11. [x] List & Status Commands with Rich UI — Create list command showing all available prompts with metadata (name, description, tools, last modified), implement status command displaying deployment state per tool, add filtering/sorting options, and format output using Rich tables and syntax highlighting. Implemented `RichTableFormatter` for formatted output, `list` command with tag filtering and sorting, `status` command with deployment status tracking using SHA-256 content hashing. All feature-specific tests passing (12/12). **Note**: Some pre-existing tests fail on Windows due to path separator and encoding issues (48 failures), but feature is fully functional and cross-platform compatible. `S`
 
-11.5. [ ] Windows Test Compatibility Fixes — Fix 48 pre-existing test failures on Windows related to path separators (`\` vs `/`), Unicode encoding (cp1252 vs UTF-8), symlink permissions, and file locking issues. Tests pass on Linux but fail on Windows. Normalize path comparisons using `Path.as_posix()`, force UTF-8 encoding in all file operations, skip symlink tests on Windows, and fix backup/rollback file locking issues. This will ensure `make check` passes on both Windows and Linux. `S`
+11.5. [x] Windows Test Compatibility Fixes — Fix 48 pre-existing test failures on Windows related to path separators (`\` vs `/`), Unicode encoding (cp1252 vs UTF-8), symlink permissions, and file locking issues. Tests pass on Linux but fail on Windows. Normalize path comparisons using `Path.as_posix()`, force UTF-8 encoding in all file operations, skip symlink tests on Windows, and fix backup/rollback file locking issues. This will ensure `make check` passes on both Windows and Linux. `S`
 
-12. [ ] Configuration Management System — Implement user configuration file (~/.prompt-unifier/config.yaml) to store repository paths, enabled tools, deployment preferences, and validation rules. Support init-time configuration, runtime overrides via CLI flags, and config validation. **Missing**: Support for user-level config file. `S`
+12. [x] Configuration Management System — Implement user configuration file (~/.prompt-unifier/config.yaml) to store repository paths, enabled tools, deployment preferences, and validation rules. Support init-time configuration, runtime overrides via CLI flags, and config validation.
 
-13. [~] Error Handling, Logging & User Feedback — `S`
+13. [x] Error Handling, Logging & User Feedback — `S`
     - [x] Implement comprehensive error handling with user-friendly messages and graceful degradation.
-    - [ ] Add a centralized logging system and a global --verbose flag for debugging.
+    - [x] Add a centralized logging system and a global --verbose flag for debugging.
 
 14. [~] Documentation & Onboarding — `M`
     - [x] Create comprehensive user-facing documentation (README, CLI help, examples).
@@ -47,6 +47,14 @@
 17. [ ] Tool Handler Implementation: Cursor — Complete tool handler for Cursor following the established pattern, with full deployment logic, configuration file handling, and validation that prompts are correctly placed in the tool's expected location. `M`
 
 18. [ ] Tool Handler Implementation: Aider — Complete tool handler for Aider following the established pattern, with full deployment logic, configuration file handling, and validation that prompts are correctly placed in the tool's expected location. `M`
+
+19. [ ] Import/Migration from Existing Tools — Implement import command to migrate existing prompts from AI tools (Continue, Cursor, Windsurf, Aider, Kilo Code) into the unified format. Auto-detect tool configurations, convert to YAML frontmatter format, preserve metadata where possible, and handle duplicates. Critical for user adoption by eliminating manual migration effort. `M`
+
+20. [ ] Diff/Preview Before Deployment — Add diff command to visualize changes between centralized storage and currently deployed files before running deploy. Show added, modified, and deleted files with color-coded diff output. Support --tool flag for tool-specific diffs and integrate with deploy command via --preview flag. `S`
+
+21. [ ] Variables/Placeholders in Prompts — Support template variables (e.g., `{{project_name}}`, `{{language}}`, `{{author}}`) in prompt content that are resolved at deployment time. Variables can be defined in config.yaml (global), per-project config (local), or via CLI flags. Enable prompt reuse across projects with context-specific values. `M`
+
+22. [ ] Semantic Validation of Prompts — Extend validation beyond YAML format to include semantic checks: excessive prompt length warnings, estimated token count, detection of problematic patterns (e.g., conflicting instructions, deprecated syntax), and best practice suggestions. Provide actionable feedback with severity levels (error, warning, info). `M`
 
 > Notes
 > - Order items by technical dependencies and product architecture

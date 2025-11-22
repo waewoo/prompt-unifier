@@ -54,7 +54,7 @@ poetry run prompt-unifier --help
 ✓ **Expected result:**
 - List of available commands: `init`, `sync`, `status`, `validate`, `deploy`
 - Short description of each command
-- Global options (`--help`, `--version`)
+- Global options (`--help`, `--version`, `--verbose`, `--log-file`)
 
 ### Test 1.2: Help for each command
 
@@ -370,14 +370,14 @@ poetry run prompt-unifier list
 
 ✓ **Expected result:** A table listing all synced prompts and rules, sorted by name.
 
-### Test 7.2: List content with --verbose
+### Test 7.2: List content with verbose mode
 
 ```bash
 cd /tmp/test-pm-1
-poetry run prompt-unifier list --verbose
+poetry run prompt-unifier -v list
 ```
 
-✓ **Expected result:** A table listing all synced prompts and rules, with detailed content previews.
+✓ **Expected result:** A table listing all synced prompts and rules, with INFO-level logging output showing storage path and file counts.
 
 ### Test 7.3: List content filtered by --tag
 

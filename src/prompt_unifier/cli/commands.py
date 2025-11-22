@@ -5,6 +5,7 @@ including the validate command for prompt file validation and
 Git integration commands (init, sync, status).
 """
 
+import logging
 from pathlib import Path
 from typing import Any
 
@@ -30,6 +31,9 @@ from prompt_unifier.utils.path_helpers import expand_env_vars
 # Initialize Rich Console for formatted output
 console = Console()
 
+# Get logger for this module
+logger = logging.getLogger(__name__)
+
 # Constants for default values to avoid function calls in argument defaults
 DEFAULT_PROMPT_NAME = None
 DEFAULT_TAGS = None
@@ -42,9 +46,7 @@ DEFAULT_SYNC_REPO = None
 DEFAULT_SYNC_STORAGE_PATH = None
 DEFAULT_VALIDATE_DIRECTORY = None
 DEFAULT_VALIDATE_JSON_OUTPUT = False
-DEFAULT_VALIDATE_VERBOSE = False
 DEFAULT_VALIDATE_CONTENT_TYPE = "all"
-DEFAULT_LIST_VERBOSE = False
 DEFAULT_LIST_TOOL = None
 DEFAULT_LIST_TAG = None
 DEFAULT_LIST_SORT = "name"
@@ -112,20 +114,11 @@ DEFAULT_VALIDATE_JSON_OPTION = typer.Option(
     "--json",
     help="Output validation results in JSON format (default: False)",
 )
-DEFAULT_VALIDATE_VERBOSE_OPTION = typer.Option(
-    DEFAULT_VALIDATE_VERBOSE,
-    "--verbose",
-    "-v",
-    help="Show verbose output with detailed validation issues (default: False)",
-)
 DEFAULT_VALIDATE_CONTENT_TYPE_OPTION = typer.Option(
     DEFAULT_VALIDATE_CONTENT_TYPE,
     "--type",
     "-t",
     help="Content type to validate: all, prompts, or rules [default: all]",
-)
-DEFAULT_LIST_VERBOSE_OPTION = typer.Option(
-    DEFAULT_LIST_VERBOSE, "--verbose", "-v", help="Show full content preview (default: False)"
 )
 DEFAULT_LIST_TOOL_OPTION = typer.Option(
     DEFAULT_LIST_TOOL,
@@ -144,7 +137,6 @@ DEFAULT_LIST_SORT_OPTION = typer.Option(
 def validate(
     directory: Path | None = DEFAULT_VALIDATE_DIRECTORY_ARG,
     json_output: bool = DEFAULT_VALIDATE_JSON_OPTION,
-    verbose: bool = DEFAULT_VALIDATE_VERBOSE_OPTION,
     content_type: str = DEFAULT_VALIDATE_CONTENT_TYPE_OPTION,
 ) -> None:
     """Validate prompt and rule files in a directory.
@@ -176,9 +168,11 @@ def validate(
         # Validate with JSON output
         prompt-unifier validate ./prompts --json
 
-        # Validate with verbose progress
-        prompt-unifier validate --verbose
+        # Validate with verbose progress (using global -v flag)
+        prompt-unifier -v validate
     """
+    logger.info("Starting validation")
+
     # If no directory provided, use storage path from config
     if directory is None:
         cwd = Path.cwd()
@@ -205,8 +199,7 @@ def validate(
 
         directory = Path(config.storage_path).expanduser().resolve()
 
-        if verbose:
-            console.print(f"[dim]Using storage path: {directory}[/dim]")
+        logger.info(f"Using storage path: {directory}")
 
     # Validate content_type parameter
     if content_type not in ["all", "prompts", "rules"]:
@@ -215,6 +208,8 @@ def validate(
             err=True,
         )
         raise typer.Exit(code=1)
+
+    logger.debug(f"Validating content type: {content_type}")
 
     # Determine which directory to validate based on content_type
     if content_type == "prompts":
@@ -246,6 +241,8 @@ def validate(
             )
             raise typer.Exit(code=1)
 
+    logger.info(f"Found {len(directories)} directory(ies) to validate")
+
     # Run validation
     validator = BatchValidator()
 
@@ -255,7 +252,9 @@ def validate(
         all_success = True
 
         for dir_path in directories:
+            logger.debug(f"Validating directory: {dir_path}")
             summary = validator.validate_directory(dir_path)
+            logger.info(f"Validated {summary.total_files} files in {dir_path}")
             json_output_str = json_formatter.format_summary(summary, dir_path)
             typer.echo(json_output_str)
 
@@ -271,14 +270,21 @@ def validate(
         all_success = True
 
         for dir_path in directories:
+            logger.debug(f"Validating directory: {dir_path}")
             summary = validator.validate_directory(dir_path)
-            rich_formatter.format_summary(summary, directory=dir_path, verbose=verbose)
+            logger.info(
+                f"Validated {summary.total_files} files: "
+                f"{summary.passed} passed, {summary.failed} failed"
+            )
+            rich_formatter.format_summary(summary, directory=dir_path)
 
             if not summary.success:
                 all_success = False
 
         if not all_success:
             raise typer.Exit(code=1)
+
+    logger.info("Validation complete")
 
 
 def init(
@@ -305,6 +311,8 @@ def init(
         # Initialize with custom storage location
         prompt-unifier init --storage-path /custom/path/storage
     """
+    logger.info("Initializing prompt-unifier")
+
     try:
         # Get current working directory
         cwd = Path.cwd()
@@ -332,10 +340,13 @@ def init(
             else:
                 storage_dir = Path.home() / ".prompt-unifier" / "storage"
 
+        logger.debug(f"Using storage path: {storage_dir}")
+
         # Create .prompt-unifier/ directory if it doesn't exist
         if not prompt_unifier_dir.exists():
             prompt_unifier_dir.mkdir(parents=True, exist_ok=True)
             created_items.append(f"Created: {prompt_unifier_dir}")
+            logger.info(f"Created directory: {prompt_unifier_dir}")
         else:
             existing_items.append(f"Exists: {prompt_unifier_dir}")
 
@@ -353,6 +364,7 @@ def init(
             )
             config_manager.save_config(config_path, empty_config)
             created_items.append(f"Created: {config_path}")
+            logger.info(f"Created config file: {config_path}")
         else:
             existing_items.append(f"Exists: {config_path}")
 
@@ -360,6 +372,7 @@ def init(
         if not storage_dir.exists():
             storage_dir.mkdir(parents=True, exist_ok=True)
             created_items.append(f"Created: {storage_dir}")
+            logger.info(f"Created storage directory: {storage_dir}")
         else:
             existing_items.append(f"Exists: {storage_dir}")
 
@@ -427,8 +440,10 @@ Thumbs.db
         # Display success message with Rich formatting
         if created_items:
             console.print("[green]✓[/green] Initialization complete")
+            logger.info(f"Initialization complete: created {len(created_items)} items")
         else:
             console.print("[green]✓[/green] Already initialized (all components exist)")
+            logger.info("Already initialized")
 
         console.print("━" * 80)
 
@@ -489,6 +504,8 @@ def sync(
         # Sync with custom storage path
         prompt-unifier sync --storage-path /custom/path/storage
     """
+    logger.info("Starting sync operation")
+
     try:
         # Get current working directory
         cwd = Path.cwd()
@@ -521,9 +538,11 @@ def sync(
             # Use --repo flags if provided (CLI override)
             for repo_url in repos:
                 repo_configs.append(RepositoryConfig(url=repo_url))
+            logger.info(f"Using {len(repo_configs)} repositories from CLI")
         elif config.repos is not None and len(config.repos) > 0:
             # Use repos from config.yaml
             repo_configs = config.repos
+            logger.info(f"Using {len(repo_configs)} repositories from config")
         else:
             typer.echo(
                 "Error: No repository URLs configured. Use --repo flag to specify repositories.",
@@ -541,6 +560,8 @@ def sync(
         else:
             # Use default storage path
             storage_dir = Path.home() / ".prompt-unifier" / "storage"
+
+        logger.debug(f"Storage path: {storage_dir}")
 
         # Display sync start message
         console.print()
@@ -597,6 +618,7 @@ def sync(
 
         # Display summary statistics
         files = metadata.get_files()
+        logger.info(f"Sync complete: {len(files)} files from {len(repositories_list)} repos")
         console.print(f"Total files synced: {len(files)}")
         # Note: Conflict detection would need to be tracked separately during sync
         console.print(f"Repositories synced: {len(repositories_list)}")
@@ -634,6 +656,8 @@ def status() -> None:
         # Check sync status
         prompt-unifier status
     """
+    logger.info("Checking status")
+
     try:
         # Get current working directory
         cwd = Path.cwd()
@@ -746,6 +770,8 @@ def status() -> None:
                 except Exception as e:
                     console.print(f"[yellow]Warning: Failed to parse {md_file}: {e}[/yellow]")
 
+        logger.debug(f"Found {len(content_files)} content files")
+
         if not content_files:
             console.print("[yellow]No prompts or rules found in storage.[/yellow]")
             return
@@ -830,6 +856,8 @@ def status() -> None:
         console.print(table)
         console.print()
 
+        logger.info(f"Status check complete: {len(status_items)} items checked")
+
     except Exception as e:
         # Unexpected errors - but status should always exit with 0
         typer.echo(f"Error: {e}", err=True)
@@ -838,7 +866,6 @@ def status() -> None:
 
 
 def list_content(
-    verbose: bool = DEFAULT_LIST_VERBOSE_OPTION,
     tool: str | None = DEFAULT_LIST_TOOL_OPTION,
     tag: str | None = DEFAULT_LIST_TAG_OPTION,
     sort: str = DEFAULT_LIST_SORT_OPTION,
@@ -846,7 +873,7 @@ def list_content(
     """List available prompts and rules.
 
     Displays a table of all available prompts and rules, with optional filtering
-    and sorting. Use --verbose to see content previews.
+    and sorting.
 
     Examples:
         # List all content
@@ -855,9 +882,11 @@ def list_content(
         # Filter by tag
         prompt-unifier list --tag coding
 
-        # Show detailed content
-        prompt-unifier list --verbose
+        # Sort by date
+        prompt-unifier list --sort date
     """
+    logger.info("Listing content")
+
     try:
         # Load configuration to get storage path
         cwd = Path.cwd()
@@ -875,6 +904,8 @@ def list_content(
             storage_dir = Path(config.storage_path).expanduser().resolve()
         else:
             storage_dir = Path.home() / ".prompt-unifier" / "storage"
+
+        logger.debug(f"Storage path: {storage_dir}")
 
         if not storage_dir.exists():
             typer.echo(f"Error: Storage directory '{storage_dir}' does not exist.", err=True)
@@ -902,6 +933,8 @@ def list_content(
                 except Exception as e:
                     console.print(f"[yellow]Warning: Failed to parse {md_file}: {e}[/yellow]")
 
+        logger.info(f"Found {len(content_files)} content files")
+
         if not content_files:
             console.print("[yellow]No prompts or rules found.[/yellow]")
             return
@@ -913,6 +946,7 @@ def list_content(
                 for c, t, p in content_files
                 if hasattr(c, "tags") and c.tags and tag in c.tags
             ]
+            logger.debug(f"Filtered by tag '{tag}': {len(content_files)} files")
 
         # Filter by tool (placeholder logic for now as tools are not strictly bound in source)
         # If we had tool-specific metadata, we'd filter here.
@@ -938,29 +972,7 @@ def list_content(
         table = formatter.format_list_table(formatted_files)
         console.print(table)
 
-        # Display verbose content
-        if verbose:
-            console.print()
-            for content, content_type, _ in content_files:
-                console.print(f"[bold cyan]{content.title}[/bold cyan] ({content_type})")
-
-                # Reconstruct content body (this is a bit hacky, ideally parser gives raw body)
-                # But parser gives structured object.
-                # We can read the file again or just show description.
-                # Let's show description + body if available, or just read file.
-
-                # For preview, reading file is safest to show exact content
-                # But we want to skip frontmatter for cleaner view?
-                # Let's just show the whole file for now, or use syntax highlighting
-
-                # Actually, let's use the file content directly
-                try:
-                    file_content = _.read_text(encoding="utf-8")
-                    syntax = formatter.format_content_preview(file_content)
-                    console.print(syntax)
-                    console.print("━" * 40)
-                except Exception as e:
-                    console.print(f"[red]Error reading file: {e}[/red]")
+        logger.info(f"Listed {len(content_files)} content files")
 
     except Exception as e:
         typer.echo(f"Error: {e}", err=True)
@@ -985,6 +997,8 @@ def deploy(
 
     Environment variables ($HOME, $USER, $PWD) in configured base_path are automatically expanded.
     """
+    logger.info("Starting deployment")
+
     try:
         # Load configuration
         cwd = Path.cwd()
@@ -1003,6 +1017,8 @@ def deploy(
         if not storage_dir.exists():
             typer.echo(f"Error: Storage directory '{storage_dir}' does not exist.", err=True)
             raise typer.Exit(code=1)
+
+        logger.debug(f"Storage path: {storage_dir}")
 
         # Determine deploy tags
         deploy_tags = tags if tags is not None else config.deploy_tags
@@ -1100,6 +1116,8 @@ def deploy(
                 except Exception as e:
                     console.print(f"[yellow]Warning: Failed to parse {md_file}: {e}[/yellow]")
 
+        logger.info(f"Found {len(content_files)} content files")
+
         # Check for duplicate titles before filtering
         title_to_files: dict[str, list[Path]] = {}
         for parsed_content, _, file_path in content_files:
@@ -1139,12 +1157,15 @@ def deploy(
                     continue
             filtered_files.append((parsed_content, content_type, file_path))
 
+        logger.debug(f"After filtering: {len(filtered_files)} files to deploy")
+
         if not filtered_files:
             console.print("[yellow]No content files match the specified criteria.[/yellow]")
             return
 
         # Handle dry-run mode
         if dry_run:
+            logger.info("Dry-run mode: showing preview")
             _display_dry_run_preview(filtered_files, all_handlers, prompts_dir, rules_dir)
             return
 
@@ -1156,6 +1177,7 @@ def deploy(
         for handler in all_handlers:
             handler_name = handler.get_name()
             console.print(f"Deploying to {handler_name}...")
+            logger.info(f"Deploying to handler: {handler_name}")
             handler_deployed = 0
             deployed_filenames: set[str] = set()
 
@@ -1200,6 +1222,7 @@ def deploy(
                     console.print(
                         f"  [green]✓[/green] Deployed {parsed_content.title} ({content_type})"
                     )
+                    logger.debug(f"Deployed: {parsed_content.title} ({content_type})")
 
                     # Call verification after successful deploy
                     if hasattr(handler, "verify_deployment_with_details"):
@@ -1216,6 +1239,7 @@ def deploy(
                         f"  [red]✗[/red] Failed to deploy {parsed_content.title} "
                         f"({content_type}): {e}"
                     )
+                    logger.error(f"Failed to deploy {parsed_content.title}: {e}")
                     # Attempt rollback if available
                     if hasattr(handler, "rollback"):
                         try:
@@ -1232,6 +1256,7 @@ def deploy(
                     total_cleaned += removed
                     if removed > 0:
                         console.print(f"  [yellow]Cleaned {removed} orphaned file(s)[/yellow]")
+                        logger.info(f"Cleaned {removed} orphaned files")
                 except Exception as e:
                     console.print(f"  [red]✗[/red] Failed to clean orphaned files: {e}")
 
@@ -1254,6 +1279,7 @@ def deploy(
             summary_parts.append(f"{total_cleaned} orphaned file(s) cleaned")
 
         console.print(f"\n[bold]Deployment summary:[/bold] {', '.join(summary_parts)}.")
+        logger.info(f"Deployment complete: {total_deployed} items to {len(all_handlers)} handlers")
 
         # Don't exit with error code even if deployment fails partially
         return

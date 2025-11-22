@@ -20,6 +20,7 @@ Managing AI prompts across a team can be chaotic, with templates scattered acros
 - ✅ **Easy Deployment**: A single command to deploy prompts to supported handlers (like **Continue**).
 - ✅ **Structured Organization**: Recursively discovers files, preserving your subdirectory structure.
 - ✅ **Multi-Repository Support**: Combine company-wide prompts with team-specific ones seamlessly.
+- ✅ **Centralized Logging**: Global verbose mode (`-v`, `-vv`) and file logging (`--log-file`) for debugging.
 
 ## Current Handler Support
 
@@ -124,6 +125,23 @@ version: 1.0.0
 
 The CLI provides several commands to manage your prompts.
 
+### Global Options
+
+These options can be used with any command:
+
+-   <code>--verbose</code>, <code>-v</code>: Increase verbosity level. Use `-v` for INFO, `-vv` for DEBUG.
+-   <code>--log-file TEXT</code>: Write logs to a file for persistent debugging.
+-   <code>--version</code>, <code>-V</code>: Show version and exit.
+-   <code>--help</code>: Show help message and exit.
+
+```bash
+# Run any command with verbose output
+prompt-unifier -v validate
+
+# Debug mode with file logging
+prompt-unifier -vv --log-file debug.log sync --repo https://github.com/example/prompts.git
+```
+
 <details><summary><code>prompt-unifier init</code> - Initialize configuration</summary>
 <br>
 Creates a <code>.prompt-unifier/config.yaml</code> file in your current directory. This file tracks which repositories you sync from and your deployment settings. It also sets up a local storage directory (default: <code>~/.prompt-unifier/storage/</code>) with <code>prompts/</code>, <code>rules/</code> subdirectories and a <code>.gitignore</code> file.
@@ -163,8 +181,9 @@ Checks prompt and rule files for correct YAML frontmatter, required fields, and 
 **Options:**
 -   <code>[DIRECTORY]</code>: Optional. Directory to validate (defaults to synchronized storage).
 -   <code>--json</code>: Output validation results in JSON format.
--   <code>--verbose</code>, <code>-v</code>: Show verbose output with detailed validation issues.
 -   <code>--type TEXT</code>, <code>-t TEXT</code>: Specify content type to validate: 'all', 'prompts', or 'rules' [default: 'all'].
+
+Use the global <code>-v</code> flag for verbose output (e.g., <code>prompt-unifier -v validate</code>).
 
 ```bash
 # Validate the central storage
@@ -180,17 +199,18 @@ prompt-unifier validate ./my-prompts/
 Displays a table of all available prompts and rules in your centralized storage. You can filter and sort the content using various options.
 
 **Options:**
--   <code>--verbose</code>, <code>-v</code>: Show full content preview.
 -   <code>--tool</code>, <code>-t TEXT</code>: Filter content by target tool handler.
 -   <code>--tag TEXT</code>: Filter content by a specific tag.
 -   <code>--sort</code>, <code>-s TEXT</code>: Sort content by 'name' (default) or 'date'.
+
+Use the global <code>-v</code> flag for verbose output (e.g., <code>prompt-unifier -v list</code>).
 
 ```bash
 # List all content
 prompt-unifier list
 
 # List prompts tagged "python" with verbose output
-prompt-unifier list --tag python --verbose
+prompt-unifier -v list --tag python
 
 # List content sorted by date
 prompt-unifier list --sort date

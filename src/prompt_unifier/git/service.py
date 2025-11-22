@@ -5,6 +5,7 @@ cloning repositories, extracting prompts, retrieving commit information, and
 checking for remote updates using GitPython library.
 """
 
+import logging
 import shutil
 import tempfile
 import time
@@ -20,6 +21,9 @@ if TYPE_CHECKING:
     from prompt_unifier.utils.repo_metadata import RepoMetadata
 
 T = TypeVar("T")
+
+# Get logger for this module
+logger = logging.getLogger(__name__)
 
 
 def retry_with_backoff(
@@ -62,7 +66,7 @@ def retry_with_backoff(
         except Exception as e:
             last_exception = e
             if attempt < max_attempts:
-                print(f"Network error. Retrying... (attempt {attempt}/{max_attempts})")
+                logger.warning(f"Network error. Retrying... (attempt {attempt}/{max_attempts})")
                 time.sleep(delay)
                 delay *= backoff_factor
             else:
@@ -520,12 +524,12 @@ class GitService:
         from prompt_unifier.utils.repo_metadata import RepoMetadata
 
         # Step 1: Validate all repositories before starting sync (fail-fast)
-        print("Validating repositories...")
+        logger.info("Validating repositories...")
         self.validate_repositories(repos)
 
         # Step 2: Clear storage if requested
         if clear_storage and storage_path.exists():
-            print(f"Clearing storage directory: {storage_path}")
+            logger.info(f"Clearing storage directory: {storage_path}")
             shutil.rmtree(storage_path, ignore_errors=True)
 
         # Ensure storage directory exists
@@ -543,9 +547,9 @@ class GitService:
             include_patterns = repo_config.include_patterns
             exclude_patterns = repo_config.exclude_patterns
 
-            print(f"\n[{idx}/{len(repos)}] Syncing: {url}")
+            logger.info(f"[{idx}/{len(repos)}] Syncing: {url}")
             if branch:
-                print(f"  Branch: {branch}")
+                logger.debug(f"  Branch: {branch}")
 
             # Clone repository
             temp_path, repo = self.clone_to_temp(url, branch=branch, auth_config=auth_config)
@@ -558,7 +562,7 @@ class GitService:
                 # Determine actual branch name
                 actual_branch = branch if branch else repo.active_branch.name
 
-                print(f"  Commit: {commit_hash}")
+                logger.debug(f"  Commit: {commit_hash}")
 
                 # Get list of files to sync before extracting
                 all_files: list[str] = []
@@ -578,10 +582,10 @@ class GitService:
                         include_patterns=include_patterns,
                         exclude_patterns=exclude_patterns,
                     )
-                    print(f"  Files: {len(filtered_files)} (filtered from {len(all_files)})")
+                    logger.debug(f"  Files: {len(filtered_files)} (filtered from {len(all_files)})")
                 else:
                     filtered_files = all_files
-                    print(f"  Files: {len(filtered_files)}")
+                    logger.debug(f"  Files: {len(filtered_files)}")
 
                 # Extract to storage (this will overwrite existing files - last-wins)
                 self.extract_prompts_dir(temp_path, storage_path)
@@ -591,7 +595,7 @@ class GitService:
                     # Check if file was already synced from another repo
                     if rel_path in file_sources:
                         previous_source = file_sources[rel_path]
-                        print(
+                        logger.info(
                             f"  ⚠️  Conflict: '{rel_path}' from "
                             f"{previous_source} overridden by {url}"
                         )
@@ -622,7 +626,7 @@ class GitService:
                     shutil.rmtree(temp_path, ignore_errors=True)
 
         # Step 5: Save metadata to storage
-        print(f"\nSaving metadata to {storage_path / '.repo-metadata.json'}")
+        logger.info(f"Saving metadata to {storage_path / '.repo-metadata.json'}")
         metadata.save_to_file(storage_path)
 
         return metadata

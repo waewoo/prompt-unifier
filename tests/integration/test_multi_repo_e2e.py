@@ -31,7 +31,7 @@ class TestThreeRepoConflictResolution:
         mock_get_commit: Mock,
         mock_clone: Mock,
         tmp_path: Path,
-        capsys: "pytest.CaptureFixture[str]",
+        caplog: "pytest.LogCaptureFixture",
     ) -> None:
         """Test that with 3 repos having same file, last repo wins and conflicts are reported."""
         service = GitService()
@@ -72,17 +72,19 @@ class TestThreeRepoConflictResolution:
         mock_get_commit.side_effect = ["commit1", "commit2", "commit3"]
 
         # Call sync
-        metadata = service.sync_multiple_repos(repos, storage_path)
+        import logging
+
+        with caplog.at_level(logging.INFO):
+            metadata = service.sync_multiple_repos(repos, storage_path)
 
         # Verify last repo's content wins
         final_file = storage_path / "prompts" / "example.md"
         assert final_file.exists()
         assert final_file.read_text() == "Content from repo3 - FINAL"
 
-        # Verify conflict messages were displayed for both overwrites
-        captured = capsys.readouterr()
-        output_lower = captured.out.lower()
-        assert "overridden" in output_lower or "conflict" in output_lower
+        # Verify conflict messages were logged for both overwrites
+        log_output = caplog.text.lower()
+        assert "overridden" in log_output or "conflict" in log_output
 
         # Verify metadata tracks final source
         file_source = metadata.get_file_source("prompts/example.md")

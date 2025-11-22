@@ -25,6 +25,7 @@ from prompt_unifier.cli.commands import (
 from prompt_unifier.cli.commands import (
     validate as validate_command,
 )
+from prompt_unifier.utils import configure_logging
 
 # Version
 __version__ = "0.1.0"
@@ -50,14 +51,29 @@ def main_callback(
     version: bool = typer.Option(
         False,
         "--version",
-        "-v",
+        "-V",
         help="Show version and exit",
         callback=version_callback,
         is_eager=True,
     ),
+    verbose: int = typer.Option(
+        0,
+        "--verbose",
+        "-v",
+        count=True,
+        help="Increase verbosity level (use -v for INFO, -vv for DEBUG)",
+        is_eager=True,
+    ),
+    log_file: str | None = typer.Option(
+        None,
+        "--log-file",
+        help="Write logs to the specified file path",
+        is_eager=True,
+    ),
 ) -> None:
     """Prompt Unifier CLI - Manage and validate AI prompt templates."""
-    pass
+    # Configure logging based on verbosity level and optional log file
+    configure_logging(verbosity=verbose, log_file=log_file)
 
 
 @app.command(name="validate", help="Validate prompt and rule files in a directory")
@@ -66,7 +82,6 @@ def validate(
         None, help="Directory to validate (defaults to synchronized storage)"
     ),
     json: bool = typer.Option(False, "--json"),
-    verbose: bool = typer.Option(False, "--verbose", "-v"),
     type: str = typer.Option(
         "all", "--type", "-t", help="Content type to validate: all, prompts, or rules"
     ),
@@ -79,11 +94,10 @@ def validate(
     Args:
         directory: Directory containing prompt/rule files to validate (optional)
         json: Output in JSON format (use --json flag)
-        verbose: Show detailed progress (use --verbose or -v flag)
         type: Content type to validate: 'all' (default), 'prompts', or 'rules'
     """
     dir_path = Path(directory) if directory is not None else None
-    validate_command(dir_path, json_output=json, verbose=verbose, content_type=type)
+    validate_command(dir_path, json_output=json, content_type=type)
 
 
 @app.command(name="init", help="Initialize prompt-unifier in current directory")
@@ -144,7 +158,6 @@ def status() -> None:
 
 @app.command(name="list", help="List available prompts and rules")
 def list_content(
-    verbose: bool = typer.Option(False, "--verbose", "-v", help="Show full content preview"),
     tool: str | None = typer.Option(None, "--tool", "-t", help="Filter by target tool"),
     tag: str | None = typer.Option(None, "--tag", help="Filter by tag"),
     sort: str = typer.Option("name", "--sort", "-s", help="Sort by 'name' or 'date'"),
@@ -152,9 +165,9 @@ def list_content(
     """List available prompts and rules.
 
     Displays a table of all available prompts and rules, with optional filtering
-    and sorting. Use --verbose to see content previews.
+    and sorting.
     """
-    list_command(verbose=verbose, tool=tool, tag=tag, sort=sort)
+    list_command(tool=tool, tag=tag, sort=sort)
 
 
 @app.command(name="deploy", help="Deploy prompts and rules to tool handlers")

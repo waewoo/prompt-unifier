@@ -195,7 +195,7 @@ description: test
 content""")
 
             result = runner.invoke(
-                app, ["validate", str(test_dir), "--json", "--verbose", "--type", "all"]
+                app, ["-v", "validate", str(test_dir), "--json", "--type", "all"]
             )
             # Command should succeed or fail gracefully
             assert result.exit_code in [0, 1]
@@ -899,8 +899,8 @@ class TestMainModule:
         assert f"prompt-unifier version {__version__}" in result.output
 
     def test_version_short_flag(self):
-        """Test short version flag."""
-        result = runner.invoke(app, ["-v"])
+        """Test short version flag (-V for version)."""
+        result = runner.invoke(app, ["-V"])
         assert result.exit_code == 0
         from prompt_unifier.cli.main import __version__
 

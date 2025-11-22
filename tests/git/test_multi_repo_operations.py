@@ -215,7 +215,7 @@ class TestConflictDetection:
         mock_extract: Mock,
         mock_clone: Mock,
         tmp_path: Path,
-        capsys: "pytest.CaptureFixture[str]",
+        caplog: "pytest.LogCaptureFixture",
     ) -> None:
         """Test that conflict detection tracks and reports file overwrites."""
         service = GitService()
@@ -257,8 +257,11 @@ class TestConflictDetection:
         mock_extract.side_effect = extract_side_effect
 
         # Call sync
-        service.sync_multiple_repos(repos, storage_path)
+        import logging
 
-        # Verify conflict message was displayed
-        captured = capsys.readouterr()
-        assert "overridden" in captured.out.lower() or "conflict" in captured.out.lower()
+        with caplog.at_level(logging.INFO):
+            service.sync_multiple_repos(repos, storage_path)
+
+        # Verify conflict message was logged
+        log_output = caplog.text.lower()
+        assert "overridden" in log_output or "conflict" in log_output

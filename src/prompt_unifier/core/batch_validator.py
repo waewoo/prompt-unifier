@@ -4,11 +4,15 @@ This module provides the BatchValidator class for validating multiple
 prompt files in a directory and aggregating the results.
 """
 
+import logging
 from pathlib import Path
 
 from prompt_unifier.core.validator import PromptValidator
 from prompt_unifier.models.validation import ValidationResult, ValidationSummary
 from prompt_unifier.utils.file_scanner import FileScanner
+
+# Get logger for this module
+logger = logging.getLogger(__name__)
 
 
 class BatchValidator:
@@ -66,12 +70,17 @@ class BatchValidator:
             ... else:
             ...     print(f"{summary.failed} files failed validation")
         """
+        logger.debug(f"Scanning directory: {directory}")
+
         # Step 1: Discover all .md files
         md_files = self.file_scanner.scan_directory(directory)
+
+        logger.info(f"Found {len(md_files)} .md files to validate")
 
         # Step 2: Validate each file independently
         results: list[ValidationResult] = []
         for file_path in md_files:
+            logger.debug(f"Validating file: {file_path}")
             result = self.prompt_validator.validate_file(file_path)
             results.append(result)
 
@@ -86,6 +95,12 @@ class BatchValidator:
 
         # Success is True if no errors across all files
         success = total_errors == 0
+
+        logger.info(
+            f"Validation complete: {total_files} files, "
+            f"{passed_files} passed, {failed_files} failed, "
+            f"{total_errors} errors, {total_warnings} warnings"
+        )
 
         # Step 4: Create and return ValidationSummary
         return ValidationSummary(

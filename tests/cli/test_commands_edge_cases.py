@@ -36,10 +36,11 @@ Content
 
             config_file.write_text(f"storage_path: {storage_dir}")
 
-            result = runner.invoke(app, ["validate", "--verbose"])
+            result = runner.invoke(app, ["-v", "validate"])
 
-            # Verbose should show storage path
-            assert "Using storage path" in result.output or result.exit_code == 0
+            # With global -v flag, logging should be at INFO level
+            # The command should succeed
+            assert result.exit_code == 0
 
     def test_validate_rules_directory_missing(self):
         """Test validate when rules directory doesn't exist."""
@@ -181,9 +182,8 @@ repos:
 last_sync_timestamp: '2024-01-01T12:00:00'
 repo_metadata:
   - url: https://example.com/repo.git
-    commit: abc123def  # pragma: allowlist secret
+    commit: abc123def
 """)
-
             result = runner.invoke(app, ["status"])
 
             assert result.exit_code == 0
