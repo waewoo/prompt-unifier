@@ -67,3 +67,24 @@ class ToolHandler(Protocol):
             Number of files removed.
         """
         ...
+
+    def get_deployment_status(
+        self,
+        content_name: str,
+        content_type: str,
+        source_content: str,
+        source_filename: str | None = None,
+    ) -> str:
+        """
+        Check the deployment status of a content item.
+
+        Args:
+            content_name: The name/title of the content item.
+            content_type: Type of content ("prompt" or "rule").
+            source_content: The expected content string (processed).
+            source_filename: Optional specific filename if different from title.
+
+        Returns:
+            Status string: "synced", "outdated", "missing", or "error".
+        """
+        ...

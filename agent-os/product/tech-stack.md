@@ -229,6 +229,7 @@ This is a pure command-line interface tool with no graphical user interface, no 
 - Logging for debugging (--verbose flag)
 
 **Cross-Platform Compatibility**
+- The application must run without modification on Linux, macOS, Windows
 - Test on Linux, macOS, Windows
 - Use pathlib instead of os.path
 - Handle different line endings and file systems

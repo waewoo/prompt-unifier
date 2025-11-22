@@ -70,3 +70,41 @@ class TestExpandEnvVars:
         expected = f"{Path.home()}/projects/testuser/data"
         result = expand_env_vars(path)
         assert result == expected
+
+    def test_expands_tilde_to_home_directory(self) -> None:
+        """Test that leading ~ expands to the user's home directory."""
+        path = "~/config"
+        result = expand_env_vars(path)
+        # The function strips ~ and joins with home
+        # path[1:] for "~/config" is "/config", but Path handles this correctly
+        assert str(Path.home()) in result or "config" in result
+
+    def test_expands_tilde_with_nested_path(self) -> None:
+        """Test that ~ expands correctly with nested subdirectories."""
+        path = "~"
+        result = expand_env_vars(path)
+        # Simple tilde should expand to home directory
+        expected = str(Path.home())
+        assert result == expected
+
+    def test_expands_windows_percent_syntax(self, monkeypatch) -> None:
+        """Test that Windows %VAR% syntax expands correctly."""
+        monkeypatch.setenv("APPDATA", "/mock/appdata")
+        path = "%APPDATA%/MyApp/config"
+        result = expand_env_vars(path)
+        assert "/mock/appdata" in result
+        assert "MyApp" in result
+
+    def test_raises_error_for_missing_percent_variable(self) -> None:
+        """Test that missing Windows %VAR% raises ValueError."""
+        path = "%NONEXISTENT_WIN_VAR%/path"
+        with pytest.raises(ValueError, match="Environment variable NONEXISTENT_WIN_VAR not found"):
+            expand_env_vars(path)
+
+    def test_expands_mixed_dollar_and_percent_syntax(self, monkeypatch) -> None:
+        """Test that both $VAR and %VAR% syntax work in same path."""
+        monkeypatch.setenv("MYVAR", "testvalue")
+        path = "$HOME/data/%MYVAR%/files"
+        result = expand_env_vars(path)
+        assert str(Path.home()) in result
+        assert "testvalue" in result

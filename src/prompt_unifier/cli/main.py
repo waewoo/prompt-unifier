@@ -14,6 +14,9 @@ from prompt_unifier.cli.commands import (
     init as init_command,
 )
 from prompt_unifier.cli.commands import (
+    list_content as list_command,
+)
+from prompt_unifier.cli.commands import (
     status as status_command,
 )
 from prompt_unifier.cli.commands import (
@@ -126,6 +129,21 @@ def status() -> None:
     updates are available from the remote repository.
     """
     status_command()
+
+
+@app.command(name="list", help="List available prompts and rules")
+def list_content(
+    verbose: bool = typer.Option(False, "--verbose", "-v", help="Show full content preview"),
+    tool: str | None = typer.Option(None, "--tool", "-t", help="Filter by target tool"),
+    tag: str | None = typer.Option(None, "--tag", help="Filter by tag"),
+    sort: str = typer.Option("name", "--sort", "-s", help="Sort by 'name' or 'date'"),
+) -> None:
+    """List available prompts and rules.
+
+    Displays a table of all available prompts and rules, with optional filtering
+    and sorting. Use --verbose to see content previews.
+    """
+    list_command(verbose=verbose, tool=tool, tag=tag, sort=sort)
 
 
 @app.command(name="deploy", help="Deploy prompts and rules to tool handlers")

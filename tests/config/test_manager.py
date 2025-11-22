@@ -94,6 +94,21 @@ class TestConfigManager:
 
         assert config is None
 
+    def test_load_config_returns_default_for_empty_yaml_file(self, tmp_path: Path) -> None:
+        """Test that load_config returns default GitConfig for empty YAML file."""
+        manager = ConfigManager()
+        config_path = tmp_path / "empty.yaml"
+
+        # Create an empty YAML file (yaml.safe_load returns None)
+        config_path.touch()
+
+        config = manager.load_config(config_path)
+
+        # Should return default GitConfig, not None
+        assert config is not None
+        assert config.repos is None
+        assert config.last_sync_timestamp is None
+
     def test_load_config_handles_corrupted_yaml_with_clear_error(self, tmp_path: Path) -> None:
         """Test that load_config handles corrupted YAML gracefully with clear error message."""
         manager = ConfigManager()

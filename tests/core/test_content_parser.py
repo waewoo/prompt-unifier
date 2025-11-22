@@ -632,3 +632,19 @@ This rule applies to Python files""")
         assert isinstance(result, RuleFile)
         assert result.title == "Python Rule"
         assert result.applies_to == ["*.py", "*.pyx"]
+
+    def test_validate_file_success(self, tmp_path: Path):
+        """Test validate_file with valid prompt returns passed status."""
+        parser = ContentFileParser()
+
+        test_file = tmp_path / "prompts" / "valid.md"
+        test_file.parent.mkdir(parents=True)
+        test_file.write_text("""---
+title: Valid Prompt
+description: A valid prompt for testing
+---
+This is valid content.""")
+
+        result = parser.validate_file(test_file)
+        assert result.status == "passed"
+        assert len(result.errors) == 0

@@ -118,7 +118,7 @@ def test_init_is_idempotent_when_already_exists(tmp_path: Path) -> None:
                 repo_url=None,
                 last_sync_timestamp=None,
                 last_sync_commit=None,
-                storage_path="/root/.prompt-unifier/storage",
+                storage_path=str(tmp_path / "storage"),
             )
 
             # Run init command - should succeed (not raise)

@@ -55,6 +55,16 @@ class MockToolHandler:
         """Mock clean orphaned files method."""
         return 0
 
+    def get_deployment_status(
+        self,
+        content_name: str,
+        content_type: str,
+        source_content: str,
+        source_filename: str | None = None,
+    ) -> str:
+        """Mock get deployment status method."""
+        return "synced"
+
 
 # Test cases for ToolHandler Protocol
 def test_tool_handler_protocol_enforces_methods():

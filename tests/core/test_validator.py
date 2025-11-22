@@ -383,3 +383,32 @@ Content"""
 
         assert invalid_result.is_valid is False
         assert len(invalid_result.errors) >= 1
+
+    def test_invalid_encoding_fails_validation(
+        self, validator: PromptValidator, tmp_path: Path
+    ) -> None:
+        """Test that file with invalid UTF-8 encoding fails validation."""
+        test_file = tmp_path / "invalid_encoding.md"
+        # Write invalid UTF-8 bytes
+        test_file.write_bytes(b"---\ntitle: test\n\xff\xfe\n---\ncontent")
+
+        result = validator.validate_file(test_file)
+
+        assert result.status == "failed"
+        assert len(result.errors) >= 1
+        assert any("utf-8" in str(err.message).lower() for err in result.errors)
+
+    def test_generic_validation_error(self, validator: PromptValidator, tmp_path: Path) -> None:
+        """Test generic validation error handling for non-string type error."""
+        test_file = tmp_path / "generic_error.md"
+        # Use YAML that parses description as a list to trigger type error
+        # This will trigger the generic error branch (not missing, not version, not extra)
+        test_file.write_text(
+            "---\ntitle: test\ndescription:\n  - item1\n  - item2\n---\n\nContent",
+            encoding="utf-8",
+        )
+
+        result = validator.validate_file(test_file)
+
+        assert result.status == "failed"
+        assert len(result.errors) >= 1

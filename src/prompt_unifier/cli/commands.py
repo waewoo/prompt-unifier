@@ -23,6 +23,7 @@ from prompt_unifier.models.prompt import PromptFrontmatter
 from prompt_unifier.models.rule import RuleFrontmatter
 from prompt_unifier.output.json_formatter import JSONFormatter
 from prompt_unifier.output.rich_formatter import RichFormatter
+from prompt_unifier.output.rich_table_formatter import RichTableFormatter
 from prompt_unifier.utils.formatting import format_timestamp
 from prompt_unifier.utils.path_helpers import expand_env_vars
 
@@ -72,7 +73,7 @@ DEFAULT_DRY_RUN_OPTION = typer.Option(
     DEFAULT_DRY_RUN,
     "--dry-run",
     help=(
-        "Preview deployment without executing any file operations " "(shows what would be deployed)"
+        "Preview deployment without executing any file operations (shows what would be deployed)"
     ),
 )
 
@@ -556,6 +557,7 @@ def status() -> None:
 
     Shows the configured repository URL, last sync timestamp, last synced
     commit, and whether updates are available from the remote repository.
+    Also checks deployment status of prompts and rules against target handlers.
 
     Exit codes:
         0: Always (status is informational)
@@ -610,12 +612,20 @@ def status() -> None:
                 console.print(f"  {idx}. {repo_config.url}")
                 if repo_config.branch:
                     console.print(f"     Branch: {repo_config.branch}")
+
+                # Display commit info from repo_metadata if available
+                if hasattr(config, "repo_metadata") and config.repo_metadata:
+                    for metadata in config.repo_metadata:
+                        if metadata.get("url") == repo_config.url:
+                            if "commit" in metadata:
+                                console.print(f"     Commit: {metadata['commit']}")
+                            break
         else:
             console.print("Repositories: [yellow]Not configured[/yellow]")
             console.print()
             console.print("[dim]Run 'prompt-unifier sync --repo <git-url>' to configure[/dim]")
             console.print()
-            return
+            # We continue to show deployment status even if no repo is configured
 
         # Display last sync information with human-readable timestamp
         if config.last_sync_timestamp:
@@ -624,14 +634,132 @@ def status() -> None:
         else:
             console.print("Last sync: [yellow]Never[/yellow]")
 
-        # Display repo metadata if available
-        if config.repo_metadata and len(config.repo_metadata) > 0:
-            console.print(f"Last synced repositories: {len(config.repo_metadata)}")
-            for repo_meta in config.repo_metadata:
-                console.print(f"  - {repo_meta.get('url', 'Unknown')}")
-                if "commit" in repo_meta:
-                    console.print(f"    Commit: {repo_meta['commit']}")
+        console.print()
+        console.print("[bold]Deployment Status[/bold]")
+        console.print("━" * 80)
 
+        # Initialize handlers
+        registry = ToolHandlerRegistry()
+        # Register default handlers (currently only Continue)
+        # In a real plugin system, this would be dynamic
+        registry.register(ContinueToolHandler())
+
+        target_handlers = config.target_handlers or ["continue"]
+        handlers = registry.get_all_handlers()
+        active_handlers = [h for h in handlers if h.get_name() in target_handlers]
+
+        if not active_handlers:
+            console.print("[yellow]No active handlers configured.[/yellow]")
+            return
+
+        # Scan for content files
+        if not storage_dir.exists():
+            console.print("[yellow]Storage directory does not exist.[/yellow]")
+            return
+
+        parser = ContentFileParser()
+        content_files = []
+
+        prompts_dir = storage_dir / "prompts"
+        if prompts_dir.exists():
+            for md_file in prompts_dir.glob("**/*.md"):
+                try:
+                    parsed_content = parser.parse_file(md_file)
+                    content_files.append((parsed_content, "prompt", md_file))
+                except Exception as e:
+                    console.print(f"[yellow]Warning: Failed to parse {md_file}: {e}[/yellow]")
+
+        rules_dir = storage_dir / "rules"
+        if rules_dir.exists():
+            for md_file in rules_dir.glob("**/*.md"):
+                try:
+                    parsed_content = parser.parse_file(md_file)
+                    content_files.append((parsed_content, "rule", md_file))
+                except Exception as e:
+                    console.print(f"[yellow]Warning: Failed to parse {md_file}: {e}[/yellow]")
+
+        if not content_files:
+            console.print("[yellow]No prompts or rules found in storage.[/yellow]")
+            return
+
+        # Check status for each file against each handler
+        status_items = []
+
+        with console.status("[bold green]Checking deployment status...[/bold green]"):
+            for handler in active_handlers:
+                handler_name = handler.get_name()
+
+                for content, content_type, file_path in content_files:
+                    try:
+                        # Prepare content for comparison
+                        # We need to process the content exactly as deploy() does
+                        # The parser returns PromptFile or RuleFile which have .content attribute
+                        if not hasattr(content, "content"):
+                            # Skip if content doesn't have body (shouldn't happen with parser)
+                            continue
+
+                        if content_type == "prompt":
+                            if isinstance(handler, ContinueToolHandler):
+                                # Type narrowing: we know content is PromptFile here
+                                from prompt_unifier.models.prompt import PromptFile
+
+                                if isinstance(content, PromptFile):
+                                    processed_content = handler._process_prompt_content(
+                                        content, content.content
+                                    )
+                                else:
+                                    continue
+                            else:
+                                # Fallback for other handlers if added
+                                processed_content = content.content
+                        elif content_type == "rule":
+                            if isinstance(handler, ContinueToolHandler):
+                                # Type narrowing: we know content is RuleFile here
+                                from prompt_unifier.models.rule import RuleFile
+
+                                if isinstance(content, RuleFile):
+                                    processed_content = handler._process_rule_content(
+                                        content, content.content
+                                    )
+                                else:
+                                    continue
+                            else:
+                                processed_content = content.content
+                        else:
+                            continue
+
+                        status = handler.get_deployment_status(
+                            content_name=content.title,
+                            content_type=content_type,
+                            source_content=processed_content,
+                            source_filename=file_path.name,
+                        )
+
+                        status_items.append(
+                            {
+                                "name": content.title,
+                                "type": content_type,
+                                "handler": handler_name,
+                                "status": status,
+                                "details": "",
+                                # Could add details if get_deployment_status returned more info
+                            }
+                        )
+                    except Exception as e:
+                        status_items.append(
+                            {
+                                "name": content.title,
+                                "type": content_type,
+                                "handler": handler_name,
+                                "status": "failed",
+                                "details": str(e),
+                            }
+                        )
+
+        # Display status table
+        formatter = RichTableFormatter()
+        table = formatter.format_status_table(status_items)
+        console.print(table)
         console.print()
 
     except Exception as e:
@@ -639,6 +767,136 @@ def status() -> None:
         typer.echo(f"Error: {e}", err=True)
         # Status is informational - don't exit with error code
         console.print()
+
+
+def list_content(
+    verbose: bool = typer.Option(False, "--verbose", "-v", help="Show full content preview"),
+    tool: str | None = typer.Option(None, "--tool", "-t", help="Filter by target tool"),
+    tag: str | None = typer.Option(None, "--tag", help="Filter by tag"),
+    sort: str = typer.Option("name", "--sort", "-s", help="Sort by 'name' or 'date'"),
+) -> None:
+    """List available prompts and rules.
+
+    Displays a table of all available prompts and rules, with optional filtering
+    and sorting. Use --verbose to see content previews.
+
+    Examples:
+        # List all content
+        prompt-unifier list
+
+        # Filter by tag
+        prompt-unifier list --tag coding
+
+        # Show detailed content
+        prompt-unifier list --verbose
+    """
+    try:
+        # Load configuration to get storage path
+        cwd = Path.cwd()
+        config_path = cwd / ".prompt-unifier" / "config.yaml"
+
+        if not config_path.exists():
+            # Fallback to default storage if config doesn't exist (e.g. just initialized)
+            # But ideally init should be run.
+            pass
+
+        config_manager = ConfigManager()
+        config = config_manager.load_config(config_path) if config_path.exists() else None
+
+        if config and config.storage_path:
+            storage_dir = Path(config.storage_path).expanduser().resolve()
+        else:
+            storage_dir = Path.home() / ".prompt-unifier" / "storage"
+
+        if not storage_dir.exists():
+            typer.echo(f"Error: Storage directory '{storage_dir}' does not exist.", err=True)
+            raise typer.Exit(code=1)
+
+        # Scan for content files
+        parser = ContentFileParser()
+        content_files = []
+
+        prompts_dir = storage_dir / "prompts"
+        if prompts_dir.exists():
+            for md_file in prompts_dir.glob("**/*.md"):
+                try:
+                    parsed_content = parser.parse_file(md_file)
+                    content_files.append((parsed_content, "prompt", md_file))
+                except Exception as e:
+                    console.print(f"[yellow]Warning: Failed to parse {md_file}: {e}[/yellow]")
+
+        rules_dir = storage_dir / "rules"
+        if rules_dir.exists():
+            for md_file in rules_dir.glob("**/*.md"):
+                try:
+                    parsed_content = parser.parse_file(md_file)
+                    content_files.append((parsed_content, "rule", md_file))
+                except Exception as e:
+                    console.print(f"[yellow]Warning: Failed to parse {md_file}: {e}[/yellow]")
+
+        if not content_files:
+            console.print("[yellow]No prompts or rules found.[/yellow]")
+            return
+
+        # Filter by tag
+        if tag:
+            content_files = [
+                (c, t, p)
+                for c, t, p in content_files
+                if hasattr(c, "tags") and c.tags and tag in c.tags
+            ]
+
+        # Filter by tool (placeholder logic for now as tools are not strictly bound in source)
+        # If we had tool-specific metadata, we'd filter here.
+        if tool:
+            # For now, just warn that tool filtering is limited
+            # console.print(
+            #     f"[dim]Filtering by tool '{tool}' is currently limited to metadata check[/dim]"
+            # )
+            pass
+
+        # Sort
+        if sort == "date":
+            # Sort by file modification time
+            content_files.sort(key=lambda x: x[2].stat().st_mtime, reverse=True)
+        else:
+            # Sort by title (default)
+            content_files.sort(key=lambda x: x[0].title)
+
+        # Display table
+        formatter = RichTableFormatter()
+        # Convert Path to str for formatter
+        formatted_files = [(c, t, str(p)) for c, t, p in content_files]
+        table = formatter.format_list_table(formatted_files)
+        console.print(table)
+
+        # Display verbose content
+        if verbose:
+            console.print()
+            for content, content_type, _ in content_files:
+                console.print(f"[bold cyan]{content.title}[/bold cyan] ({content_type})")
+
+                # Reconstruct content body (this is a bit hacky, ideally parser gives raw body)
+                # But parser gives structured object.
+                # We can read the file again or just show description.
+                # Let's show description + body if available, or just read file.
+
+                # For preview, reading file is safest to show exact content
+                # But we want to skip frontmatter for cleaner view?
+                # Let's just show the whole file for now, or use syntax highlighting
+
+                # Actually, let's use the file content directly
+                try:
+                    file_content = _.read_text(encoding="utf-8")
+                    syntax = formatter.format_content_preview(file_content)
+                    console.print(syntax)
+                    console.print("━" * 40)
+                except Exception as e:
+                    console.print(f"[red]Error reading file: {e}[/red]")
+
+    except Exception as e:
+        typer.echo(f"Error: {e}", err=True)
+        raise typer.Exit(code=1) from e
 
 
 def deploy(

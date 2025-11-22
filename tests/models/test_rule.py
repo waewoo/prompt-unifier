@@ -231,6 +231,32 @@ class TestRuleFrontmatterInvalidTags:
         assert rule.tags == ["python", "pep8", "style-guide"]
 
 
+class TestRuleFrontmatterInvalidAppliesTo:
+    """Test applies_to validation."""
+
+    def test_empty_pattern_in_applies_to_rejected(self):
+        """Test that empty string in applies_to list is rejected."""
+        with pytest.raises(ValidationError) as exc_info:
+            RuleFrontmatter(
+                title="test-rule",
+                description="Test",
+                category="coding-standards",
+                applies_to=["python", "", "django"],
+            )
+        assert "non-empty" in str(exc_info.value).lower()
+
+    def test_whitespace_only_pattern_in_applies_to_rejected(self):
+        """Test that whitespace-only pattern in applies_to is rejected."""
+        with pytest.raises(ValidationError) as exc_info:
+            RuleFrontmatter(
+                title="test-rule",
+                description="Test",
+                category="coding-standards",
+                applies_to=["python", "   "],
+            )
+        assert "non-empty" in str(exc_info.value).lower()
+
+
 class TestRuleFrontmatterInvalidVersion:
     """Test version validation."""
 

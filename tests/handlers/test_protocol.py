@@ -38,6 +38,16 @@ class MockValidHandler:
     def clean_orphaned_files(self, deployed_filenames: set[str]) -> int:
         return 0
 
+    def get_deployment_status(
+        self,
+        content_name: str,
+        content_type: str,
+        source_content: str,
+        source_filename: str | None = None,
+    ) -> str:
+        """Implement the get_deployment_status method of the protocol."""
+        return "synced"
+
 
 class MockHandlerMissingDeploy:
     """Mock handler missing the deploy method."""
@@ -53,6 +63,15 @@ class MockHandlerMissingDeploy:
 
     def clean_orphaned_files(self, deployed_filenames: set[str]) -> int:
         return 0
+
+    def get_deployment_status(
+        self,
+        content_name: str,
+        content_type: str,
+        source_content: str,
+        source_filename: str | None = None,
+    ) -> str:
+        return "synced"
 
 
 class CompleteHandler:
@@ -72,6 +91,15 @@ class CompleteHandler:
 
     def clean_orphaned_files(self, deployed_filenames: set[str]) -> int:
         return 0
+
+    def get_deployment_status(
+        self,
+        content_name: str,
+        content_type: str,
+        source_content: str,
+        source_filename: str | None = None,
+    ) -> str:
+        return "synced"
 
 
 class IncompleteHandler:
@@ -214,6 +242,15 @@ class TestProtocol:
             def clean_orphaned_files(self, deployed_filenames: set[str]) -> int:
                 return 0
 
+            def get_deployment_status(
+                self,
+                content_name: str,
+                content_type: str,
+                source_content: str,
+                source_filename: str | None = None,
+            ) -> str:
+                return "synced"
+
         handler = CompleteHandler()
 
         # Verify isinstance works
@@ -249,6 +286,15 @@ class TestProtocol:
 
             def clean_orphaned_files(self, deployed_filenames: set[str]) -> int:
                 return 0
+
+            def get_deployment_status(
+                self,
+                content_name: str,
+                content_type: str,
+                source_content: str,
+                source_filename: str | None = None,
+            ) -> str:
+                return "synced"
 
         handler = TestHandler()
         assert isinstance(handler, ToolHandler)
@@ -290,6 +336,15 @@ class TestProtocol:
             def clean_orphaned_files(self, deployed_filenames: set[str]) -> int:
                 return 0
 
+            def get_deployment_status(
+                self,
+                content_name: str,
+                content_type: str,
+                source_content: str,
+                source_filename: str | None = None,
+            ) -> str:
+                return "synced"
+
         handler = HandlerWithDifferentReturns()
         assert isinstance(handler, ToolHandler)
 
@@ -325,6 +380,15 @@ class TestProtocol:
             def clean_orphaned_files(self, deployed_filenames: set[str]) -> int:
                 return 0
 
+            def get_deployment_status(
+                self,
+                content_name: str,
+                content_type: str,
+                source_content: str,
+                source_filename: str | None = None,
+            ) -> str:
+                return "synced"
+
         handler = HandlerWithErrors()
         assert isinstance(handler, ToolHandler)
 
@@ -352,6 +416,15 @@ class TestProtocol:
 
             def clean_orphaned_files(self, deployed_filenames: set[str]) -> int:
                 return 0
+
+            def get_deployment_status(
+                self,
+                content_name: str,
+                content_type: str,
+                source_content: str,
+                source_filename: str | None = None,
+            ) -> str:
+                return "synced"
 
             def rollback(self) -> None:
                 pass
@@ -390,6 +463,15 @@ class TestProtocol:
             def clean_orphaned_files(self, deployed_filenames: set[str]) -> int:
                 return 0
 
+            def get_deployment_status(
+                self,
+                content_name: str,
+                content_type: str,
+                source_content: str,
+                source_filename: str | None = None,
+            ) -> str:
+                return "synced"
+
         handler = HandlerWithProperties()
         # Note: Properties are considered as methods by isinstance
         # This is a limitation of Python's runtime checking
@@ -421,6 +503,15 @@ class TestProtocol:
 
             def clean_orphaned_files(self, deployed_filenames: set[str]) -> int:
                 return 0
+
+            def get_deployment_status(
+                self,
+                content_name: str,
+                content_type: str,
+                source_content: str,
+                source_filename: str | None = None,
+            ) -> str:
+                return "synced"
 
         handler = HandlerWithStaticMethods()
         # This should respect the protocol because static methods
@@ -461,6 +552,15 @@ class TestProtocol:
             def clean_orphaned_files(self, deployed_filenames: set[str]) -> int:
                 return 0
 
+            def get_deployment_status(
+                self,
+                content_name: str,
+                content_type: str,
+                source_content: str,
+                source_filename: str | None = None,
+            ) -> str:
+                return "synced"
+
         handler = HandlerWithClassMethods()
         # This should respect the protocol
         assert isinstance(handler, ToolHandler)
@@ -488,6 +588,15 @@ class TestProtocol:
 
             def clean_orphaned_files(self):  # Missing parameters
                 return 0
+
+            def get_deployment_status(
+                self,
+                content_name: str,
+                content_type: str,
+                source_content: str,
+                source_filename: str | None = None,
+            ) -> str:
+                return "synced"
 
         handler = WrongSignatureHandler()
         # This should not respect the protocol due to incorrect signature
@@ -523,8 +632,18 @@ class TestProtocol:
             def clean_orphaned_files(self, deployed_filenames: set[str]) -> int:
                 return 0
 
-        # An abstract class cannot be instantiated
-        # But it can implement the protocol
+            # An abstract class cannot be instantiated
+            # But it can implement the protocol
+
+            def get_deployment_status(
+                self,
+                content_name: str,
+                content_type: str,
+                source_content: str,
+                source_filename: str | None = None,
+            ) -> str:
+                return "synced"
+
         assert isinstance(AbstractHandler, type)
 
         class ConcreteHandler(AbstractHandler):
@@ -548,6 +667,15 @@ class TestProtocol:
 
             def clean_orphaned_files(self, deployed_filenames: set[str]) -> int:
                 return 0
+
+            def get_deployment_status(
+                self,
+                content_name: str,
+                content_type: str,
+                source_content: str,
+                source_filename: str | None = None,
+            ) -> str:
+                return "synced"
 
         handler = ConcreteHandler()
         assert isinstance(handler, ToolHandler)
@@ -610,6 +738,15 @@ class TestProtocol:
             def clean_orphaned_files(self, deployed_filenames: set[str]) -> int:
                 return 0
 
+            def get_deployment_status(
+                self,
+                content_name: str,
+                content_type: str,
+                source_content: str,
+                source_filename: str | None = None,
+            ) -> str:
+                return "synced"
+
         handler = GenericHandler[PromptFrontmatter]()
         assert isinstance(handler, ToolHandler)
 
@@ -645,6 +782,15 @@ class TestProtocol:
 
             def clean_orphaned_files(self, deployed_filenames: set[str]) -> int:
                 return 0
+
+            def get_deployment_status(
+                self,
+                content_name: str,
+                content_type: str,
+                source_content: str,
+                source_filename: str | None = None,
+            ) -> str:
+                return "synced"
 
         handler = MultiInheritanceHandler()
         assert isinstance(handler, ToolHandler)
@@ -686,6 +832,15 @@ class TestProtocol:
                 if self.should_raise:
                     raise RuntimeError("Clean failed")
                 return 0
+
+            def get_deployment_status(
+                self,
+                content_name: str,
+                content_type: str,
+                source_content: str,
+                source_filename: str | None = None,
+            ) -> str:
+                return "synced"
 
         handler = ExceptionHandler()
         assert isinstance(handler, ToolHandler)
@@ -731,6 +886,11 @@ class TestProtocol:
         def lambda_clean(filenames):
             return 0
 
+        def lambda_get_deployment_status(
+            content_name, content_type, source_content, source_filename=None
+        ):
+            return "synced"
+
         # Create a class that uses lambdas
         class LambdaHandler:
             deploy = lambda_deploy
@@ -738,6 +898,7 @@ class TestProtocol:
             get_name = lambda_get_name
             rollback = lambda_rollback
             clean_orphaned_files = lambda_clean
+            get_deployment_status = lambda_get_deployment_status
 
         handler = LambdaHandler()
         # This should still respect the protocol
@@ -768,6 +929,15 @@ class TestProtocol:
 
                 def clean_orphaned_files(self, deployed_filenames: set[str]) -> int:
                     return 0
+
+                def get_deployment_status(
+                    self,
+                    content_name: str,
+                    content_type: str,
+                    source_content: str,
+                    source_filename: str | None = None,
+                ) -> str:
+                    return "synced"
 
         handler = OuterClass.NestedHandler()
         assert isinstance(handler, ToolHandler)
@@ -803,6 +973,15 @@ class TestProtocol:
 
             def clean_orphaned_files(self, deployed_filenames: set[str]) -> int:
                 return 0
+
+            def get_deployment_status(
+                self,
+                content_name: str,
+                content_type: str,
+                source_content: str,
+                source_filename: str | None = None,
+            ) -> str:
+                return "synced"
 
         handler = MetaHandler()
         assert isinstance(handler, ToolHandler)

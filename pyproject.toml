@@ -15,7 +15,7 @@ description = "CLI tool for managing AI prompt templates with YAML frontmatter"
 authors = ["Waewoo <waewoo@gmail.com>"]
 license = "MIT"
 readme = "README.md"
-packages = [{include = "prompt_unifier", from = "src"}]
+packages = [{ include = "prompt_unifier", from = "src" }]
 
 [tool.poetry.scripts]
 prompt-unifier = "prompt_unifier.cli.main:main"
@@ -70,7 +70,7 @@ ignore = []
 known-first-party = ["prompt_unifier"]
 
 [tool.ruff.lint.per-file-ignores]
-"tests/**/*.py" = ["SIM117"]  # Allow nested with statements in tests for clarity
+"tests/**/*.py" = ["SIM117"] # Allow nested with statements in tests for clarity
 
 # mypy configuration - Static type checking
 [tool.mypy]
@@ -101,11 +101,7 @@ filterwarnings = [
 ]
 python_classes = ["Test*"]
 python_functions = ["test_*"]
-addopts = [
-    "--strict-markers",
-    "--strict-config",
-    "--showlocals",
-]
+addopts = ["--strict-markers", "--strict-config", "--showlocals"]
 
 [tool.coverage.run]
 source = ["src"]
@@ -122,7 +118,7 @@ exclude_lines = [
     "raise NotImplementedError",
     "if __name__ == .__main__.:",
     "if TYPE_CHECKING:",
-    "\\.\\.\\.",  # Exclude protocol ellipsis markers
+    "\\.\\.\\.",                  # Exclude protocol ellipsis markers
 ]
 
 # Bandit configuration - Security linting
@@ -141,7 +137,7 @@ name = "cz_conventional_commits"
 version = "0.5.1"
 version_files = [
     "pyproject.toml:version",
-    "src/prompt_unifier/__init__.py:__version__"
+    "src/prompt_unifier/__init__.py:__version__",
 ]
 tag_format = "v$version"
 changelog_file = "CHANGELOG.md"

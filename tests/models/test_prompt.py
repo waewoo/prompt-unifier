@@ -12,7 +12,7 @@ This module tests the validation logic for prompt frontmatter including:
 import pytest
 from pydantic import ValidationError
 
-from prompt_unifier.models.prompt import PromptFrontmatter
+from prompt_unifier.models.prompt import PromptFile, PromptFrontmatter
 
 
 class TestPromptFrontmatterRequiredFields:
@@ -261,3 +261,37 @@ class TestPromptFrontmatterSerialization:
         assert serialized["version"] is None
         assert serialized["tags"] is None
         assert serialized["author"] is None
+
+
+class TestPromptFile:
+    """Tests for PromptFile model including content field."""
+
+    def test_valid_prompt_file(self) -> None:
+        """Test that valid PromptFile is accepted."""
+        prompt = PromptFile(
+            title="Test Prompt",
+            description="A test prompt",
+            content="This is the prompt content.",
+        )
+        assert prompt.title == "Test Prompt"
+        assert prompt.content == "This is the prompt content."
+
+    def test_whitespace_only_content_rejected(self) -> None:
+        """Test that whitespace-only content is rejected."""
+        with pytest.raises(ValidationError) as exc_info:
+            PromptFile(
+                title="Test Prompt",
+                description="A test prompt",
+                content="   \n\t\n   ",
+            )
+        assert "content" in str(exc_info.value).lower()
+
+    def test_empty_content_rejected(self) -> None:
+        """Test that empty content is rejected."""
+        with pytest.raises(ValidationError) as exc_info:
+            PromptFile(
+                title="Test Prompt",
+                description="A test prompt",
+                content="",
+            )
+        assert "content" in str(exc_info.value).lower()

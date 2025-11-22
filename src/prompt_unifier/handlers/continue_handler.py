@@ -1,4 +1,5 @@
 from dataclasses import dataclass
+from hashlib import sha256
 from pathlib import Path
 from typing import Any
 
@@ -602,3 +603,59 @@ class ContinueToolHandler(ToolHandler):
         # Clean up empty directories after restoration
         self._remove_empty_directories(self.prompts_dir)
         self._remove_empty_directories(self.rules_dir)
+
+    def get_deployment_status(
+        self,
+        content_name: str,
+        content_type: str,
+        source_content: str,
+        source_filename: str | None = None,
+    ) -> str:
+        """
+        Check the deployment status of a content item.
+
+        Args:
+            content_name: The name/title of the content item.
+            content_type: Type of content ("prompt" or "rule").
+            source_content: The expected content string (processed).
+            source_filename: Optional specific filename if different from title.
+
+        Returns:
+            Status string: "synced", "outdated", "missing", or "error".
+        """
+        # Determine target filename
+        if source_filename:
+            filename = (
+                source_filename if source_filename.endswith(".md") else f"{source_filename}.md"
+            )
+        else:
+            filename = f"{content_name}.md"
+
+        # Determine target directory
+        if content_type == "prompt":
+            target_file = self.prompts_dir / filename
+        elif content_type == "rule":
+            target_file = self.rules_dir / filename
+        else:
+            return "error"
+
+        # Check existence
+        if not target_file.exists():
+            return "missing"
+
+        try:
+            # Read deployed content
+            deployed_content = target_file.read_text(encoding="utf-8")
+
+            # Compare content hashes for robustness against whitespace issues
+            # (though currently we expect exact matches, hashing is good practice)
+            source_hash = sha256(source_content.encode("utf-8")).hexdigest()
+            deployed_hash = sha256(deployed_content.encode("utf-8")).hexdigest()
+
+            if source_hash == deployed_hash:
+                return "synced"
+            else:
+                return "outdated"
+
+        except (OSError, UnicodeDecodeError):
+            return "error"
