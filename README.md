@@ -71,7 +71,7 @@ prompt-unifier init
 
 # 2. Sync prompts from a Git repository
 # This clones the repo into a centralized local storage.
-prompt-unifier sync --repo https://github.com/prompt-unifier/example-prompts.git
+prompt-unifier sync --repo https://gitlab.com/waewoo/prompt-unifier-data.git
 
 # 3. Deploy prompts to your AI assistant (e.g., Continue)
 # This copies the prompts to the .continue/ folder in your project.
@@ -80,6 +80,19 @@ prompt-unifier deploy
 # 4. Check the status of your synced repositories
 prompt-unifier status
 ```
+
+## Example Repository
+
+An example repository with prompts and rules is available as a template:
+
+**[prompt-unifier-data](https://gitlab.com/waewoo/prompt-unifier-data)** - A collection of DevOps-focused prompts and coding rules ready to use with Prompt Unifier.
+
+This repository includes:
+- Structured prompts and rules with proper YAML frontmatter
+- GitLab CI pipeline for validation
+- Auto-bump release mechanism with semantic versioning
+
+You can fork this repository to create your own prompt collection, or use it directly as a starting point.
 
 ## Core Concepts
 
