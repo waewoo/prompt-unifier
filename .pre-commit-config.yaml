@@ -63,7 +63,7 @@ repos:
         pass_filenames: false
       - id: validate-gitlab-ci
         name: Validate GitLab CI config
-        entry: gitlab-ci-local --list
+        entry: gitlab-ci-local --preview > /dev/null
         language: system
         files: \.gitlab-ci\.yml$
         pass_filenames: false

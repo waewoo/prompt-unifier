@@ -15,7 +15,7 @@
 #
 # Usage: make <target>
 
-.PHONY: install update-deps test test-ci test-ci-shell test-ci-clean lint typecheck format check clean clean-ci run release changelog
+.PHONY: install update-deps test test-ci test-ci-shell test-ci-clean lint typecheck format check clean clean-ci run release changelog ci-lint
 
 # Install dependencies via Poetry
 install:
@@ -89,8 +89,13 @@ typecheck:
 format:
 	poetry run ruff format src/ tests/
 
+# Check GitLab CI configuration syntax
+ci-lint:
+	@echo "Checking GitLab CI configuration syntax..."
+	@gitlab-ci-local --preview > /dev/null
+
 # Run all quality checks in sequence
-check: lint typecheck test
+check: lint typecheck test ci-lint
 
 # Remove build artifacts, caches, and temporary files
 clean:
