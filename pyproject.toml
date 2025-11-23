@@ -16,6 +16,21 @@ authors = ["Waewoo <waewoo@gmail.com>"]
 license = "MIT"
 readme = "README.md"
 packages = [{ include = "prompt_unifier", from = "src" }]
+repository = "https://gitlab.com/waewoo/prompt-unifier"
+documentation = "https://gitlab.com/waewoo/prompt-unifier/-/blob/main/README.md"
+keywords = ["cli", "ai", "prompts", "yaml", "templates", "llm"]
+classifiers = [
+    "Development Status :: 4 - Beta",
+    "Environment :: Console",
+    "Intended Audience :: Developers",
+    "Topic :: Software Development :: Libraries :: Python Modules",
+    "Topic :: Text Processing :: Markup",
+]
+
+[tool.poetry.urls]
+"Bug Tracker" = "https://gitlab.com/waewoo/prompt-unifier/-/issues"
+"Changelog" = "https://gitlab.com/waewoo/prompt-unifier/-/blob/main/CHANGELOG.md"
+"Contributing" = "https://gitlab.com/waewoo/prompt-unifier/-/blob/main/CONTRIBUTING.md"
 
 [tool.poetry.scripts]
 prompt-unifier = "prompt_unifier.cli.main:main"
