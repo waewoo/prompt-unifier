@@ -141,7 +141,7 @@ Normal rule content
 @pytest.fixture
 def mock_continue_handler():
     """Mock ContinueToolHandler with proper spec."""
-    with patch("prompt_unifier.cli.commands.ContinueToolHandler") as mock_handler:
+    with patch("prompt_unifier.cli.helpers.ContinueToolHandler") as mock_handler:
         mock_handler_instance = MagicMock(spec=ContinueToolHandler)
         mock_handler.return_value = mock_handler_instance
         mock_handler_instance.get_name.return_value = "continue"

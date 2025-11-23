@@ -111,7 +111,7 @@ handlers:
         cli_override_path = tmp_path / "cli_override_path"
 
         with patch("prompt_unifier.cli.commands.Path.cwd", return_value=tmp_path):
-            with patch("prompt_unifier.cli.commands.ContinueToolHandler") as MockHandler:  # noqa: N806
+            with patch("prompt_unifier.cli.helpers.ContinueToolHandler") as MockHandler:  # noqa: N806
                 mock_handler_instance = MagicMock()
                 MockHandler.return_value = mock_handler_instance
                 mock_handler_instance.get_name.return_value = "continue"
@@ -178,7 +178,7 @@ handlers:
         cli_path = tmp_path / "cli_path"
 
         with patch("prompt_unifier.cli.commands.Path.cwd", return_value=tmp_path):
-            with patch("prompt_unifier.cli.commands.ContinueToolHandler") as MockHandler:  # noqa: N806
+            with patch("prompt_unifier.cli.helpers.ContinueToolHandler") as MockHandler:  # noqa: N806
                 mock_handler_instance = MagicMock()
                 MockHandler.return_value = mock_handler_instance
                 mock_handler_instance.get_name.return_value = "continue"
@@ -215,7 +215,7 @@ handlers:
 """)
 
         with patch("prompt_unifier.cli.commands.Path.cwd", return_value=tmp_path):
-            with patch("prompt_unifier.cli.commands.ContinueToolHandler") as MockHandler:  # noqa: N806
+            with patch("prompt_unifier.cli.helpers.ContinueToolHandler") as MockHandler:  # noqa: N806
                 mock_handler_instance = MagicMock()
                 MockHandler.return_value = mock_handler_instance
                 mock_handler_instance.get_name.return_value = "continue"
@@ -265,7 +265,7 @@ target_handlers: ["continue"]
 """)
 
         with patch("prompt_unifier.cli.commands.Path.cwd", return_value=tmp_path):
-            with patch("prompt_unifier.cli.commands.ContinueToolHandler") as MockHandler:  # noqa: N806
+            with patch("prompt_unifier.cli.helpers.ContinueToolHandler") as MockHandler:  # noqa: N806
                 mock_handler_instance = MagicMock()
                 MockHandler.return_value = mock_handler_instance
                 mock_handler_instance.get_name.return_value = "continue"

@@ -26,6 +26,163 @@ T = TypeVar("T")
 logger = logging.getLogger(__name__)
 
 
+def _get_auth_error_message(repo_url: str) -> str:
+    """Get authentication error message with detailed instructions."""
+    return (
+        f"Failed to clone repository: {repo_url}\n\n"
+        "Authentication failed. The repository may be private or your "
+        "credentials are invalid.\n\n"
+        "You have 3 authentication options:\n\n"
+        "1. SSH Key (Recommended):\n"
+        "   - Set up SSH keys with your Git provider\n"
+        "   - Use SSH URL: git@gitlab.com:username/repo.git\n"
+        "   - Example: prompt-unifier sync --repo git@gitlab.com:username/repo.git\n\n"
+        "2. Git Credential Helper:\n"
+        "   - Configure Git to store credentials:\n"
+        "     git config --global credential.helper store\n"
+        "   - Or use cache for temporary storage:\n"
+        "     git config --global credential.helper cache\n"
+        "   - Git will prompt for credentials on first use\n\n"
+        "3. Personal Access Token in URL:\n"
+        "   - Create a personal access token from your Git provider\n"
+        "   - Use URL format: https://username:token@gitlab.com/username/repo.git\n"
+        "   - Example: prompt-unifier sync --repo https://user:ghp_xxxx@github.com/user/repo.git\n"
+        "   - Note: Less secure, token visible in command history\n\n"
+        "For GitLab: https://docs.gitlab.com/ee/user/profile/personal_access_tokens.html\n"
+        "For GitHub: https://docs.github.com/en/authentication/keeping-your-account-and-data-secure/managing-your-personal-access-tokens"
+    )
+
+
+def _get_network_error_message(repo_url: str) -> str:
+    """Get network/DNS error message."""
+    return (
+        f"Failed to clone repository: {repo_url}\n\n"
+        "Cannot resolve hostname. Possible causes:\n"
+        "- Invalid repository URL\n"
+        "- Network connectivity issues\n"
+        "- DNS resolution problems\n\n"
+        "Please check:\n"
+        "1. Repository URL is correct\n"
+        "2. You have internet connectivity\n"
+        "3. The repository exists and you have access"
+    )
+
+
+def _get_not_found_error_message(repo_url: str) -> str:
+    """Get repository not found error message."""
+    return (
+        f"Failed to clone repository: {repo_url}\n\n"
+        "Repository not found. Possible causes:\n"
+        "- Repository URL is incorrect\n"
+        "- Repository is private and authentication is required\n"
+        "- Repository has been deleted or moved\n\n"
+        "Please verify:\n"
+        "1. The repository URL is correct\n"
+        "2. You have access to the repository\n"
+        "3. Use authentication if it's a private repository (see auth options above)"
+    )
+
+
+def _classify_clone_error(error_msg: str) -> str:
+    """Classify the type of clone error based on error message.
+
+    Returns:
+        Error type: 'auth', 'network', 'not_found', or 'generic'
+    """
+    error_lower = error_msg.lower()
+
+    auth_keywords = [
+        "authentication",
+        "could not read username",
+        "could not read password",
+        "credential",
+        "permission denied",
+        "403",
+        "unauthorized",
+        "fatal: authentication",
+    ]
+    if any(keyword in error_lower for keyword in auth_keywords):
+        return "auth"
+
+    if "could not resolve host" in error_lower or "name or service not known" in error_lower:
+        return "network"
+
+    not_found_keywords = ["repository not found", "not found", "404"]
+    if any(keyword in error_lower for keyword in not_found_keywords):
+        return "not_found"
+
+    return "generic"
+
+
+def _collect_repo_files(temp_path: Path) -> list[str]:
+    """Collect all files from prompts and rules directories.
+
+    Args:
+        temp_path: Path to the cloned repository.
+
+    Returns:
+        List of relative file paths.
+    """
+    all_files: list[str] = []
+    for directory in ["prompts", "rules"]:
+        source_dir = temp_path / directory
+        if source_dir.exists():
+            for file_path in source_dir.rglob("*"):
+                if file_path.is_file():
+                    rel_path = str(file_path.relative_to(temp_path))
+                    all_files.append(rel_path)
+    return all_files
+
+
+def _apply_path_filters(
+    all_files: list[str],
+    include_patterns: list[str] | None,
+    exclude_patterns: list[str] | None,
+) -> list[str]:
+    """Apply include/exclude filters to file list.
+
+    Args:
+        all_files: List of all file paths.
+        include_patterns: Optional include patterns.
+        exclude_patterns: Optional exclude patterns.
+
+    Returns:
+        Filtered list of file paths.
+    """
+    from prompt_unifier.utils.path_filter import PathFilter
+
+    if include_patterns or exclude_patterns:
+        filtered = PathFilter.apply_filters(
+            all_files,
+            include_patterns=include_patterns,
+            exclude_patterns=exclude_patterns,
+        )
+        logger.debug(f"  Files: {len(filtered)} (total: {len(all_files)})")
+        return filtered
+    else:
+        logger.debug(f"  Files: {len(all_files)}")
+        return all_files
+
+
+def _track_file_conflicts(
+    filtered_files: list[str],
+    file_sources: dict[str, str],
+    url: str,
+) -> None:
+    """Track files and log conflicts.
+
+    Args:
+        filtered_files: List of files being synced.
+        file_sources: Dict tracking which repo each file came from.
+        url: Current repository URL.
+    """
+    for rel_path in filtered_files:
+        if rel_path in file_sources:
+            previous_source = file_sources[rel_path]
+            logger.info(f"  ⚠️  Conflict: '{rel_path}' from {previous_source} overridden by {url}")
+        file_sources[rel_path] = url
+
+
 def retry_with_backoff(
     func: Callable[..., T],
     max_attempts: int = 3,
@@ -97,7 +254,7 @@ class GitService:
         self,
         repo_url: str,
         branch: str | None = None,
-        auth_config: dict[str, str] | None = None,
+        auth_config: dict[str, str] | None = None,  # noqa: ARG002  # Reserved for future use
     ) -> tuple[Path, git.Repo]:
         """Clone repository to temporary directory with retry logic.
 
@@ -200,85 +357,24 @@ class GitService:
             ):
                 raise
 
-            # Provide clear error message based on error type
-            error_msg = str(e).lower()
+            # Classify and raise appropriate error
+            error_type = _classify_clone_error(str(e))
 
-            # Check for authentication errors
-            auth_keywords = [
-                "authentication",
-                "authentication failed",
-                "could not read username",
-                "could not read password",
-                "credential",
-                "permission denied",
-                "403",
-                "unauthorized",
-                "fatal: authentication",
-            ]
-
-            if any(keyword in error_msg for keyword in auth_keywords):
+            if error_type == "auth":
+                raise ValueError(_get_auth_error_message(repo_url)) from e
+            elif error_type == "network":
+                raise ValueError(_get_network_error_message(repo_url)) from e
+            elif error_type == "not_found":
+                raise ValueError(_get_not_found_error_message(repo_url)) from e
+            else:
                 raise ValueError(
                     f"Failed to clone repository: {repo_url}\n\n"
-                    "Authentication failed. The repository may be private or your "
-                    "credentials are invalid.\n\n"
-                    "You have 3 authentication options:\n\n"
-                    "1. SSH Key (Recommended):\n"
-                    "   - Set up SSH keys with your Git provider\n"
-                    "   - Use SSH URL: git@gitlab.com:username/repo.git\n"
-                    "   - Example: prompt-unifier sync --repo git@gitlab.com:username/repo.git\n\n"
-                    "2. Git Credential Helper:\n"
-                    "   - Configure Git to store credentials:\n"
-                    "     git config --global credential.helper store\n"
-                    "   - Or use cache for temporary storage:\n"
-                    "     git config --global credential.helper cache\n"
-                    "   - Git will prompt for credentials on first use\n\n"
-                    "3. Personal Access Token in URL:\n"
-                    "   - Create a personal access token from your Git provider\n"
-                    "   - Use URL format: https://username:token@gitlab.com/username/repo.git\n"
-                    "   - Example: prompt-unifier sync --repo https://user:ghp_xxxx@github.com/user/repo.git\n"
-                    "   - Note: Less secure, token visible in command history\n\n"
-                    "For GitLab: https://docs.gitlab.com/ee/user/profile/personal_access_tokens.html\n"
-                    "For GitHub: https://docs.github.com/en/authentication/keeping-your-account-and-data-secure/managing-your-personal-access-tokens"
-                ) from e
-
-            # Check for URL/network errors
-            if "could not resolve host" in error_msg or "name or service not known" in error_msg:
-                raise ValueError(
-                    f"Failed to clone repository: {repo_url}\n\n"
-                    "Cannot resolve hostname. Possible causes:\n"
-                    "- Invalid repository URL\n"
-                    "- Network connectivity issues\n"
-                    "- DNS resolution problems\n\n"
+                    f"Error: {e}\n\n"
                     "Please check:\n"
-                    "1. Repository URL is correct\n"
-                    "2. You have internet connectivity\n"
-                    "3. The repository exists and you have access"
+                    "- Repository URL is correct\n"
+                    "- You have network connectivity\n"
+                    "- You have access to the repository"
                 ) from e
-
-            # Check if repository doesn't exist
-            not_found_keywords = ["repository not found", "not found", "404"]
-            if any(keyword in error_msg for keyword in not_found_keywords):
-                raise ValueError(
-                    f"Failed to clone repository: {repo_url}\n\n"
-                    "Repository not found. Possible causes:\n"
-                    "- Repository URL is incorrect\n"
-                    "- Repository is private and authentication is required\n"
-                    "- Repository has been deleted or moved\n\n"
-                    "Please verify:\n"
-                    "1. The repository URL is correct\n"
-                    "2. You have access to the repository\n"
-                    "3. Use authentication if it's a private repository (see auth options above)"
-                ) from e
-
-            # Generic error
-            raise ValueError(
-                f"Failed to clone repository: {repo_url}\n\n"
-                f"Error: {e}\n\n"
-                "Please check:\n"
-                "- Repository URL is correct\n"
-                "- You have network connectivity\n"
-                "- You have access to the repository"
-            ) from e
 
     def get_latest_commit(self, repo: git.Repo) -> str:
         """Get latest commit hash from repository in short SHA format.
@@ -462,7 +558,7 @@ class GitService:
                 retry_with_backoff(ls_remote_operation, max_attempts=3)
 
                 # Clone to temp to verify prompts/ directory exists
-                temp_path, temp_repo = self.clone_to_temp(url, branch=branch)
+                temp_path, _ = self.clone_to_temp(url, branch=branch)
 
                 try:
                     # Check for prompts/ directory
@@ -528,7 +624,6 @@ class GitService:
             ... ]
             >>> metadata = service.sync_multiple_repos(repos, Path("/tmp/storage"))
         """
-        from prompt_unifier.utils.path_filter import PathFilter
         from prompt_unifier.utils.repo_metadata import RepoMetadata
 
         # Step 1: Validate all repositories before starting sync (fail-fast)
@@ -551,70 +646,37 @@ class GitService:
         for idx, repo_config in enumerate(repos, 1):
             url = repo_config.url
             branch = repo_config.branch
-            auth_config = repo_config.auth_config
-            include_patterns = repo_config.include_patterns
-            exclude_patterns = repo_config.exclude_patterns
 
             logger.info(f"[{idx}/{len(repos)}] Syncing: {url}")
             if branch:
                 logger.debug(f"  Branch: {branch}")
 
             # Clone repository
-            temp_path, repo = self.clone_to_temp(url, branch=branch, auth_config=auth_config)
+            temp_path, repo = self.clone_to_temp(
+                url, branch=branch, auth_config=repo_config.auth_config
+            )
 
             try:
                 # Get commit info
                 commit_hash = self.get_latest_commit(repo)
                 timestamp = datetime.now(UTC).isoformat()
-
-                # Determine actual branch name
                 actual_branch = branch if branch else repo.active_branch.name
-
                 logger.debug(f"  Commit: {commit_hash}")
 
-                # Get list of files to sync before extracting
-                all_files: list[str] = []
-                for directory in ["prompts", "rules"]:
-                    source_dir = temp_path / directory
-                    if source_dir.exists():
-                        for file_path in source_dir.rglob("*"):
-                            if file_path.is_file():
-                                # Store relative path from temp_path
-                                rel_path = str(file_path.relative_to(temp_path))
-                                all_files.append(rel_path)
+                # Collect and filter files
+                all_files = _collect_repo_files(temp_path)
+                filtered_files = _apply_path_filters(
+                    all_files, repo_config.include_patterns, repo_config.exclude_patterns
+                )
 
-                # Apply filters if specified
-                if include_patterns or exclude_patterns:
-                    filtered_files = PathFilter.apply_filters(
-                        all_files,
-                        include_patterns=include_patterns,
-                        exclude_patterns=exclude_patterns,
-                    )
-                    debug_msg = f"  Files: {len(filtered_files)} " f"(total: {len(all_files)})"
-                    logger.debug(debug_msg)
-
-                else:
-                    filtered_files = all_files
-                    logger.debug(f"  Files: {len(filtered_files)}")
-
-                # Extract to storage (this will overwrite existing files - last-wins)
+                # Extract to storage (last-wins merge)
                 self.extract_prompts_dir(temp_path, storage_path, files_to_copy=filtered_files)
 
-                # Track files and detect conflicts
+                # Track conflicts and update file sources
+                _track_file_conflicts(filtered_files, file_sources, url)
+
+                # Add files to metadata
                 for rel_path in filtered_files:
-                    # Check if file was already synced from another repo
-                    if rel_path in file_sources:
-                        previous_source = file_sources[rel_path]
-                        conflict_msg = (
-                            f"  ⚠️  Conflict: '{rel_path}' from {previous_source} "
-                            f"overridden by {url}"
-                        )
-                        logger.info(conflict_msg)
-
-                    # Update file source tracking
-                    file_sources[rel_path] = url
-
-                    # Add to metadata
                     metadata.add_file(
                         file_path=rel_path,
                         source_url=url,

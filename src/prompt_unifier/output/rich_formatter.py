@@ -96,7 +96,7 @@ class RichFormatter:
         self.console.print("━" * 80)
         self.console.print()
 
-    def _display_file_result(self, result: ValidationResult, verbose: bool = False) -> None:
+    def _display_file_result(self, result: ValidationResult, verbose: bool = False) -> None:  # noqa: ARG002
         """Display the validation result for a single file.
 
         Args:
@@ -196,7 +196,7 @@ class RichFormatter:
             f"  Errors: [{self.ERROR_COLOR}]{summary.error_count}[/{self.ERROR_COLOR}]"
         )
         self.console.print(
-            f"  Warnings: [{self.WARNING_COLOR}]{summary.warning_count}" f"[/{self.WARNING_COLOR}]"
+            f"  Warnings: [{self.WARNING_COLOR}]{summary.warning_count}[/{self.WARNING_COLOR}]"
         )
         self.console.print()
 

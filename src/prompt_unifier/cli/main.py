@@ -48,7 +48,7 @@ app = typer.Typer(
 
 @app.callback()
 def main_callback(
-    version: bool = typer.Option(
+    version: bool = typer.Option(  # noqa: ARG001
         False,
         "--version",
         "-V",
@@ -132,7 +132,7 @@ def sync(
             "Override storage path for this sync (defaults to config value or "
             "~/.prompt-unifier/storage/)"
         ),
-    ),  # noqa: B008
+    ),
 ) -> None:
     """Sync prompts from Git repositories to centralized storage.
 

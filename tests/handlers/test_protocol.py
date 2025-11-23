@@ -299,7 +299,7 @@ class TestProtocol:
                 relative_path: Path | None = None,
             ) -> None:
                 # Test that method can accept different content types
-                if content_type == "prompt" or content_type == "rule":
+                if content_type in ("prompt", "rule"):
                     assert hasattr(content, "title")
 
             def get_status(self) -> str:

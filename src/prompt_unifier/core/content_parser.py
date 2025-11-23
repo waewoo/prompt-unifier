@@ -62,7 +62,7 @@ class ContentFileParser:
         try:
             self.parse_file(file_path)
             return ValidationResult(file=file_path, status="passed")
-        except (ValueError, ValidationError) as e:
+        except (ValidationError, ValueError) as e:
             from prompt_unifier.models.validation import ValidationIssue, ValidationSeverity
 
             error_issue = ValidationIssue(

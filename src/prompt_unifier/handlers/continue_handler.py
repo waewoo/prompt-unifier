@@ -7,6 +7,7 @@ import yaml
 from rich.console import Console
 from rich.table import Table
 
+from prompt_unifier.constants import CONTINUE_DIR
 from prompt_unifier.handlers.protocol import ToolHandler
 from prompt_unifier.models.prompt import PromptFrontmatter
 from prompt_unifier.models.rule import RuleFrontmatter
@@ -39,8 +40,8 @@ class ContinueToolHandler(ToolHandler):
         self.name = "continue"
         # CRITICAL CHANGE: Default base_path is now Path.cwd() instead of Path.home()
         self.base_path = base_path if base_path else Path.cwd()
-        self.prompts_dir = self.base_path / ".continue" / "prompts"
-        self.rules_dir = self.base_path / ".continue" / "rules"
+        self.prompts_dir = self.base_path / CONTINUE_DIR / "prompts"
+        self.rules_dir = self.base_path / CONTINUE_DIR / "rules"
 
         # Auto-create directories with informative output
         if not self.prompts_dir.exists():
@@ -56,7 +57,7 @@ class ContinueToolHandler(ToolHandler):
 
         Checks that:
         1. base_path exists or can be created
-        2. .continue/ directory exists or can be created
+        2. CONTINUE_DIR/ directory exists or can be created
         3. Required subdirectories (prompts/, rules/) are accessible
 
         Returns:
@@ -82,7 +83,7 @@ class ContinueToolHandler(ToolHandler):
                 console.print(f"[green]Created base path: {self.base_path}[/green]")
 
             # Check if .continue directory exists
-            continue_dir = self.base_path / ".continue"
+            continue_dir = self.base_path / CONTINUE_DIR
             if not continue_dir.exists():
                 console.print(
                     f"[yellow]Continue directory does not exist, "
@@ -105,7 +106,7 @@ class ContinueToolHandler(ToolHandler):
             try:
                 test_file.touch()
                 test_file.unlink()
-            except (PermissionError, OSError) as e:
+            except OSError as e:
                 console.print(
                     f"[red]Error: Continue installation at {self.base_path} is not writable[/red]"
                 )
@@ -353,7 +354,7 @@ class ContinueToolHandler(ToolHandler):
 
     def verify_deployment_with_details(
         self,
-        content_name: str,
+        content_name: str,  # noqa: ARG002
         content_type: str,
         file_name: str,
         relative_path: Path | None = None,
@@ -594,7 +595,7 @@ class ContinueToolHandler(ToolHandler):
             try:
                 backup_file.rename(original_path)
                 console.print(f"[yellow]Restored {original_path.name} from backup[/yellow]")
-            except (OSError, FileNotFoundError) as e:
+            except OSError as e:
                 console.print(
                     f"[yellow]Warning: Could not restore {backup_file.name}: {e}[/yellow]"
                 )
@@ -606,7 +607,7 @@ class ContinueToolHandler(ToolHandler):
             try:
                 backup_file.rename(original_path)
                 console.print(f"[yellow]Restored {original_path.name} from backup[/yellow]")
-            except (OSError, FileNotFoundError) as e:
+            except OSError as e:
                 console.print(
                     f"[yellow]Warning: Could not restore {backup_file.name}: {e}[/yellow]"
                 )

@@ -235,7 +235,7 @@ handlers:
             config_file.write_text(f"storage_path: {storage_dir}")
 
             with patch(
-                "prompt_unifier.cli.commands.ContinueToolHandler.validate_tool_installation"
+                "prompt_unifier.cli.helpers.ContinueToolHandler.validate_tool_installation"
             ) as mock_validate:
                 mock_validate.side_effect = PermissionError("No write access")
 
@@ -258,7 +258,7 @@ handlers:
             config_file.write_text(f"storage_path: {storage_dir}")
 
             with patch(
-                "prompt_unifier.cli.commands.ContinueToolHandler.validate_tool_installation"
+                "prompt_unifier.cli.helpers.ContinueToolHandler.validate_tool_installation"
             ) as mock_validate:
                 mock_validate.side_effect = OSError("Disk error")
 

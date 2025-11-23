@@ -96,8 +96,8 @@ class PromptValidator:
             )
 
         # Step 2: Separator validation
-        frontmatter_text, content_text, separator_issues = (
-            self.separator_validator.validate_separator(file_content)
+        frontmatter_text, _, separator_issues = self.separator_validator.validate_separator(
+            file_content
         )
         all_errors.extend(
             [issue for issue in separator_issues if issue.severity == ValidationSeverity.ERROR]
@@ -293,7 +293,7 @@ class PromptValidator:
                         message="Tags list is empty",
                         excerpt=None,
                         suggestion=(
-                            "Add tags to categorize this prompt, or remove the empty " "tags field"
+                            "Add tags to categorize this prompt, or remove the empty tags field"
                         ),
                     )
                 )

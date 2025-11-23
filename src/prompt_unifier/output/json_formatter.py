@@ -23,7 +23,11 @@ class JSONFormatter:
         >>> print(json_output)
     """
 
-    def format_summary(self, summary: ValidationSummary, directory: Path) -> str:
+    def format_summary(
+        self,
+        summary: ValidationSummary,
+        directory: Path,  # noqa: ARG002
+    ) -> str:
         """Format a validation summary as JSON string.
 
         Converts the validation summary into a JSON structure containing:

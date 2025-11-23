@@ -4,7 +4,40 @@ This module provides utility functions for formatting data in human-readable
 formats, including timestamp formatting for relative time display.
 """
 
-from datetime import UTC, datetime
+from datetime import UTC, datetime, timedelta
+
+# Time thresholds for relative formatting: (max_seconds, divisor, unit_singular, unit_plural)
+_TIME_THRESHOLDS = [
+    (60, 1, "second", "seconds"),
+    (3600, 60, "minute", "minutes"),
+    (86400, 3600, "hour", "hours"),
+    (604800, 86400, "day", "days"),
+    (2592000, 604800, "week", "weeks"),
+    (31536000, 2592000, "month", "months"),
+]
+
+
+def _get_relative_time(diff: timedelta) -> str | None:
+    """Get relative time string for a time difference.
+
+    Args:
+        diff: Time difference to format.
+
+    Returns:
+        Relative time string or None if too old.
+    """
+    total_seconds = diff.total_seconds()
+
+    if total_seconds < 60:
+        return "just now"
+
+    for max_seconds, divisor, singular, plural in _TIME_THRESHOLDS[1:]:  # Skip seconds
+        if total_seconds < max_seconds:
+            value = int(total_seconds / divisor)
+            unit = singular if value == 1 else plural
+            return f"{value} {unit} ago"
+
+    return None
 
 
 def format_timestamp(iso_timestamp: str) -> str:
@@ -53,22 +86,9 @@ def format_timestamp(iso_timestamp: str) -> str:
         diff = now - timestamp
 
         # Return relative time for recent timestamps
-        if diff.total_seconds() < 60:
-            return "just now"
-        if diff.total_seconds() < 3600:  # Less than 1 hour
-            minutes = int(diff.total_seconds() / 60)
-            return f"{minutes} minute{'s' if minutes != 1 else ''} ago"
-        if diff.total_seconds() < 86400:  # Less than 1 day
-            hours = int(diff.total_seconds() / 3600)
-            return f"{hours} hour{'s' if hours != 1 else ''} ago"
-        if diff.days < 7:  # Less than 1 week
-            return f"{diff.days} day{'s' if diff.days != 1 else ''} ago"
-        if diff.days < 30:  # Less than 1 month
-            weeks = diff.days // 7
-            return f"{weeks} week{'s' if weeks != 1 else ''} ago"
-        if diff.days < 365:  # Less than 1 year
-            months = diff.days // 30
-            return f"{months} month{'s' if months != 1 else ''} ago"
+        relative = _get_relative_time(diff)
+        if relative:
+            return relative
 
         # For very old timestamps, return absolute format
         return timestamp.strftime("%Y-%m-%d %H:%M:%S")

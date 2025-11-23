@@ -7,26 +7,37 @@ Git integration commands (init, sync, status).
 
 import logging
 from pathlib import Path
-from typing import Any
 
 import typer
 from rich.console import Console
-from rich.table import Table
 
+from prompt_unifier.cli.helpers import (
+    check_all_content_status,
+    check_duplicate_titles,
+    create_directory_with_tracking,
+    deploy_to_single_handler,
+    determine_repo_configs,
+    determine_storage_dir,
+    determine_validation_targets,
+    display_dry_run_preview,
+    display_duplicate_titles_error,
+    display_status_header,
+    filter_content_files,
+    initialize_status_handlers,
+    resolve_validation_directory,
+    scan_content_files,
+    setup_continue_handler,
+)
 from prompt_unifier.config.manager import ConfigManager
+from prompt_unifier.constants import CONFIG_DIR, CONFIG_FILE, ERROR_CONFIG_NOT_FOUND
 from prompt_unifier.core.batch_validator import BatchValidator
 from prompt_unifier.core.content_parser import ContentFileParser
 from prompt_unifier.git.service import GitService
-from prompt_unifier.handlers.continue_handler import ContinueToolHandler, VerificationResult
 from prompt_unifier.handlers.registry import ToolHandlerRegistry
-from prompt_unifier.models.git_config import GitConfig, RepositoryConfig
-from prompt_unifier.models.prompt import PromptFrontmatter
-from prompt_unifier.models.rule import RuleFrontmatter
+from prompt_unifier.models.git_config import GitConfig
 from prompt_unifier.output.json_formatter import JSONFormatter
 from prompt_unifier.output.rich_formatter import RichFormatter
 from prompt_unifier.output.rich_table_formatter import RichTableFormatter
-from prompt_unifier.utils.formatting import format_timestamp
-from prompt_unifier.utils.path_helpers import expand_env_vars
 
 # Initialize Rich Console for formatted output
 console = Console()
@@ -173,73 +184,11 @@ def validate(
     """
     logger.info("Starting validation")
 
-    # If no directory provided, use storage path from config
-    if directory is None:
-        cwd = Path.cwd()
-        config_path = cwd / ".prompt-unifier" / "config.yaml"
+    # Resolve directory from config if not provided
+    resolved_dir = resolve_validation_directory(directory, CONFIG_DIR, CONFIG_FILE)
 
-        if not config_path.exists():
-            typer.echo(
-                "Error: No directory specified and configuration not found.\n"
-                "Either provide a directory path or run 'prompt-unifier init' first.",
-                err=True,
-            )
-            raise typer.Exit(code=1)
-
-        config_manager = ConfigManager()
-        config = config_manager.load_config(config_path)
-
-        if config is None or config.storage_path is None:
-            typer.echo(
-                "Error: Storage path not configured.\n"
-                "Either provide a directory path or run 'prompt-unifier init' to set up storage.",
-                err=True,
-            )
-            raise typer.Exit(code=1)
-
-        directory = Path(config.storage_path).expanduser().resolve()
-
-        logger.info(f"Using storage path: {directory}")
-
-    # Validate content_type parameter
-    if content_type not in ["all", "prompts", "rules"]:
-        typer.echo(
-            f"Error: Invalid --type '{content_type}'. Must be 'all', 'prompts', or 'rules'",
-            err=True,
-        )
-        raise typer.Exit(code=1)
-
-    logger.debug(f"Validating content type: {content_type}")
-
-    # Determine which directory to validate based on content_type
-    if content_type == "prompts":
-        target_dir = directory / "prompts"
-        if not target_dir.exists():
-            typer.echo(f"Error: Prompts directory '{target_dir}' does not exist", err=True)
-            raise typer.Exit(code=1)
-        directories = [target_dir]
-    elif content_type == "rules":
-        target_dir = directory / "rules"
-        if not target_dir.exists():
-            typer.echo(f"Error: Rules directory '{target_dir}' does not exist", err=True)
-            raise typer.Exit(code=1)
-        directories = [target_dir]
-    else:
-        # Validate both prompts and rules
-        directories = []
-        prompts_dir = directory / "prompts"
-        rules_dir = directory / "rules"
-        if prompts_dir.exists():
-            directories.append(prompts_dir)
-        if rules_dir.exists():
-            directories.append(rules_dir)
-
-        if not directories:
-            typer.echo(
-                f"Error: Neither prompts/ nor rules/ directory exists in '{directory}'",
-                err=True,
-            )
-            raise typer.Exit(code=1)
+    # Determine which directories to validate based on content_type
+    directories = determine_validation_targets(resolved_dir, content_type)
 
     logger.info(f"Found {len(directories)} directory(ies) to validate")
 
@@ -318,40 +267,27 @@ def init(
         cwd = Path.cwd()
 
         # Create .prompt-unifier/ directory
-        prompt_unifier_dir = cwd / ".prompt-unifier"
+        prompt_unifier_dir = cwd / CONFIG_DIR
 
         # Track what was created vs what already existed
-        created_items = []
-        existing_items = []
+        created_items: list[str] = []
+        existing_items: list[str] = []
 
         # Determine storage path (custom or default)
-        if storage_path and isinstance(storage_path, str):
-            storage_dir = Path(storage_path).expanduser().resolve()
-        else:
-            # Try to read from existing config if available
-            config_path = prompt_unifier_dir / "config.yaml"
-            if config_path.exists():
-                config_manager = ConfigManager()
-                existing_config = config_manager.load_config(config_path)
-                if existing_config and existing_config.storage_path:
-                    storage_dir = Path(existing_config.storage_path).expanduser().resolve()
-                else:
-                    storage_dir = Path.home() / ".prompt-unifier" / "storage"
-            else:
-                storage_dir = Path.home() / ".prompt-unifier" / "storage"
+        config_path = prompt_unifier_dir / CONFIG_FILE
+        existing_config = None
+        if config_path.exists():
+            config_manager = ConfigManager()
+            existing_config = config_manager.load_config(config_path)
 
+        storage_dir = determine_storage_dir(storage_path, existing_config)
         logger.debug(f"Using storage path: {storage_dir}")
 
         # Create .prompt-unifier/ directory if it doesn't exist
-        if not prompt_unifier_dir.exists():
-            prompt_unifier_dir.mkdir(parents=True, exist_ok=True)
-            created_items.append(f"Created: {prompt_unifier_dir}")
-            logger.info(f"Created directory: {prompt_unifier_dir}")
-        else:
-            existing_items.append(f"Exists: {prompt_unifier_dir}")
+        create_directory_with_tracking(prompt_unifier_dir, created_items, existing_items)
 
         # Create config.yaml if it doesn't exist
-        config_path = prompt_unifier_dir / "config.yaml"
+        config_path = prompt_unifier_dir / CONFIG_FILE
         if not config_path.exists():
             config_manager = ConfigManager()
             empty_config = GitConfig(
@@ -368,28 +304,10 @@ def init(
         else:
             existing_items.append(f"Exists: {config_path}")
 
-        # Create centralized storage directory
-        if not storage_dir.exists():
-            storage_dir.mkdir(parents=True, exist_ok=True)
-            created_items.append(f"Created: {storage_dir}")
-            logger.info(f"Created storage directory: {storage_dir}")
-        else:
-            existing_items.append(f"Exists: {storage_dir}")
-
-        # Create prompts/ and rules/ directories in storage
-        prompts_dir = storage_dir / "prompts"
-        if not prompts_dir.exists():
-            prompts_dir.mkdir(parents=True, exist_ok=True)
-            created_items.append(f"Created: {prompts_dir}")
-        else:
-            existing_items.append(f"Exists: {prompts_dir}")
-
-        rules_dir = storage_dir / "rules"
-        if not rules_dir.exists():
-            rules_dir.mkdir(parents=True, exist_ok=True)
-            created_items.append(f"Created: {rules_dir}")
-        else:
-            existing_items.append(f"Exists: {rules_dir}")
+        # Create centralized storage directory and subdirectories
+        create_directory_with_tracking(storage_dir, created_items, existing_items)
+        create_directory_with_tracking(storage_dir / "prompts", created_items, existing_items)
+        create_directory_with_tracking(storage_dir / "rules", created_items, existing_items)
 
         # Create .gitignore template in storage directory if it doesn't exist
         gitignore_path = storage_dir / ".gitignore"
@@ -511,12 +429,9 @@ def sync(
         cwd = Path.cwd()
 
         # Validate that init has been run
-        config_path = cwd / ".prompt-unifier" / "config.yaml"
+        config_path = cwd / CONFIG_DIR / CONFIG_FILE
         if not config_path.exists():
-            typer.echo(
-                "Error: Configuration not found. Run 'prompt-unifier init' first.",
-                err=True,
-            )
+            typer.echo(ERROR_CONFIG_NOT_FOUND, err=True)
             raise typer.Exit(code=1)
 
         # Load configuration
@@ -531,36 +446,9 @@ def sync(
             )
             raise typer.Exit(code=1)
 
-        # Determine repository configurations
-        repo_configs: list[RepositoryConfig] = []
-
-        if repos is not None and len(repos) > 0:
-            # Use --repo flags if provided (CLI override)
-            for repo_url in repos:
-                repo_configs.append(RepositoryConfig(url=repo_url))
-            logger.info(f"Using {len(repo_configs)} repositories from CLI")
-        elif config.repos is not None and len(config.repos) > 0:
-            # Use repos from config.yaml
-            repo_configs = config.repos
-            logger.info(f"Using {len(repo_configs)} repositories from config")
-        else:
-            typer.echo(
-                "Error: No repository URLs configured. Use --repo flag to specify repositories.",
-                err=True,
-            )
-            raise typer.Exit(code=1)
-
-        # Determine storage path
-        if storage_path and isinstance(storage_path, str):
-            # Use --storage-path flag if provided
-            storage_dir = Path(storage_path).expanduser().resolve()
-        elif config.storage_path:
-            # Use storage_path from config
-            storage_dir = Path(config.storage_path).expanduser().resolve()
-        else:
-            # Use default storage path
-            storage_dir = Path.home() / ".prompt-unifier" / "storage"
-
+        # Determine repository configurations and storage path
+        repo_configs = determine_repo_configs(repos, config)
+        storage_dir = determine_storage_dir(storage_path, config)
         logger.debug(f"Storage path: {storage_dir}")
 
         # Display sync start message
@@ -663,12 +551,9 @@ def status() -> None:
         cwd = Path.cwd()
 
         # Validate that init has been run
-        config_path = cwd / ".prompt-unifier" / "config.yaml"
+        config_path = cwd / CONFIG_DIR / CONFIG_FILE
         if not config_path.exists():
-            typer.echo(
-                "Error: Configuration not found. Run 'prompt-unifier init' first.",
-                err=True,
-            )
+            typer.echo(ERROR_CONFIG_NOT_FOUND, err=True)
             raise typer.Exit(code=1)
 
         # Load configuration
@@ -683,63 +568,17 @@ def status() -> None:
             )
             raise typer.Exit(code=1)
 
-        # Display status header
-        console.print()
-        console.print("[bold]Prompt Unifier Status[/bold]")
-        console.print("━" * 80)
-
-        # Display storage path
+        # Get storage directory
         if config.storage_path:
             storage_dir = Path(config.storage_path).expanduser().resolve()
-            console.print(f"Storage: {storage_dir}")
         else:
-            # Default storage path
-            storage_dir = Path.home() / ".prompt-unifier" / "storage"
-            console.print(f"Storage: {storage_dir} [dim](default)[/dim]")
+            storage_dir = Path.home() / CONFIG_DIR / "storage"
 
-        # Display repository URLs (support multi-repo)
-        if config.repos and len(config.repos) > 0:
-            console.print(f"Repositories: {len(config.repos)}")
-            for idx, repo_config in enumerate(config.repos, 1):
-                console.print(f"  {idx}. {repo_config.url}")
-                if repo_config.branch:
-                    console.print(f"     Branch: {repo_config.branch}")
-
-                # Display commit info from repo_metadata if available
-                if hasattr(config, "repo_metadata") and config.repo_metadata:
-                    for metadata in config.repo_metadata:
-                        if metadata.get("url") == repo_config.url:
-                            if "commit" in metadata:
-                                console.print(f"     Commit: {metadata['commit']}")
-                            break
-        else:
-            console.print("Repositories: [yellow]Not configured[/yellow]")
-            console.print()
-            console.print("[dim]Run 'prompt-unifier sync --repo <git-url>' to configure[/dim]")
-            console.print()
-            # We continue to show deployment status even if no repo is configured
-
-        # Display last sync information with human-readable timestamp
-        if config.last_sync_timestamp:
-            human_readable = format_timestamp(config.last_sync_timestamp)
-            console.print(f"Last sync: {human_readable}")
-        else:
-            console.print("Last sync: [yellow]Never[/yellow]")
-
-        console.print()
-        console.print("[bold]Deployment Status[/bold]")
-        console.print("━" * 80)
+        # Display status header with storage and repository info
+        display_status_header(config, storage_dir)
 
         # Initialize handlers
-        registry = ToolHandlerRegistry()
-        # Register default handlers (currently only Continue)
-        # In a real plugin system, this would be dynamic
-        registry.register(ContinueToolHandler())
-
-        target_handlers = config.target_handlers or ["continue"]
-        handlers = registry.get_all_handlers()
-        active_handlers = [h for h in handlers if h.get_name() in target_handlers]
-
+        active_handlers = initialize_status_handlers(config)
         if not active_handlers:
             console.print("[yellow]No active handlers configured.[/yellow]")
             return
@@ -749,138 +588,17 @@ def status() -> None:
             console.print("[yellow]Storage directory does not exist.[/yellow]")
             return
 
-        parser = ContentFileParser()
-        content_files = []
-
-        prompts_dir = storage_dir / "prompts"
-        if prompts_dir.exists():
-            for md_file in prompts_dir.glob("**/*.md"):
-                try:
-                    parsed_content = parser.parse_file(md_file)
-                    content_files.append((parsed_content, "prompt", md_file))
-                except Exception as e:
-                    console.print(f"[yellow]Warning: Failed to parse {md_file}: {e}[/yellow]")
-
-        rules_dir = storage_dir / "rules"
-        if rules_dir.exists():
-            for md_file in rules_dir.glob("**/*.md"):
-                try:
-                    parsed_content = parser.parse_file(md_file)
-                    content_files.append((parsed_content, "rule", md_file))
-                except Exception as e:
-                    console.print(f"[yellow]Warning: Failed to parse {md_file}: {e}[/yellow]")
-
-        logger.debug(f"Found {len(content_files)} content files")
-
+        content_files = scan_content_files(storage_dir)
         if not content_files:
             console.print("[yellow]No prompts or rules found in storage.[/yellow]")
             return
 
         # Check status for each file against each handler
-        status_items = []
-
-        with console.status("[bold green]Checking deployment status...[/bold green]"):
-            for handler in active_handlers:
-                handler_name = handler.get_name()
-
-                for content, content_type, file_path in content_files:
-                    # Calculate relative path from prompts/ or rules/ directory
-                    relative_path = None
-                    if content_type == "prompt" and prompts_dir:
-                        try:
-                            relative_path = file_path.parent.relative_to(prompts_dir)
-                        except ValueError:
-                            # File is not under prompts_dir, use None (root)
-                            relative_path = None
-                    elif content_type == "rule" and rules_dir:
-                        try:
-                            relative_path = file_path.parent.relative_to(rules_dir)
-                        except ValueError:
-                            # File is not under rules_dir, use None (root)
-                            relative_path = None
-
-                    # Construct target_file here for use in status_items and potential error logging
-                    if content_type == "prompt":
-                        base_dir = handler.prompts_dir
-                    elif content_type == "rule":
-                        base_dir = handler.rules_dir
-                    else:
-                        base_dir = Path("")  # Should not happen, but a fallback
-
-                    filename = file_path.name
-                    if relative_path and str(relative_path) != ".":
-                        target_file = base_dir / relative_path / filename
-                    else:
-                        target_file = base_dir / filename
-
-                    try:
-                        # Prepare content for comparison
-                        # We need to process the content exactly as deploy() does
-                        # The parser returns PromptFile or RuleFile which have .content attribute
-                        if not hasattr(content, "content"):
-                            # Skip if content doesn't have body (shouldn't happen with parser)
-                            continue
-
-                        if content_type == "prompt":
-                            if isinstance(handler, ContinueToolHandler):
-                                # Type narrowing: we know content is PromptFile here
-                                from prompt_unifier.models.prompt import PromptFile
-
-                                if isinstance(content, PromptFile):
-                                    processed_content = handler._process_prompt_content(
-                                        content, content.content
-                                    )
-                                else:
-                                    continue
-                            else:
-                                # Fallback for other handlers if added
-                                processed_content = content.content
-                        elif content_type == "rule":
-                            if isinstance(handler, ContinueToolHandler):
-                                # Type narrowing: we know content is RuleFile here
-                                from prompt_unifier.models.rule import RuleFile
-
-                                if isinstance(content, RuleFile):
-                                    processed_content = handler._process_rule_content(
-                                        content, content.content
-                                    )
-                                else:
-                                    continue
-                            else:
-                                processed_content = content.content
-                        else:
-                            continue
-
-                        status = handler.get_deployment_status(
-                            content_name=content.title,
-                            content_type=content_type,
-                            source_content=processed_content,
-                            source_filename=file_path.name,
-                            relative_path=relative_path,  # Pass the relative_path
-                        )
-
-                        status_items.append(
-                            {
-                                "name": content.title,
-                                "type": content_type,
-                                "handler": handler_name,
-                                "status": status,
-                                "file_path": str(target_file),  # Add file_path here
-                                "details": "",
-                                # Could add details if get_deployment_status returned more info
-                            }
-                        )
-                    except Exception as e:
-                        status_items.append(
-                            {
-                                "name": content.title,
-                                "type": content_type,
-                                "handler": handler_name,
-                                "status": "failed",
-                                "file_path": str(target_file),  # Add file_path even on error
-                                "details": str(e),
-                            }
-                        )
+        prompts_dir = storage_dir / "prompts"
+        rules_dir = storage_dir / "rules"
+        status_items = check_all_content_status(
+            active_handlers, content_files, prompts_dir, rules_dir
+        )
 
         # Display status table
         formatter = RichTableFormatter()
@@ -922,7 +640,7 @@ def list_content(
     try:
         # Load configuration to get storage path
         cwd = Path.cwd()
-        config_path = cwd / ".prompt-unifier" / "config.yaml"
+        config_path = cwd / CONFIG_DIR / CONFIG_FILE
 
         if not config_path.exists():
             # Fallback to default storage if config doesn't exist (e.g. just initialized)
@@ -935,7 +653,7 @@ def list_content(
         if config and config.storage_path:
             storage_dir = Path(config.storage_path).expanduser().resolve()
         else:
-            storage_dir = Path.home() / ".prompt-unifier" / "storage"
+            storage_dir = Path.home() / CONFIG_DIR / "storage"
 
         logger.debug(f"Storage path: {storage_dir}")
 
@@ -1034,7 +752,7 @@ def deploy(
     try:
         # Load configuration
         cwd = Path.cwd()
-        config_path = cwd / ".prompt-unifier" / "config.yaml"
+        config_path = cwd / CONFIG_DIR / CONFIG_FILE
         if not config_path.exists():
             typer.echo("Error: Configuration not found. Run 'prompt-unifier init' first.", err=True)
             raise typer.Exit(code=1)
@@ -1058,65 +776,9 @@ def deploy(
         # Determine target handlers
         target_handlers = handlers if handlers is not None else config.target_handlers
 
-        # Helper function to resolve base_path for a specific handler
-        def resolve_handler_base_path(handler_name: str) -> Path | None:
-            """
-            Resolve base_path for a handler following precedence order:
-            1. CLI --base-path flag (highest priority)
-            2. config.handlers[handler_name].base_path
-            3. None (handler will default to Path.cwd())
-
-            Returns:
-                Path object or None (None means handler should use default)
-            """
-            # Priority 1: CLI flag
-            if base_path is not None:
-                return base_path
-
-            # Priority 2: Config handlers section
-            if config.handlers and handler_name in config.handlers:
-                handler_config = config.handlers[handler_name]
-                if handler_config.base_path:
-                    try:
-                        # Expand environment variables
-                        expanded_path = expand_env_vars(handler_config.base_path)
-                        return Path(expanded_path).expanduser().resolve()
-                    except ValueError as e:
-                        # Missing environment variable
-                        console.print(f"[red]Error: {e}[/red]")
-                        console.print(
-                            f"[yellow]Handler '{handler_name}' configuration contains "
-                            f"invalid environment variable in base_path[/yellow]"
-                        )
-                        raise typer.Exit(code=1) from e
-
-            # Priority 3: None (handler defaults to Path.cwd())
-            return None
-
         # Register handlers with resolved base paths
         registry: ToolHandlerRegistry = ToolHandlerRegistry()
-
-        # For each handler type, resolve and instantiate with appropriate base_path
-        # Currently only ContinueToolHandler is implemented
-        continue_base_path = resolve_handler_base_path("continue")
-
-        # Instantiate handler with base_path (or None to use default)
-        if continue_base_path is not None:
-            continue_handler = ContinueToolHandler(base_path=continue_base_path)
-        else:
-            continue_handler = ContinueToolHandler()
-
-        # Validate tool installation before deployment
-        try:
-            continue_handler.validate_tool_installation()
-        except (PermissionError, OSError) as e:
-            console.print("[red]Error: Failed to validate Continue installation[/red]")
-            console.print(f"[red]Details: {e}[/red]")
-            console.print(
-                "[yellow]Suggestion: Check that the base path is accessible and writable[/yellow]"
-            )
-            raise typer.Exit(code=1) from e
-
+        continue_handler = setup_continue_handler(base_path, config)
         registry.register(continue_handler)
 
         all_handlers = registry.get_all_handlers()
@@ -1126,70 +788,20 @@ def deploy(
                 typer.echo(f"Error: No matching handlers found for {target_handlers}.", err=True)
                 raise typer.Exit(code=1)
 
-        # Scan for content files (recursive discovery using glob("**/*.md"))
-        parser = ContentFileParser()
-        content_files = []
-
+        # Scan for content files
         prompts_dir = storage_dir / "prompts"
-        if prompts_dir.exists():
-            for md_file in prompts_dir.glob("**/*.md"):
-                try:
-                    parsed_content = parser.parse_file(md_file)
-                    content_files.append((parsed_content, "prompt", md_file))
-                except Exception as e:
-                    console.print(f"[yellow]Warning: Failed to parse {md_file}: {e}[/yellow]")
-
         rules_dir = storage_dir / "rules"
-        if rules_dir.exists():
-            for md_file in rules_dir.glob("**/*.md"):
-                try:
-                    parsed_content = parser.parse_file(md_file)
-                    content_files.append((parsed_content, "rule", md_file))
-                except Exception as e:
-                    console.print(f"[yellow]Warning: Failed to parse {md_file}: {e}[/yellow]")
-
+        content_files = scan_content_files(storage_dir)
         logger.info(f"Found {len(content_files)} content files")
 
         # Check for duplicate titles before filtering
-        title_to_files: dict[str, list[Path]] = {}
-        for parsed_content, _, file_path in content_files:
-            title = parsed_content.title
-            if title not in title_to_files:
-                title_to_files[title] = []
-            title_to_files[title].append(file_path)
-
-        # Detect duplicates
-        duplicates = {title: files for title, files in title_to_files.items() if len(files) > 1}
+        duplicates = check_duplicate_titles(content_files)
         if duplicates:
-            console.print("[red]Error: Duplicate titles detected![/red]")
-            console.print()
-            console.print("The following titles are used in multiple files:")
-            console.print()
-            for title, files in duplicates.items():
-                console.print(f"  Title: [yellow]{title}[/yellow]")
-                for file_path in files:
-                    console.print(f"    - {file_path}")
-                console.print()
-            console.print(
-                "[yellow]Please ensure each prompt/rule has a unique title "
-                "before deploying.[/yellow]"
-            )
+            display_duplicate_titles_error(duplicates)
             raise typer.Exit(code=1)
 
         # Filter by tags and name
-        filtered_files = []
-        for parsed_content, content_type, file_path in content_files:
-            # Filter by name if specified
-            if prompt_name and parsed_content.title != prompt_name:
-                continue
-            # Filter by tags if specified
-            if deploy_tags:
-                content_tags = getattr(parsed_content, "tags", []) or []
-                if not any(tag in content_tags for tag in deploy_tags):
-                    continue
-            filtered_files.append((parsed_content, content_type, file_path))
-
-        logger.debug(f"After filtering: {len(filtered_files)} files to deploy")
+        filtered_files = filter_content_files(content_files, prompt_name, deploy_tags)
 
         if not filtered_files:
             console.print("[yellow]No content files match the specified criteria.[/yellow]")
@@ -1198,113 +810,19 @@ def deploy(
         # Handle dry-run mode
         if dry_run:
             logger.info("Dry-run mode: showing preview")
-            _display_dry_run_preview(filtered_files, all_handlers, prompts_dir, rules_dir)
+            display_dry_run_preview(filtered_files, all_handlers, prompts_dir, rules_dir)
             return
 
         # Deploy to handlers
         total_deployed = 0
         total_cleaned = 0
-        all_verification_results: list[VerificationResult] = []
 
         for handler in all_handlers:
-            handler_name = handler.get_name()
-            console.print(f"Deploying to {handler_name}...")
-            logger.info(f"Deploying to handler: {handler_name}")
-            handler_deployed = 0
-            deployed_filenames: set[str] = set()
-
-            for parsed_content, content_type, file_path in filtered_files:
-                try:
-                    body = str(parsed_content.content) if hasattr(parsed_content, "content") else ""
-                    # Extract original filename to preserve it in deployment
-                    source_filename = file_path.name if file_path else None
-
-                    # Calculate relative path from prompts/ or rules/ directory
-                    relative_path = None
-                    if content_type == "prompt" and prompts_dir:
-                        try:
-                            relative_path = file_path.parent.relative_to(prompts_dir)
-                        except ValueError:
-                            # File is not under prompts_dir, use None (root)
-                            relative_path = None
-                    elif content_type == "rule" and rules_dir:
-                        try:
-                            relative_path = file_path.parent.relative_to(rules_dir)
-                        except ValueError:
-                            # File is not under rules_dir, use None (root)
-                            relative_path = None
-
-                    if content_type == "prompt":
-                        frontmatter_dict = parsed_content.model_dump(exclude={"content"})
-                        prompt_content = PromptFrontmatter(**frontmatter_dict)
-                        handler.deploy(
-                            prompt_content, content_type, body, source_filename, relative_path
-                        )
-                    elif content_type == "rule":
-                        frontmatter_dict = parsed_content.model_dump(exclude={"content"})
-                        rule_content = RuleFrontmatter(**frontmatter_dict)
-                        handler.deploy(
-                            rule_content, content_type, body, source_filename, relative_path
-                        )
-                    handler_deployed += 1
-                    total_deployed += 1
-                    # Track deployed filename for cleanup
-                    if source_filename:
-                        deployed_filenames.add(source_filename)
-                    console.print(
-                        f"  [green]✓[/green] Deployed {parsed_content.title} ({content_type})"
-                    )
-                    logger.debug(f"Deployed: {parsed_content.title} ({content_type})")
-
-                    # Call verification after successful deploy
-                    if hasattr(handler, "verify_deployment_with_details"):
-                        verification_result = handler.verify_deployment_with_details(
-                            parsed_content.title,
-                            content_type,
-                            source_filename or parsed_content.title,
-                            relative_path,  # Pass the relative_path
-                        )
-                        all_verification_results.append(verification_result)
-
-                except Exception as e:
-                    console.print(
-                        f"  [red]✗[/red] Failed to deploy {parsed_content.title} "
-                        f"({content_type}): {e}"
-                    )
-                    logger.error(f"Failed to deploy {parsed_content.title}: {e}")
-                    # Attempt rollback if available
-                    if hasattr(handler, "rollback"):
-                        try:
-                            handler.rollback()
-                            console.print("  [yellow]Rollback completed.[/yellow]")
-                        except Exception as rollback_e:
-                            console.print(f"  [red]Rollback failed: {rollback_e}[/red]")
-
-            # Clean orphaned files if requested
-            if clean and hasattr(handler, "clean_orphaned_files"):
-                console.print(f"Cleaning orphaned files in {handler_name}...")
-                try:
-                    removed = handler.clean_orphaned_files(deployed_filenames)
-                    total_cleaned += removed
-                    if removed > 0:
-                        console.print(f"  [yellow]Cleaned {removed} orphaned file(s)[/yellow]")
-                        logger.info(f"Cleaned {removed} orphaned files")
-                except Exception as e:
-                    console.print(f"  [red]✗[/red] Failed to clean orphaned files: {e}")
-
-            if handler_deployed > 0:
-                console.print(
-                    f"[green]✓ Deployment to {handler_name} completed "
-                    f"({handler_deployed} items).[/green]"
-                )
-            else:
-                console.print(f"[yellow]⚠ No items deployed to {handler_name}.[/yellow]")
-
-            # Display verification report for this handler if there are results
-            if all_verification_results and hasattr(handler, "display_verification_report"):
-                handler.display_verification_report(all_verification_results)
-                # Clear results for next handler
-                all_verification_results = []
+            handler_deployed, cleaned = deploy_to_single_handler(
+                handler, filtered_files, prompts_dir, rules_dir, clean
+            )
+            total_deployed += handler_deployed
+            total_cleaned += cleaned
 
         summary_parts = [f"{total_deployed} items deployed to {len(all_handlers)} handler(s)"]
         if clean and total_cleaned > 0:
@@ -1319,89 +837,3 @@ def deploy(
     except Exception as e:
         typer.echo(f"Error during deployment: {e}", err=True)
         raise typer.Exit(code=1) from e
-
-
-def _display_dry_run_preview(
-    filtered_files: list[tuple[Any, str, Path]],
-    all_handlers: list[Any],
-    prompts_dir: Path,
-    rules_dir: Path,
-) -> None:
-    """Display a dry-run preview of what would be deployed.
-
-    Args:
-        filtered_files: List of (parsed_content, content_type, file_path) tuples.
-        all_handlers: List of handler objects.
-        prompts_dir: Path to the prompts directory.
-        rules_dir: Path to the rules directory.
-    """
-    console.print()
-    console.print("[bold]Dry-run preview - No files will be modified[/bold]")
-    console.print("━" * 80)
-
-    for handler in all_handlers:
-        handler_name = handler.get_name()
-        console.print(f"\n[bold]Handler: {handler_name}[/bold]")
-
-        # Check if target directories exist
-        if hasattr(handler, "prompts_dir") and not handler.prompts_dir.exists():
-            console.print(
-                f"[yellow]Warning: Target prompts directory does not exist: "
-                f"{handler.prompts_dir}[/yellow]"
-            )
-        if hasattr(handler, "rules_dir") and not handler.rules_dir.exists():
-            console.print(
-                f"[yellow]Warning: Target rules directory does not exist: "
-                f"{handler.rules_dir}[/yellow]"
-            )
-
-        # Build preview table
-        table = Table(show_header=True, header_style="bold")
-        table.add_column("Source Path", style="dim")
-        table.add_column("Target Path", style="dim")
-        table.add_column("Type")
-        table.add_column("Title")
-
-        for parsed_content, content_type, file_path in filtered_files:
-            # Determine target path
-            source_filename = file_path.name
-
-            # Calculate relative path
-            relative_path = None
-            if content_type == "prompt" and prompts_dir:
-                try:
-                    relative_path = file_path.parent.relative_to(prompts_dir)
-                except ValueError:
-                    relative_path = None
-            elif content_type == "rule" and rules_dir:
-                try:
-                    relative_path = file_path.parent.relative_to(rules_dir)
-                except ValueError:
-                    relative_path = None
-
-            # Determine target path based on handler
-            if content_type == "prompt" and hasattr(handler, "prompts_dir"):
-                if relative_path and str(relative_path) != ".":
-                    target_path = handler.prompts_dir / relative_path / source_filename
-                else:
-                    target_path = handler.prompts_dir / source_filename
-            elif content_type == "rule" and hasattr(handler, "rules_dir"):
-                if relative_path and str(relative_path) != ".":
-                    target_path = handler.rules_dir / relative_path / source_filename
-                else:
-                    target_path = handler.rules_dir / source_filename
-            else:
-                target_path = Path("N/A")
-
-            table.add_row(
-                str(file_path),
-                str(target_path),
-                content_type,
-                parsed_content.title,
-            )
-
-        console.print(table)
-
-    console.print()
-    console.print(f"[bold]Total:[/bold] {len(filtered_files)} file(s) would be deployed")
-    console.print()

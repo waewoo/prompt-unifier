@@ -27,9 +27,9 @@ def expand_env_vars(path: str) -> str:
         return os.path.normpath(path)
 
     # Patterns for $VAR/${VAR} and %VAR%
-    dollar_pattern = re.compile(r"\$\{([A-Za-z_][A-Za-z0-9_]*)\}|\$([A-Za-z_][A-Za-z0-9_]*)")
+    dollar_pattern = re.compile(r"\$\{([A-Za-z_]\w*)\}|\$([A-Za-z_]\w*)")
     # Pattern for %VAR% (Windows)
-    percent_pattern = re.compile(r"%([A-Za-z_][A-Za-z0-9_]*)%")
+    percent_pattern = re.compile(r"%([A-Za-z_]\w*)%")
 
     def replace_var(match: re.Match[str]) -> str:
         var_name = match.group(1) if match.group(1) else match.group(2)
