@@ -23,6 +23,7 @@ This project and everyone participating in it is governed by a [Code of Conduct]
 - **Suggesting Enhancements**: Have an idea for a new feature or an improvement? Open an issue with a clear description of your suggestion.
 - **Writing Documentation**: Good documentation is crucial. We welcome improvements to the README, docstrings, or other docs.
 - **Submitting Code**: Fix a bug or implement a new feature by submitting a Pull Request.
+- **Adding Tool Handlers**: Want to add support for a new AI tool? See the [Adding New Tool Handlers](DEVELOPMENT.md#adding-new-tool-handlers) guide.
 
 ## Submitting a Pull Request
 
@@ -84,3 +85,14 @@ chore(release): bump version to 0.5.0
 ## Development and Testing
 
 For a detailed guide on setting up the environment, running tests, and understanding the project architecture, please refer to the [**DEVELOPMENT.md**](DEVELOPMENT.md) file.
+
+### Adding New Tool Handlers
+
+If you want to add support for a new AI tool (like Cursor, Windsurf, or Aider), we have a comprehensive step-by-step guide that covers:
+
+- Understanding the ToolHandler Protocol
+- Creating a complete handler implementation
+- Writing tests with pytest
+- Integrating with the CLI deploy command
+
+See the [**Adding New Tool Handlers**](DEVELOPMENT.md#adding-new-tool-handlers) section in DEVELOPMENT.md for the full tutorial.
