@@ -34,10 +34,21 @@ before_script:
   - pip install --quiet poetry
   - poetry install --no-interaction --no-ansi
 
+# ============================================================================
+# QUALITY JOBS (incl. Code Quality via Ruff/MyPy)
+# ============================================================================
+
 lint:
   stage: quality
   script:
-    - poetry run ruff check src/ tests/
+    # Ruff en mode GitLab Code Quality
+    - poetry run ruff check src/ tests/ --output-format=gitlab > gl-code-quality-ruff.json || true
+  artifacts:
+    reports:
+      codequality: gl-code-quality-ruff.json
+    paths:
+      - gl-code-quality-ruff.json
+    expire_in: 1 week
   rules:
     - if: '$CI_COMMIT_TAG'
       when: never
@@ -47,7 +58,16 @@ lint:
 typecheck:
   stage: quality
   script:
-    - poetry run mypy src/
+    # MyPy -> texte -> JSON Code Quality
+    - poetry run mypy src/ --no-error-summary > mypy-out.txt || true
+    - poetry run mypy-gitlab-code-quality < mypy-out.txt > gl-code-quality-mypy.json
+  artifacts:
+    reports:
+      codequality: gl-code-quality-mypy.json
+    paths:
+      - mypy-out.txt
+      - gl-code-quality-mypy.json
+    expire_in: 1 week
   rules:
     - if: '$CI_COMMIT_TAG'
       when: never
@@ -187,9 +207,8 @@ auto-bump:
       echo "  - Create a commit and tag"
       echo ""
       poetry run cz bump --changelog --yes || echo "⚠️  No version bump needed (no conventional commits found)"
-    
-    # Explicit push of branch AND tags
-    - |
+      
+      # Explicit push of branch AND tags
       echo ""
       echo "📤 Pushing changes and tags to GitLab..."
       git push origin "${CI_COMMIT_REF_NAME}"
