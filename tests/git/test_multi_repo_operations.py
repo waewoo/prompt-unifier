@@ -249,10 +249,45 @@ class TestConflictDetection:
         mock_get_commit.side_effect = ["abc1234", "def5678"]
 
         # Mock extract to copy files from temp to storage
-        def extract_side_effect(source: Path, target: Path) -> None:
+        def extract_side_effect(
+            source: Path,
+            target: Path,
+            files_to_copy: list[str] | None = None,
+        ) -> None:
             import shutil
 
-            shutil.copytree(source / "prompts", target / "prompts", dirs_exist_ok=True)
+            if files_to_copy:
+                logger = logging.getLogger(__name__)
+                for rel_file_path_str in files_to_copy:
+                    source_file = source / rel_file_path_str
+                    if source_file.is_file():
+                        target_file_path = target / rel_file_path_str
+                        target_file_path.parent.mkdir(parents=True, exist_ok=True)
+                        if target_file_path.exists():
+                            logger.info(
+                                f"File overridden during multi-repo sync: {rel_file_path_str}"
+                            )
+                        shutil.copy2(source_file, target_file_path)
+            else:
+                # Fallback: copy entire prompts/ directory (as in original)
+                source_prompts = source / "prompts"
+                if source_prompts.exists() and source_prompts.is_dir():
+                    target_prompts = target / "prompts"
+                    logger = logging.getLogger(__name__)
+                    import os
+
+                    conflicts = []
+                    for root, _dirs, files in os.walk(source_prompts):
+                        for file_name in files:
+                            source_file = Path(root) / file_name
+                            rel_path = source_file.relative_to(source)
+                            target_file = target / rel_path
+                            if target_file.exists():
+                                conflicts.append(str(rel_path))
+                    if conflicts:
+                        for conflict in conflicts:
+                            logger.info(f"File overridden during multi-repo sync: {conflict}")
+                    shutil.copytree(source_prompts, target_prompts, dirs_exist_ok=True)
 
         mock_extract.side_effect = extract_side_effect
 
@@ -264,4 +299,4 @@ class TestConflictDetection:
 
         # Verify conflict message was logged
         log_output = caplog.text.lower()
-        assert "overridden" in log_output or "conflict" in log_output
+        assert any(word in log_output for word in ("overridden", "conflict"))

@@ -63,6 +63,9 @@ class RichTableFormatter:
         table.add_column("Type", style="blue")
         table.add_column("Handler")
         table.add_column("Status")
+        table.add_column(
+            "File Path", style="dim", min_width=40, overflow="fold"
+        )  # Adjusted column definition
         table.add_column("Details", style="dim")
 
         for item in items:
@@ -80,6 +83,7 @@ class RichTableFormatter:
                 item["type"],
                 item["handler"],
                 f"[{status_style}]{status.upper()}[/{status_style}]",
+                item.get("file_path", ""),
                 item.get("details", ""),
             )
 

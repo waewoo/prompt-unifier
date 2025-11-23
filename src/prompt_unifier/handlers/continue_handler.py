@@ -622,6 +622,7 @@ class ContinueToolHandler(ToolHandler):
         content_type: str,
         source_content: str,
         source_filename: str | None = None,
+        relative_path: Path | None = None,  # Added relative_path parameter
     ) -> str:
         """
         Check the deployment status of a content item.
@@ -631,6 +632,7 @@ class ContinueToolHandler(ToolHandler):
             content_type: Type of content ("prompt" or "rule").
             source_content: The expected content string (processed).
             source_filename: Optional specific filename if different from title.
+            relative_path: Relative subdirectory path where the file was deployed.
 
         Returns:
             Status string: "synced", "outdated", "missing", or "error".
@@ -643,13 +645,18 @@ class ContinueToolHandler(ToolHandler):
         else:
             filename = f"{content_name}.md"
 
-        # Determine target directory
+        # Determine target directory and file path, accounting for relative_path
         if content_type == "prompt":
-            target_file = self.prompts_dir / filename
+            base_dir = self.prompts_dir
         elif content_type == "rule":
-            target_file = self.rules_dir / filename
+            base_dir = self.rules_dir
         else:
             return "error"
+
+        if relative_path and str(relative_path) != ".":
+            target_file = base_dir / relative_path / filename
+        else:
+            target_file = base_dir / filename
 
         # Check existence
         if not target_file.exists():

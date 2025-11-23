@@ -7,8 +7,12 @@ class ToolHandler(Protocol):
     """
     Protocol for defining a ToolHandler.
 
-    Any class implementing this protocol must provide the specified methods.
+    Any class implementing this protocol must provide the specified methods and attributes.
     """
+
+    # Directory attributes for prompts and rules
+    prompts_dir: Path
+    rules_dir: Path
 
     def deploy(
         self,
@@ -74,6 +78,7 @@ class ToolHandler(Protocol):
         content_type: str,
         source_content: str,
         source_filename: str | None = None,
+        relative_path: Path | None = None,
     ) -> str:
         """
         Check the deployment status of a content item.
@@ -83,6 +88,8 @@ class ToolHandler(Protocol):
             content_type: Type of content ("prompt" or "rule").
             source_content: The expected content string (processed).
             source_filename: Optional specific filename if different from title.
+            relative_path: Relative subdirectory path where the file was deployed.
+
 
         Returns:
             Status string: "synced", "outdated", "missing", or "error".

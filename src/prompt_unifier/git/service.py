@@ -300,43 +300,51 @@ class GitService:
         full_sha: str = repo.head.commit.hexsha
         return full_sha[:7]
 
-    def extract_prompts_dir(self, repo_path: Path, target_path: Path) -> None:
-        """Extract prompts/ and rules/ directories from cloned repo to target location.
+    def extract_prompts_dir(
+        self,
+        repo_path: Path,
+        target_path: Path,
+        files_to_copy: list[str] | None = None,
+    ) -> None:
+        """Extract prompts/ and rules/ directories or specific files from cloned repo to target.
 
-        This method validates that the prompts/ directory exists in the
-        cloned repository, then copies it to the target location using
-        shutil.copytree with dirs_exist_ok=True to overwrite existing files.
-        If a rules/ directory exists in the repository, it is also copied.
+        If `files_to_copy` is provided, only those specific files are copied, preserving their
+        relative subdirectory structure. Otherwise, the entire prompts/ and rules/ directories
+        are copied.
 
         Args:
             repo_path: Path to the cloned repository
-            target_path: Path where prompts/ and rules/ should be copied to
-
-        Raises:
-            ValueError: If prompts/ directory not found in repository
-
-        Examples:
-            >>> service = GitService()
-            >>> service.extract_prompts_dir(Path("/tmp/repo"), Path("/app"))
+            target_path: Path where prompts/ and rules/ (or specific files) should be copied to
+            files_to_copy: Optional list of relative file paths (from repo_path) to copy.
         """
-        # Validate that prompts/ directory exists in repository (required)
-        source_prompts = repo_path / "prompts"
+        if files_to_copy:
+            for rel_file_path_str in files_to_copy:
+                source_file = repo_path / rel_file_path_str
+                if source_file.is_file():
+                    # Construct target path, preserving subdirectory structure
+                    target_file_path = target_path / rel_file_path_str
+                    target_file_path.parent.mkdir(parents=True, exist_ok=True)
+                    # Ensure parent directories exist
+                    shutil.copy2(source_file, target_file_path)  # copy2 preserves metadata
+                else:
+                    logger.warning(
+                        f"File '{rel_file_path_str}' specified for copy not found in '{repo_path}'"
+                    )
+        else:
+            # Fallback to current behavior: copy entire directories
+            source_prompts = repo_path / "prompts"
+            if not source_prompts.exists() or not source_prompts.is_dir():
+                raise ValueError(
+                    f"Repository does not contain a prompts/ directory. "
+                    f"Expected at: {source_prompts}"
+                )
+            target_prompts = target_path / "prompts"
+            shutil.copytree(source_prompts, target_prompts, dirs_exist_ok=True)
 
-        if not source_prompts.exists() or not source_prompts.is_dir():
-            raise ValueError(
-                f"Repository does not contain a prompts/ directory. "
-                f"Expected at: {source_prompts}"
-            )
-
-        # Copy prompts/ directory to target location
-        target_prompts = target_path / "prompts"
-        shutil.copytree(source_prompts, target_prompts, dirs_exist_ok=True)
-
-        # Copy rules/ directory if it exists (optional)
-        source_rules = repo_path / "rules"
-        if source_rules.exists() and source_rules.is_dir():
-            target_rules = target_path / "rules"
-            shutil.copytree(source_rules, target_rules, dirs_exist_ok=True)
+            source_rules = repo_path / "rules"
+            if source_rules.exists() and source_rules.is_dir():
+                target_rules = target_path / "rules"
+                shutil.copytree(source_rules, target_rules, dirs_exist_ok=True)
 
     def check_remote_updates(self, repo_url: str, last_commit: str) -> tuple[bool, int]:
         """Check if remote repository has updates since last commit.
@@ -582,23 +590,26 @@ class GitService:
                         include_patterns=include_patterns,
                         exclude_patterns=exclude_patterns,
                     )
-                    logger.debug(f"  Files: {len(filtered_files)} (filtered from {len(all_files)})")
+                    debug_msg = f"  Files: {len(filtered_files)} " f"(total: {len(all_files)})"
+                    logger.debug(debug_msg)
+
                 else:
                     filtered_files = all_files
                     logger.debug(f"  Files: {len(filtered_files)}")
 
                 # Extract to storage (this will overwrite existing files - last-wins)
-                self.extract_prompts_dir(temp_path, storage_path)
+                self.extract_prompts_dir(temp_path, storage_path, files_to_copy=filtered_files)
 
                 # Track files and detect conflicts
                 for rel_path in filtered_files:
                     # Check if file was already synced from another repo
                     if rel_path in file_sources:
                         previous_source = file_sources[rel_path]
-                        logger.info(
-                            f"  ⚠️  Conflict: '{rel_path}' from "
-                            f"{previous_source} overridden by {url}"
+                        conflict_msg = (
+                            f"  ⚠️  Conflict: '{rel_path}' from {previous_source} "
+                            f"overridden by {url}"
                         )
+                        logger.info(conflict_msg)
 
                     # Update file source tracking
                     file_sources[rel_path] = url

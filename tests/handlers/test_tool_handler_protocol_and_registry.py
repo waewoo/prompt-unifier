@@ -1,3 +1,4 @@
+from pathlib import Path
 from typing import Any
 
 import pytest
@@ -21,6 +22,8 @@ class MockToolHandler:
         self._name = name
         self._status = status
         self.deployed_prompts: list[Any] = []
+        self.prompts_dir = Path(".")
+        self.rules_dir = Path(".")
 
     def deploy(
         self,

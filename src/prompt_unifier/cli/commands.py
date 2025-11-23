@@ -784,6 +784,35 @@ def status() -> None:
                 handler_name = handler.get_name()
 
                 for content, content_type, file_path in content_files:
+                    # Calculate relative path from prompts/ or rules/ directory
+                    relative_path = None
+                    if content_type == "prompt" and prompts_dir:
+                        try:
+                            relative_path = file_path.parent.relative_to(prompts_dir)
+                        except ValueError:
+                            # File is not under prompts_dir, use None (root)
+                            relative_path = None
+                    elif content_type == "rule" and rules_dir:
+                        try:
+                            relative_path = file_path.parent.relative_to(rules_dir)
+                        except ValueError:
+                            # File is not under rules_dir, use None (root)
+                            relative_path = None
+
+                    # Construct target_file here for use in status_items and potential error logging
+                    if content_type == "prompt":
+                        base_dir = handler.prompts_dir
+                    elif content_type == "rule":
+                        base_dir = handler.rules_dir
+                    else:
+                        base_dir = Path("")  # Should not happen, but a fallback
+
+                    filename = file_path.name
+                    if relative_path and str(relative_path) != ".":
+                        target_file = base_dir / relative_path / filename
+                    else:
+                        target_file = base_dir / filename
+
                     try:
                         # Prepare content for comparison
                         # We need to process the content exactly as deploy() does
@@ -827,6 +856,7 @@ def status() -> None:
                             content_type=content_type,
                             source_content=processed_content,
                             source_filename=file_path.name,
+                            relative_path=relative_path,  # Pass the relative_path
                         )
 
                         status_items.append(
@@ -835,6 +865,7 @@ def status() -> None:
                                 "type": content_type,
                                 "handler": handler_name,
                                 "status": status,
+                                "file_path": str(target_file),  # Add file_path here
                                 "details": "",
                                 # Could add details if get_deployment_status returned more info
                             }
@@ -846,6 +877,7 @@ def status() -> None:
                                 "type": content_type,
                                 "handler": handler_name,
                                 "status": "failed",
+                                "file_path": str(target_file),  # Add file_path even on error
                                 "details": str(e),
                             }
                         )

@@ -1,6 +1,7 @@
 """Tests for ToolHandler protocol."""
 
 from abc import ABC, abstractmethod
+from pathlib import Path
 from typing import Any, Protocol
 
 import pytest
@@ -13,12 +14,16 @@ from prompt_unifier.models.rule import RuleFrontmatter
 class MockValidHandler:
     """Mock handler that respects the ToolHandler protocol."""
 
+    prompts_dir = Path(".")
+    rules_dir = Path(".")
+
     def deploy(
         self,
         content: Any,
         content_type: str,
         body: str = "",
         source_filename: str | None = None,
+        relative_path: Path | None = None,
     ) -> None:
         """Implement the deploy method of the protocol."""
         pass
@@ -44,6 +49,7 @@ class MockValidHandler:
         content_type: str,
         source_content: str,
         source_filename: str | None = None,
+        relative_path: Path | None = None,
     ) -> str:
         """Implement the get_deployment_status method of the protocol."""
         return "synced"
@@ -70,6 +76,7 @@ class MockHandlerMissingDeploy:
         content_type: str,
         source_content: str,
         source_filename: str | None = None,
+        relative_path: Path | None = None,
     ) -> str:
         return "synced"
 
@@ -77,7 +84,17 @@ class MockHandlerMissingDeploy:
 class CompleteHandler:
     """Complete handler that implements all protocol elements."""
 
-    def deploy(self, content: any, content_type: str, body: str = "") -> None:
+    prompts_dir = Path(".")
+    rules_dir = Path(".")
+
+    def deploy(
+        self,
+        content: Any,
+        content_type: str,
+        body: str = "",
+        source_filename: str | None = None,
+        relative_path: Path | None = None,
+    ) -> None:
         pass
 
     def get_status(self) -> str:
@@ -98,6 +115,7 @@ class CompleteHandler:
         content_type: str,
         source_content: str,
         source_filename: str | None = None,
+        relative_path: Path | None = None,
     ) -> str:
         return "synced"
 
@@ -221,12 +239,16 @@ class TestProtocol:
         """Test that protocol can be used to check inheritance."""
 
         class CompleteHandler:
+            prompts_dir = Path(".")
+            rules_dir = Path(".")
+
             def deploy(
                 self,
                 content: Any,
                 content_type: str,
                 body: str = "",
                 source_filename: str | None = None,
+                relative_path: Path | None = None,
             ) -> None:
                 pass
 
@@ -248,6 +270,7 @@ class TestProtocol:
                 content_type: str,
                 source_content: str,
                 source_filename: str | None = None,
+                relative_path: Path | None = None,
             ) -> str:
                 return "synced"
 
@@ -264,12 +287,16 @@ class TestProtocol:
         """Test detailed method signatures of the protocol."""
 
         class TestHandler:
+            prompts_dir = Path(".")
+            rules_dir = Path(".")
+
             def deploy(
                 self,
                 content: Any,
                 content_type: str,
                 body: str = "",
                 source_filename: str | None = None,
+                relative_path: Path | None = None,
             ) -> None:
                 # Test that method can accept different content types
                 if content_type == "prompt" or content_type == "rule":
@@ -293,6 +320,7 @@ class TestProtocol:
                 content_type: str,
                 source_content: str,
                 source_filename: str | None = None,
+                relative_path: Path | None = None,
             ) -> str:
                 return "synced"
 
@@ -315,12 +343,16 @@ class TestProtocol:
         """Test protocol with different possible return types."""
 
         class HandlerWithDifferentReturns:
+            prompts_dir = Path(".")
+            rules_dir = Path(".")
+
             def deploy(
                 self,
                 content: Any,
                 content_type: str,
                 body: str = "",
                 source_filename: str | None = None,
+                relative_path: Path | None = None,
             ) -> None:
                 return None  # Must return None
 
@@ -342,6 +374,7 @@ class TestProtocol:
                 content_type: str,
                 source_content: str,
                 source_filename: str | None = None,
+                relative_path: Path | None = None,
             ) -> str:
                 return "synced"
 
@@ -358,12 +391,16 @@ class TestProtocol:
         """Test that protocol can handle errors."""
 
         class HandlerWithErrors:
+            prompts_dir = Path(".")
+            rules_dir = Path(".")
+
             def deploy(
                 self,
                 content: Any,
                 content_type: str,
                 body: str = "",
                 source_filename: str | None = None,
+                relative_path: Path | None = None,
             ) -> None:
                 if content_type not in ["prompt", "rule"]:
                     raise ValueError(f"Invalid content type: {content_type}")
@@ -386,6 +423,7 @@ class TestProtocol:
                 content_type: str,
                 source_content: str,
                 source_filename: str | None = None,
+                relative_path: Path | None = None,
             ) -> str:
                 return "synced"
 
@@ -411,7 +449,17 @@ class TestProtocol:
                 return "base_name"
 
         class CompleteHandler(BaseHandler):
-            def deploy(self, content: Any, content_type: str, body: str = "") -> None:
+            prompts_dir = Path(".")
+            rules_dir = Path(".")
+
+            def deploy(
+                self,
+                content: Any,
+                content_type: str,
+                body: str = "",
+                source_filename: str | None = None,
+                relative_path: Path | None = None,
+            ) -> None:
                 pass
 
             def clean_orphaned_files(self, deployed_filenames: set[str]) -> int:
@@ -423,6 +471,7 @@ class TestProtocol:
                 content_type: str,
                 source_content: str,
                 source_filename: str | None = None,
+                relative_path: Path | None = None,
             ) -> str:
                 return "synced"
 
@@ -436,6 +485,9 @@ class TestProtocol:
         """Test protocol with properties."""
 
         class HandlerWithProperties:
+            prompts_dir = Path(".")
+            rules_dir = Path(".")
+
             def __init__(self):
                 self._status = "initial"
                 self._name = "prop_handler"
@@ -446,6 +498,7 @@ class TestProtocol:
                 content_type: str,
                 body: str = "",
                 source_filename: str | None = None,
+                relative_path: Path | None = None,
             ) -> None:
                 pass
 
@@ -469,6 +522,7 @@ class TestProtocol:
                 content_type: str,
                 source_content: str,
                 source_filename: str | None = None,
+                relative_path: Path | None = None,
             ) -> str:
                 return "synced"
 
@@ -481,12 +535,16 @@ class TestProtocol:
         """Test protocol with static methods."""
 
         class HandlerWithStaticMethods:
+            prompts_dir = Path(".")
+            rules_dir = Path(".")
+
             def deploy(
                 self,
                 content: Any,
                 content_type: str,
                 body: str = "",
                 source_filename: str | None = None,
+                relative_path: Path | None = None,
             ) -> None:
                 pass
 
@@ -510,6 +568,7 @@ class TestProtocol:
                 content_type: str,
                 source_content: str,
                 source_filename: str | None = None,
+                relative_path: Path | None = None,
             ) -> str:
                 return "synced"
 
@@ -526,6 +585,8 @@ class TestProtocol:
         """Test protocol with class methods."""
 
         class HandlerWithClassMethods:
+            prompts_dir = Path(".")
+            rules_dir = Path(".")
             _status = "class_status"
             _name = "class_name"
 
@@ -535,6 +596,7 @@ class TestProtocol:
                 content_type: str,
                 body: str = "",
                 source_filename: str | None = None,
+                relative_path: Path | None = None,
             ) -> None:
                 pass
 
@@ -558,6 +620,7 @@ class TestProtocol:
                 content_type: str,
                 source_content: str,
                 source_filename: str | None = None,
+                relative_path: Path | None = None,
             ) -> str:
                 return "synced"
 
@@ -574,6 +637,9 @@ class TestProtocol:
 
         # Test with a class that has methods but not the right signatures
         class WrongSignatureHandler:
+            prompts_dir = Path(".")
+            rules_dir = Path(".")
+
             def deploy(self):  # Missing parameters
                 pass
 
@@ -595,6 +661,7 @@ class TestProtocol:
                 content_type: str,
                 source_content: str,
                 source_filename: str | None = None,
+                relative_path: Path | None = None,
             ) -> str:
                 return "synced"
 
@@ -607,6 +674,9 @@ class TestProtocol:
         """Test protocol with abstract methods."""
 
         class AbstractHandler(ABC):
+            prompts_dir = Path(".")
+            rules_dir = Path(".")
+
             @abstractmethod
             def deploy(
                 self,
@@ -614,6 +684,7 @@ class TestProtocol:
                 content_type: str,
                 body: str = "",
                 source_filename: str | None = None,
+                relative_path: Path | None = None,
             ) -> None:
                 pass
 
@@ -641,6 +712,7 @@ class TestProtocol:
                 content_type: str,
                 source_content: str,
                 source_filename: str | None = None,
+                relative_path: Path | None = None,
             ) -> str:
                 return "synced"
 
@@ -653,6 +725,7 @@ class TestProtocol:
                 content_type: str,
                 body: str = "",
                 source_filename: str | None = None,
+                relative_path: Path | None = None,
             ) -> None:
                 pass
 
@@ -674,6 +747,7 @@ class TestProtocol:
                 content_type: str,
                 source_content: str,
                 source_filename: str | None = None,
+                relative_path: Path | None = None,
             ) -> str:
                 return "synced"
 
@@ -717,12 +791,16 @@ class TestProtocol:
         T = TypeVar("T")
 
         class GenericHandler(Generic[T]):
+            prompts_dir = Path(".")
+            rules_dir = Path(".")
+
             def deploy(
                 self,
                 content: T,
                 content_type: str,
                 body: str = "",
                 source_filename: str | None = None,
+                relative_path: Path | None = None,
             ) -> None:
                 pass
 
@@ -744,6 +822,7 @@ class TestProtocol:
                 content_type: str,
                 source_content: str,
                 source_filename: str | None = None,
+                relative_path: Path | None = None,
             ) -> str:
                 return "synced"
 
@@ -762,12 +841,16 @@ class TestProtocol:
                 return "b"
 
         class MultiInheritanceHandler(MixinA, MixinB):
+            prompts_dir = Path(".")
+            rules_dir = Path(".")
+
             def deploy(
                 self,
                 content: Any,
                 content_type: str,
                 body: str = "",
                 source_filename: str | None = None,
+                relative_path: Path | None = None,
             ) -> None:
                 pass
 
@@ -789,6 +872,7 @@ class TestProtocol:
                 content_type: str,
                 source_content: str,
                 source_filename: str | None = None,
+                relative_path: Path | None = None,
             ) -> str:
                 return "synced"
 
@@ -801,6 +885,9 @@ class TestProtocol:
         """Test that protocol can handle exceptions in methods."""
 
         class ExceptionHandler:
+            prompts_dir = Path(".")
+            rules_dir = Path(".")
+
             def __init__(self, should_raise=False):
                 self.should_raise = should_raise
 
@@ -810,6 +897,7 @@ class TestProtocol:
                 content_type: str,
                 body: str = "",
                 source_filename: str | None = None,
+                relative_path: Path | None = None,
             ) -> None:
                 if self.should_raise:
                     raise RuntimeError("Deployment failed")
@@ -839,6 +927,7 @@ class TestProtocol:
                 content_type: str,
                 source_content: str,
                 source_filename: str | None = None,
+                relative_path: Path | None = None,
             ) -> str:
                 return "synced"
 
@@ -871,7 +960,7 @@ class TestProtocol:
 
         # A lambda function cannot implement a protocol
         # because it cannot have multiple methods
-        def lambda_deploy(content, content_type, body=""):
+        def lambda_deploy(content, content_type, body="", source_filename=None, relative_path=None):
             return None
 
         def lambda_get_status():
@@ -887,12 +976,14 @@ class TestProtocol:
             return 0
 
         def lambda_get_deployment_status(
-            content_name, content_type, source_content, source_filename=None
+            content_name, content_type, source_content, source_filename=None, relative_path=None
         ):
             return "synced"
 
         # Create a class that uses lambdas
         class LambdaHandler:
+            prompts_dir = Path(".")
+            rules_dir = Path(".")
             deploy = lambda_deploy
             get_status = lambda_get_status
             get_name = lambda_get_name
@@ -909,12 +1000,16 @@ class TestProtocol:
 
         class OuterClass:
             class NestedHandler:
+                prompts_dir = Path(".")
+                rules_dir = Path(".")
+
                 def deploy(
                     self,
                     content: Any,
                     content_type: str,
                     body: str = "",
                     source_filename: str | None = None,
+                    relative_path: Path | None = None,
                 ) -> None:
                     pass
 
@@ -936,6 +1031,7 @@ class TestProtocol:
                     content_type: str,
                     source_content: str,
                     source_filename: str | None = None,
+                    relative_path: Path | None = None,
                 ) -> str:
                     return "synced"
 
@@ -953,12 +1049,16 @@ class TestProtocol:
                 return super().__new__(cls, name, bases, namespace)
 
         class MetaHandler(metaclass=HandlerMeta):
+            prompts_dir = Path(".")
+            rules_dir = Path(".")
+
             def deploy(
                 self,
                 content: Any,
                 content_type: str,
                 body: str = "",
                 source_filename: str | None = None,
+                relative_path: Path | None = None,
             ) -> None:
                 pass
 
@@ -980,6 +1080,7 @@ class TestProtocol:
                 content_type: str,
                 source_content: str,
                 source_filename: str | None = None,
+                relative_path: Path | None = None,
             ) -> str:
                 return "synced"
 
