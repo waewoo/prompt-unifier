@@ -1,6 +1,6 @@
 # Prompt Unifier
 
-[![PyPI Version](https://img.shields.io/pypi/v/prompt-unifier.svg)](https://pypi.org/project/prompt-unifier/) [![Python Version](https://img.shields.io/pypi/pyversions/prompt-unifier.svg)](https://pypi.org/project/prompt-unifier/) [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT) [![Code Coverage](https://img.shields.io/badge/coverage-95%25-brightgreen)](./htmlcov) [![pipeline status](https://gitlab.com/waewoo/prompt-unifier/badges/main/pipeline.svg)](https://gitlab.com/waewoo/prompt-unifier/-/pipelines)
+[![PyPI Version](https://img.shields.io/pypi/v/prompt-unifier.svg)](https://pypi.org/project/prompt-unifier/) [![Python Version](https://img.shields.io/pypi/pyversions/prompt-unifier.svg)](https://pypi.org/project/prompt-unifier/) [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT) [![Code Coverage](https://img.shields.io/badge/coverage-95%25-brightgreen)](./htmlcov) [![pipeline status](https://img.shields.io/gitlab/pipeline-status/waewoo%2Fprompt-unifier?branch=main)](https://gitlab.com/waewoo/prompt-unifier/-/pipelines)
 
 A Python CLI tool for managing AI prompt templates and coding rules with YAML frontmatter, enabling version control, validation, and deployment workflows.
 
