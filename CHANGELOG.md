@@ -4,6 +4,17 @@ All notable changes to this project will be documented in this file.
 
 This project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## v1.0.0 (2025-11-23)
+
+### BREAKING CHANGE
+
+- -v flag now controls verbosity level instead of showing version. use -V or --version for version information.
+
+### Feat
+
+- **protocol**: add relative_path parameter and directory attributes to ToolHandler
+- **logging**: implement centralized logging system with global verbose flag
+
 ## v0.6.0 (2025-11-22)
 
 ### Feat

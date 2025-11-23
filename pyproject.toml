@@ -10,7 +10,7 @@
 
 [tool.poetry]
 name = "prompt-unifier"
-version = "0.6.0"
+version = "1.0.0"
 description = "CLI tool for managing AI prompt templates with YAML frontmatter"
 authors = ["Waewoo <waewoo@gmail.com>"]
 license = "MIT"
@@ -134,7 +134,7 @@ skips = ["*/test_*.py", "*/conftest.py"]
 
 [tool.commitizen]
 name = "cz_conventional_commits"
-version = "0.6.0"
+version = "1.0.0"
 version_files = [
     "pyproject.toml:version",
     "src/prompt_unifier/__init__.py:__version__",
