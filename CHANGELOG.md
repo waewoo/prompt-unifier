@@ -4,6 +4,17 @@ All notable changes to this project will be documented in this file.
 
 This project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## v1.2.0 (2025-11-23)
+
+### Feat
+
+- **ci**: Refine SonarQube integration and CI linting
+- Add GitLab CI configuration validation pre-commit hook
+
+### Refactor
+
+- Reduce cognitive complexity and align Ruff with SonarQube
+
 ## v1.1.0 (2025-11-23)
 
 ### Feat
