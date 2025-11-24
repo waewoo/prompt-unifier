@@ -4,6 +4,16 @@ All notable changes to this project will be documented in this file.
 
 This project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## v1.2.1 (2025-11-24)
+
+### Fix
+
+- **ci**: Add rules to sonar-scan job to skip on tags
+
+### Refactor
+
+- Fix SonarQube issues and implement unused parameters
+
 ## v1.2.0 (2025-11-23)
 
 ### Feat
