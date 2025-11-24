@@ -355,6 +355,71 @@ class ContinueToolHandler(ToolHandler):
                 return False  # Invalid YAML
         return True
 
+    def _get_target_file_path(
+        self,
+        content_type: str,
+        file_name: str,
+        relative_path: Path | None,
+    ) -> tuple[Path | None, str | None]:
+        """Get target file path and validate content type."""
+        actual_file_name = file_name if file_name.endswith(".md") else f"{file_name}.md"
+
+        if content_type == "prompt":
+            base_dir = self.prompts_dir
+        elif content_type == "rule":
+            base_dir = self.rules_dir
+        else:
+            return None, f"Unsupported content type: {content_type}"
+
+        if relative_path and str(relative_path) != ".":
+            target_file_path = base_dir / relative_path / actual_file_name
+        else:
+            target_file_path = base_dir / actual_file_name
+
+        return target_file_path, None
+
+    def _verify_prompt_frontmatter(
+        self,
+        deployed_content: str,
+        file_name: str,
+    ) -> VerificationResult | None:
+        """Verify prompt frontmatter has invokable field. Returns error result or None if OK."""
+        parts = deployed_content.split("---", 2)
+        if len(parts) < 3:
+            return VerificationResult(
+                file_name=file_name,
+                content_type="prompt",
+                status="failed",
+                details="Invalid format: missing frontmatter delimiters",
+            )
+
+        frontmatter_str = parts[1].strip()
+        try:
+            frontmatter = yaml.safe_load(frontmatter_str)
+            if not isinstance(frontmatter, dict):
+                return VerificationResult(
+                    file_name=file_name,
+                    content_type="prompt",
+                    status="failed",
+                    details="Invalid frontmatter: not a dictionary",
+                )
+            if not frontmatter.get("invokable"):
+                return VerificationResult(
+                    file_name=file_name,
+                    content_type="prompt",
+                    status="failed",
+                    details="Missing or false 'invokable' field in frontmatter",
+                )
+        except yaml.YAMLError as e:
+            return VerificationResult(
+                file_name=file_name,
+                content_type="prompt",
+                status="failed",
+                details=f"Invalid YAML frontmatter: {e}",
+            )
+
+        return None  # No error, verification passed
+
     def verify_deployment_with_details(
         self,
         content_name: str,
@@ -375,30 +440,16 @@ class ContinueToolHandler(ToolHandler):
         Returns:
             VerificationResult with status and details.
         """
-        # Log verification with content_name for identification
         logger.debug(f"Verifying deployment: '{content_name}' ({content_type}) at '{file_name}'")
 
-        # Ensure file_name has .md extension
-        actual_file_name = file_name if file_name.endswith(".md") else f"{file_name}.md"
-
-        if content_type == "prompt":
-            base_dir = self.prompts_dir
-        elif content_type == "rule":
-            base_dir = self.rules_dir
-        else:
+        target_file_path, error = self._get_target_file_path(content_type, file_name, relative_path)
+        if error or target_file_path is None:
             return VerificationResult(
                 file_name=file_name,
                 content_type=content_type,
                 status="failed",
-                details=f"Unsupported content type: {content_type}",
+                details=error or "Invalid path",
             )
-
-        # Construct target path with subdirectory structure if relative_path is provided
-        if relative_path and str(relative_path) != ".":
-            target_file_path = base_dir / relative_path / actual_file_name
-        else:
-            # Deploy to root directory
-            target_file_path = base_dir / actual_file_name
 
         if not target_file_path.exists():
             return VerificationResult(
@@ -408,7 +459,6 @@ class ContinueToolHandler(ToolHandler):
                 details=f"File does not exist: {target_file_path}",
             )
 
-        # Basic content verification
         try:
             deployed_content = target_file_path.read_text(encoding="utf-8")
         except (OSError, UnicodeDecodeError) as e:
@@ -419,42 +469,10 @@ class ContinueToolHandler(ToolHandler):
                 details=f"Cannot read file: {e}",
             )
 
-        # For prompts, check if invokable: true is present in frontmatter
         if content_type == "prompt":
-            # Extract frontmatter
-            parts = deployed_content.split("---", 2)
-            if len(parts) < 3:
-                return VerificationResult(
-                    file_name=file_name,
-                    content_type=content_type,
-                    status="failed",
-                    details="Invalid format: missing frontmatter delimiters",
-                )
-
-            frontmatter_str = parts[1].strip()
-            try:
-                frontmatter = yaml.safe_load(frontmatter_str)
-                if not isinstance(frontmatter, dict):
-                    return VerificationResult(
-                        file_name=file_name,
-                        content_type=content_type,
-                        status="failed",
-                        details="Invalid frontmatter: not a dictionary",
-                    )
-                if not frontmatter.get("invokable"):
-                    return VerificationResult(
-                        file_name=file_name,
-                        content_type=content_type,
-                        status="failed",
-                        details="Missing or false 'invokable' field in frontmatter",
-                    )
-            except yaml.YAMLError as e:
-                return VerificationResult(
-                    file_name=file_name,
-                    content_type=content_type,
-                    status="failed",
-                    details=f"Invalid YAML frontmatter: {e}",
-                )
+            error_result = self._verify_prompt_frontmatter(deployed_content, file_name)
+            if error_result:
+                return error_result
 
         return VerificationResult(
             file_name=file_name,

@@ -146,6 +146,46 @@ DEFAULT_LIST_SORT_OPTION = typer.Option(
 )
 
 
+def _validate_with_json_output(validator: Any, directories: list[Path]) -> None:
+    """Validate directories and output results as JSON."""
+    json_formatter = JSONFormatter()
+    all_success = True
+
+    for dir_path in directories:
+        logger.debug(f"Validating directory: {dir_path}")
+        summary = validator.validate_directory(dir_path)
+        logger.info(f"Validated {summary.total_files} files in {dir_path}")
+        json_output_str = json_formatter.format_summary(summary, dir_path)
+        typer.echo(json_output_str)
+
+        if not summary.success:
+            all_success = False
+
+    if not all_success:
+        raise typer.Exit(code=1)
+
+
+def _validate_with_rich_output(validator: Any, directories: list[Path]) -> None:
+    """Validate directories and output results with Rich formatting."""
+    rich_formatter = RichFormatter()
+    all_success = True
+
+    for dir_path in directories:
+        logger.debug(f"Validating directory: {dir_path}")
+        summary = validator.validate_directory(dir_path)
+        logger.info(
+            f"Validated {summary.total_files} files: "
+            f"{summary.passed} passed, {summary.failed} failed"
+        )
+        rich_formatter.format_summary(summary, directory=dir_path)
+
+        if not summary.success:
+            all_success = False
+
+    if not all_success:
+        raise typer.Exit(code=1)
+
+
 def validate(
     directory: Path | None = DEFAULT_VALIDATE_DIRECTORY_ARG,
     json_output: bool = DEFAULT_VALIDATE_JSON_OPTION,
@@ -197,42 +237,9 @@ def validate(
     validator = BatchValidator()
 
     if json_output:
-        # JSON output mode - validate first directory and combine results
-        json_formatter = JSONFormatter()
-        all_success = True
-
-        for dir_path in directories:
-            logger.debug(f"Validating directory: {dir_path}")
-            summary = validator.validate_directory(dir_path)
-            logger.info(f"Validated {summary.total_files} files in {dir_path}")
-            json_output_str = json_formatter.format_summary(summary, dir_path)
-            typer.echo(json_output_str)
-
-            if not summary.success:
-                all_success = False
-
-        # Exit with error code if any validation failed
-        if not all_success:
-            raise typer.Exit(code=1)
+        _validate_with_json_output(validator, directories)
     else:
-        # Rich formatted output
-        rich_formatter = RichFormatter()
-        all_success = True
-
-        for dir_path in directories:
-            logger.debug(f"Validating directory: {dir_path}")
-            summary = validator.validate_directory(dir_path)
-            logger.info(
-                f"Validated {summary.total_files} files: "
-                f"{summary.passed} passed, {summary.failed} failed"
-            )
-            rich_formatter.format_summary(summary, directory=dir_path)
-
-            if not summary.success:
-                all_success = False
-
-        if not all_success:
-            raise typer.Exit(code=1)
+        _validate_with_rich_output(validator, directories)
 
     logger.info("Validation complete")
 
@@ -758,6 +765,67 @@ def list_content(
         raise typer.Exit(code=1) from e
 
 
+def _load_and_validate_config() -> tuple[Path, Any]:
+    """Load deployment configuration and validate storage directory."""
+    cwd = Path.cwd()
+    config_path = cwd / CONFIG_DIR / CONFIG_FILE
+    if not config_path.exists():
+        typer.echo("Error: Configuration not found. Run 'prompt-unifier init' first.", err=True)
+        raise typer.Exit(code=1)
+
+    config_manager = ConfigManager()
+    config = config_manager.load_config(config_path)
+    if config is None or config.storage_path is None:
+        typer.echo("Error: Storage path not configured.", err=True)
+        raise typer.Exit(code=1)
+
+    storage_dir = Path(config.storage_path).expanduser().resolve()
+    if not storage_dir.exists():
+        typer.echo(f"Error: Storage directory '{storage_dir}' does not exist.", err=True)
+        raise typer.Exit(code=1)
+
+    logger.debug(f"Storage path: {storage_dir}")
+    return storage_dir, config
+
+
+def _setup_deployment_handlers(
+    base_path: Path | None,
+    config: Any,
+    target_handlers: list[str] | None,
+) -> list[Any]:
+    """Setup and filter deployment handlers based on configuration."""
+    registry: ToolHandlerRegistry = ToolHandlerRegistry()
+    continue_handler = setup_continue_handler(base_path, config)
+    registry.register(continue_handler)
+
+    all_handlers = registry.get_all_handlers()
+    if target_handlers:
+        all_handlers = [h for h in all_handlers if h.get_name() in target_handlers]
+        if not all_handlers:
+            typer.echo(f"Error: No matching handlers found for {target_handlers}.", err=True)
+            raise typer.Exit(code=1)
+
+    return all_handlers
+
+
+def _prepare_content_for_deployment(
+    storage_dir: Path,
+    prompt_name: str | None,
+    deploy_tags: list[str] | None,
+) -> list[tuple[str, str, Path]]:
+    """Scan, validate, and filter content files for deployment."""
+    content_files = scan_content_files(storage_dir)
+    logger.info(f"Found {len(content_files)} content files")
+
+    duplicates = check_duplicate_titles(content_files)
+    if duplicates:
+        display_duplicate_titles_error(duplicates)
+        raise typer.Exit(code=1)
+
+    filtered_files = filter_content_files(content_files, prompt_name, deploy_tags)
+    return filtered_files
+
+
 def deploy(
     prompt_name: str | None = DEFAULT_PROMPT_NAME_OPTION,
     tags: list[str] | None = DEFAULT_TAGS_OPTION,
@@ -779,70 +847,24 @@ def deploy(
     logger.info("Starting deployment")
 
     try:
-        # Load configuration
-        cwd = Path.cwd()
-        config_path = cwd / CONFIG_DIR / CONFIG_FILE
-        if not config_path.exists():
-            typer.echo("Error: Configuration not found. Run 'prompt-unifier init' first.", err=True)
-            raise typer.Exit(code=1)
-
-        config_manager = ConfigManager()
-        config = config_manager.load_config(config_path)
-        if config is None or config.storage_path is None:
-            typer.echo("Error: Storage path not configured.", err=True)
-            raise typer.Exit(code=1)
-
-        storage_dir = Path(config.storage_path).expanduser().resolve()
-        if not storage_dir.exists():
-            typer.echo(f"Error: Storage directory '{storage_dir}' does not exist.", err=True)
-            raise typer.Exit(code=1)
-
-        logger.debug(f"Storage path: {storage_dir}")
-
-        # Determine deploy tags
+        storage_dir, config = _load_and_validate_config()
         deploy_tags = tags if tags is not None else config.deploy_tags
-
-        # Determine target handlers
         target_handlers = handlers if handlers is not None else config.target_handlers
-
-        # Register handlers with resolved base paths
-        registry: ToolHandlerRegistry = ToolHandlerRegistry()
-        continue_handler = setup_continue_handler(base_path, config)
-        registry.register(continue_handler)
-
-        all_handlers = registry.get_all_handlers()
-        if target_handlers:
-            all_handlers = [h for h in all_handlers if h.get_name() in target_handlers]
-            if not all_handlers:
-                typer.echo(f"Error: No matching handlers found for {target_handlers}.", err=True)
-                raise typer.Exit(code=1)
-
-        # Scan for content files
-        prompts_dir = storage_dir / "prompts"
-        rules_dir = storage_dir / "rules"
-        content_files = scan_content_files(storage_dir)
-        logger.info(f"Found {len(content_files)} content files")
-
-        # Check for duplicate titles before filtering
-        duplicates = check_duplicate_titles(content_files)
-        if duplicates:
-            display_duplicate_titles_error(duplicates)
-            raise typer.Exit(code=1)
-
-        # Filter by tags and name
-        filtered_files = filter_content_files(content_files, prompt_name, deploy_tags)
+        all_handlers = _setup_deployment_handlers(base_path, config, target_handlers)
+        filtered_files = _prepare_content_for_deployment(storage_dir, prompt_name, deploy_tags)
 
         if not filtered_files:
             console.print("[yellow]No content files match the specified criteria.[/yellow]")
             return
 
-        # Handle dry-run mode
+        prompts_dir = storage_dir / "prompts"
+        rules_dir = storage_dir / "rules"
+
         if dry_run:
             logger.info("Dry-run mode: showing preview")
             display_dry_run_preview(filtered_files, all_handlers, prompts_dir, rules_dir)
             return
 
-        # Deploy to handlers
         total_deployed = 0
         total_cleaned = 0
 
@@ -859,9 +881,6 @@ def deploy(
 
         console.print(f"\n[bold]Deployment summary:[/bold] {', '.join(summary_parts)}.")
         logger.info(f"Deployment complete: {total_deployed} items to {len(all_handlers)} handlers")
-
-        # Don't exit with error code even if deployment fails partially
-        return
 
     except Exception as e:
         typer.echo(f"Error during deployment: {e}", err=True)
