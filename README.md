@@ -24,7 +24,12 @@ Managing AI prompts across a team can be chaotic, with templates scattered acros
 
 ## Current Handler Support
 
-Currently, **Prompt Unifier** primarily supports the **Continue** AI assistant as a handler. We plan to integrate with more AI tools and platforms in the future to provide a wider range of deployment options.
+**Prompt Unifier** currently supports the following AI assistants as handlers:
+
+- **Continue** - Full support with YAML frontmatter preservation
+- **Kilo Code** - Full support with pure Markdown deployment (no YAML frontmatter)
+
+We plan to integrate with more AI tools and platforms in the future to provide a wider range of deployment options.
 
 ## How it Works: The Workflow
 
@@ -235,13 +240,20 @@ prompt-unifier list --sort date
 Copies the synchronized prompts and rules to the configuration directories of your AI coding assistants.
 
 - **Default Handler:** `continue`
-- **Default Destination:** `./.continue/` (in your current project)
+- **Supported Handlers:** `continue`, `kilocode`
+- **Default Destinations:** 
+  - Continue: `./.continue/` (in your current project)
+  - Kilo Code: `./.kilocode/` (in your current project)
 - **Base Path Override:** Can be overridden via CLI <code>--base-path</code> or handler-specific configuration in <code>config.yaml</code>.
+
+**Handler-Specific Behavior:**
+- **Continue**: Preserves YAML frontmatter in deployed files
+- **Kilo Code**: Converts to pure Markdown (no YAML frontmatter), uses flat directory structure with directory-prefixed file naming
 
 **Deployment Options:**
 -   <code>--name TEXT</code>: Deploy only a specific prompt or rule by name.
 -   <code>--tags TEXT</code>: Filter content to deploy by tags (comma-separated).
--   <code>--handlers TEXT</code>: Specify target handlers for deployment (comma-separated). Currently, only 'continue' is supported.
+-   <code>--handlers TEXT</code>: Specify target handlers for deployment (comma-separated). Supported: 'continue', 'kilocode'.
 -   <code>--base-path PATH</code>: Custom base path for handler deployment (overrides config.yaml).
 -   <code>--clean</code>: Remove orphaned prompts/rules in destination that are not in your source (creates backups before removal).
 -   <code>--dry-run</code>: Preview deployment without executing any file operations.
@@ -252,8 +264,11 @@ After deployment, a detailed verification report is provided, outlining the stat
 # Deploy only prompts tagged "python", with cleanup, and preview changes
 prompt-unifier deploy --tags python --clean --dry-run
 
-# Deploy to a specific handler base path
-prompt-unifier deploy --base-path /custom/handler/path
+# Deploy to Kilo Code handler
+prompt-unifier deploy --handlers kilocode
+
+# Deploy to both Continue and Kilo Code
+prompt-unifier deploy --handlers continue,kilocode
 ```
 </details>
 

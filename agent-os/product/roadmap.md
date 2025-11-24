@@ -40,7 +40,7 @@
     - [x] Create comprehensive user-facing documentation (README, CLI help, examples).
     - [x] Write a guide for adding new tool handlers.
 
-15. [ ] Tool Handler Implementation: Kilo Code — Complete tool handler for Kilo Code following the established pattern, with full deployment logic, configuration file handling, and validation that prompts are correctly placed in the tool's expected location. `M`
+15. [x] Tool Handler Implementation: Kilo Code — Complete tool handler for Kilo Code following the established pattern, with full deployment logic, configuration file handling, and validation that prompts are correctly placed in the tool's expected location. `M`
 
 16. [ ] Tool Handler Implementation: Windsurf — Complete tool handler for Windsurf following the established pattern, with full deployment logic, configuration file handling, and validation that prompts are correctly placed in the tool's expected location. `M`
 

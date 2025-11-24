@@ -16,6 +16,7 @@ This guide details all manual tests to be performed to validate all features of 
 | [Validate Command](#validate-command) | File validation tests |
 | [Deploy Command](#deploy-command) | Deployment to Continue tests |
 | [Recursive Discovery](#recursive-discovery) | Tests with subdirectories |
+| [Kilo Code Handler Tests](#kilo-code-handler-tests) | Tests for Kilo Code handler |
 | [Error Handling](#error-handling) | Error case tests |
 | [Complete Workflows](#complete-workflows) | Real scenario tests |
 | [Cleanup](#cleanup) | Test resources cleanup |
@@ -798,6 +799,147 @@ poetry run prompt-unifier status   # Confirm
 ```
 
 ✓ **Expected result:** Each command completes (Code: 0)
+
+---
+
+## Kilo Code Handler Tests
+
+### Test 12.1: Deploy to Kilo Code handler
+
+```bash
+cd /tmp/test-pm-1
+poetry run prompt-unifier sync --repo git@gitlab.com:waewoo/prompt-unifier-data.git
+poetry run prompt-unifier deploy --handlers kilocode
+```
+
+✓ **Expected result:**
+- Files deployed to `./.kilocode/workflows/` (prompts) and `./.kilocode/rules/` (rules)
+- All files are pure Markdown (no YAML frontmatter)
+- Files have H1 title (`# Title`) and description
+- Directory-prefixed naming (e.g., `misc-code-review.md` for root files)
+- Verification report shows all files as "PASSED"
+
+### Test 12.2: Verify pure Markdown conversion
+
+```bash
+cd /tmp/test-pm-1
+poetry run prompt-unifier deploy --name "code-review" --handlers kilocode
+cat ./.kilocode/workflows/misc-code-review.md
+```
+
+✓ **Expected result:**
+- File starts with `# Code Review` (H1 title)
+- Description appears as paragraph after title
+- No `---` YAML delimiters in file
+- Body content preserved intact
+- Optional metadata formatted as: `**Field:** value | **Field:** value`
+
+### Test 12.3: Directory-prefixed file naming
+
+```bash
+# Create prompts in subdirectories
+mkdir -p ~/.prompt-unifier/storage/prompts/backend/api
+cat > ~/.prompt-unifier/storage/prompts/backend/api/api-design.md << 'EOF'
+---
+title: api-design
+description: API design review
+tags: [api, backend]
+---
+# API Design
+Content here
+EOF
+
+poetry run prompt-unifier deploy --handlers kilocode
+```
+
+✓ **Expected result:**
+- File deployed as `./.kilocode/workflows/api-api-design.md` (directory prefix: `api-`)
+- Root files use `misc-` prefix
+- Flat structure maintained (no subdirectories in `.kilocode/workflows/`)
+
+### Test 12.4: Kilo Code rollback
+
+```bash
+cd /tmp/test-pm-1
+# Deploy initial version
+poetry run prompt-unifier deploy --name "code-review" --handlers kilocode
+
+# Modify and redeploy
+echo "Modified" >> ./.kilocode/workflows/misc-code-review.md
+poetry run prompt-unifier deploy --name "code-review" --handlers kilocode
+
+# Check backup exists
+ls -la ./.kilocode/workflows/*.bak
+
+# Rollback (manual - handler provides rollback method)
+# Note: CLI rollback command not yet implemented
+```
+
+✓ **Expected result:**
+- Backup file `./.kilocode/workflows/misc-code-review.md.bak` created
+- Original content can be restored from backup
+
+### Test 12.5: Deploy to both Continue and Kilo Code
+
+```bash
+cd /tmp/test-pm-1
+poetry run prompt-unifier deploy --handlers continue,kilocode
+```
+
+✓ **Expected result:**
+- Files deployed to both `./.continue/` and `./.kilocode/`
+- Continue files preserve YAML frontmatter
+- Kilo Code files are pure Markdown
+- Verification report shows status for both handlers
+
+### Test 12.6: Kilo Code clean orphaned files
+
+```bash
+cd /tmp/test-pm-1
+# Deploy some files
+poetry run prompt-unifier deploy --tags python --handlers kilocode
+
+# Create orphan files
+echo "orphan" > ./.kilocode/workflows/orphan.md
+echo "backup" > ./.kilocode/workflows/old.md.bak
+
+# Redeploy with --clean
+poetry run prompt-unifier deploy --tags python --handlers kilocode --clean
+```
+
+✓ **Expected result:**
+- Orphan `.md` files in root removed
+- All `.bak` files removed recursively
+- Message "Cleaned X orphaned file(s)"
+- Deployed files remain intact
+
+### Test 12.7: Kilo Code with all metadata fields
+
+```bash
+# Create rule with all optional fields
+cat > ~/.prompt-unifier/storage/rules/complete-rule.md << 'EOF'
+---
+title: complete-rule
+description: A rule with all fields
+category: testing
+version: 2.0.0
+tags: [python, testing]
+author: Test Author
+language: en
+applies_to: ["*.py", "*.js"]
+---
+# Complete Rule
+Rule content here
+EOF
+
+poetry run prompt-unifier deploy --name "complete-rule" --handlers kilocode
+cat ./.kilocode/rules/misc-complete-rule.md
+```
+
+✓ **Expected result:**
+- File contains: `**Category:** testing | **Tags:** python, testing | **Version:** 2.0 | **Author:** Test Author | **Language:** en | **AppliesTo:** *.py, *.js`
+- All metadata formatted as Markdown text line
+- No YAML frontmatter
 
 ---
 

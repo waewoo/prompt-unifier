@@ -14,7 +14,9 @@ from rich.table import Table
 from prompt_unifier.config.manager import ConfigManager
 from prompt_unifier.constants import MD_GLOB_PATTERN
 from prompt_unifier.core.content_parser import ContentFileParser
-from prompt_unifier.handlers.continue_handler import ContinueToolHandler, VerificationResult
+from prompt_unifier.handlers.base_handler import VerificationResult
+from prompt_unifier.handlers.continue_handler import ContinueToolHandler
+from prompt_unifier.handlers.kilo_code_handler import KiloCodeToolHandler
 from prompt_unifier.handlers.registry import ToolHandlerRegistry
 from prompt_unifier.models.git_config import GitConfig
 from prompt_unifier.models.prompt import PromptFrontmatter
@@ -190,6 +192,104 @@ def resolve_handler_base_path(
     return None
 
 
+def _deploy_single_content_item(
+    handler: Any,
+    parsed_content: Any,
+    content_type: str,
+    file_path: Path,
+    prompts_dir: Path,
+    rules_dir: Path,
+) -> None:
+    """Deploy a single content item to the handler.
+
+    Args:
+        handler: The handler to deploy to.
+        parsed_content: The parsed content object.
+        content_type: Type of content ("prompt" or "rule").
+        file_path: Path to the source file.
+        prompts_dir: Path to prompts directory.
+        rules_dir: Path to rules directory.
+    """
+    body = str(parsed_content.content) if hasattr(parsed_content, "content") else ""
+    source_filename = file_path.name if file_path else None
+    relative_path = _calculate_relative_path(file_path, content_type, prompts_dir, rules_dir)
+
+    frontmatter_dict = parsed_content.model_dump(exclude={"content"})
+
+    content_obj: PromptFrontmatter | RuleFrontmatter
+    if content_type == "prompt":
+        content_obj = PromptFrontmatter(**frontmatter_dict)
+    elif content_type == "rule":
+        content_obj = RuleFrontmatter(**frontmatter_dict)
+    else:
+        raise ValueError(f"Unsupported content type: {content_type}")
+
+    handler.deploy(content_obj, content_type, body, source_filename, relative_path)
+
+
+def _get_deployed_filename(
+    handler: Any,
+    parsed_content: Any,
+    file_path: Path,
+    prompts_dir: Path,
+    rules_dir: Path,
+    content_type: str,
+) -> str | None:
+    """Get the final deployed filename for a content item.
+
+    Args:
+        handler: The handler that deployed the content.
+        parsed_content: The parsed content object.
+        file_path: Path to the source file.
+        prompts_dir: Path to prompts directory.
+        rules_dir: Path to rules directory.
+        content_type: Type of content.
+
+    Returns:
+        Final filename or None.
+    """
+    source_filename = file_path.name if file_path else None
+
+    if isinstance(handler, KiloCodeToolHandler) and source_filename:
+        relative_path = _calculate_relative_path(file_path, content_type, prompts_dir, rules_dir)
+        return handler.calculate_deployed_filename(
+            source_filename, parsed_content.title, relative_path
+        )
+
+    return source_filename
+
+
+def _verify_single_deployment(
+    handler: Any,
+    parsed_content: Any,
+    content_type: str,
+    final_filename: str | None,
+    relative_path: Path | None,
+) -> VerificationResult | None:
+    """Verify a single deployment if handler supports it.
+
+    Args:
+        handler: The handler to verify with.
+        parsed_content: The parsed content object.
+        content_type: Type of content.
+        final_filename: The final deployed filename.
+        relative_path: Relative path from content directory.
+
+    Returns:
+        VerificationResult or None if handler doesn't support verification.
+    """
+    if not hasattr(handler, "verify_deployment_with_details"):
+        return None
+
+    result: VerificationResult = handler.verify_deployment_with_details(
+        parsed_content.title,
+        content_type,
+        final_filename or parsed_content.title,
+        relative_path,
+    )
+    return result
+
+
 def deploy_content_to_handler(
     handler: Any,
     content_files: list[ContentFile],
@@ -213,40 +313,32 @@ def deploy_content_to_handler(
 
     for parsed_content, content_type, file_path in content_files:
         try:
-            body = str(parsed_content.content) if hasattr(parsed_content, "content") else ""
-            source_filename = file_path.name if file_path else None
-
-            # Calculate relative path
-            relative_path = _calculate_relative_path(
-                file_path, content_type, prompts_dir, rules_dir
+            # Deploy single content item
+            _deploy_single_content_item(
+                handler, parsed_content, content_type, file_path, prompts_dir, rules_dir
             )
-
-            # Deploy based on content type
-            if content_type == "prompt":
-                frontmatter_dict = parsed_content.model_dump(exclude={"content"})
-                prompt_content = PromptFrontmatter(**frontmatter_dict)
-                handler.deploy(prompt_content, content_type, body, source_filename, relative_path)
-            elif content_type == "rule":
-                frontmatter_dict = parsed_content.model_dump(exclude={"content"})
-                rule_content = RuleFrontmatter(**frontmatter_dict)
-                handler.deploy(rule_content, content_type, body, source_filename, relative_path)
-
             handler_deployed += 1
-            if source_filename:
-                deployed_filenames.add(source_filename)
+
+            # Get final filename and track it
+            final_filename = _get_deployed_filename(
+                handler, parsed_content, file_path, prompts_dir, rules_dir, content_type
+            )
+            if final_filename:
+                deployed_filenames.add(final_filename)
 
             console.print(f"  [green]✓[/green] Deployed {parsed_content.title} ({content_type})")
             logger.debug(f"Deployed: {parsed_content.title} ({content_type})")
 
-            # Verify deployment
-            if hasattr(handler, "verify_deployment_with_details"):
-                result = handler.verify_deployment_with_details(
-                    parsed_content.title,
-                    content_type,
-                    source_filename or parsed_content.title,
-                    relative_path,
-                )
-                verification_results.append(result)
+            # Verify deployment if handler supports it
+            verification_result = _verify_single_deployment(
+                handler,
+                parsed_content,
+                content_type,
+                final_filename,
+                _calculate_relative_path(file_path, content_type, prompts_dir, rules_dir),
+            )
+            if verification_result:
+                verification_results.append(verification_result)
 
         except Exception as e:
             console.print(

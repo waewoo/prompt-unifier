@@ -15,6 +15,9 @@ BAK_GLOB_PATTERN = "**/*.bak"
 # Continue tool handler paths
 CONTINUE_DIR = ".continue"
 
+# Kilo Code tool handler paths
+KILO_CODE_DIR = ".kilocode"
+
 # Error messages
 ERROR_CONFIG_NOT_FOUND = "Error: Configuration not found. Run 'prompt-unifier init' first."
 

@@ -34,6 +34,7 @@ from prompt_unifier.constants import CONFIG_DIR, CONFIG_FILE, ERROR_CONFIG_NOT_F
 from prompt_unifier.core.batch_validator import BatchValidator
 from prompt_unifier.core.content_parser import ContentFileParser
 from prompt_unifier.git.service import GitService
+from prompt_unifier.handlers.kilo_code_handler import KiloCodeToolHandler
 from prompt_unifier.handlers.registry import ToolHandlerRegistry
 from prompt_unifier.models.git_config import GitConfig
 from prompt_unifier.output.json_formatter import JSONFormatter
@@ -80,7 +81,7 @@ DEFAULT_HANDLERS_OPTION = typer.Option(
     "--handlers",
     help=(
         "Specify target handlers for deployment (comma-separated, "
-        "defaults to 'continue'). Currently, only 'continue' is supported."
+        "defaults to 'continue'). Supported handlers: 'continue', 'kilocode'."
     ),
 )
 
@@ -794,9 +795,23 @@ def _setup_deployment_handlers(
     target_handlers: list[str] | None,
 ) -> list[Any]:
     """Setup and filter deployment handlers based on configuration."""
+    from prompt_unifier.cli.helpers import resolve_handler_base_path
+
     registry: ToolHandlerRegistry = ToolHandlerRegistry()
+
+    # Register Continue handler
     continue_handler = setup_continue_handler(base_path, config)
     registry.register(continue_handler)
+
+    # Register Kilo Code handler
+    kilo_base_path = resolve_handler_base_path("kilocode", base_path, config)
+    kilo_handler = KiloCodeToolHandler(base_path=kilo_base_path)
+    try:
+        kilo_handler.validate_tool_installation()
+        registry.register(kilo_handler)
+    except OSError as e:
+        logger.warning(f"Kilo Code handler validation failed: {e}")
+        # Don't fail - just don't register this handler
 
     all_handlers = registry.get_all_handlers()
     if target_handlers:

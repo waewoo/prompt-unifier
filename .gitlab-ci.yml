@@ -184,7 +184,7 @@ sonar-scan:
     paths:
       - .sonar/cache
   script:
-    - sonar-scanner
+    - sonar-scanner -X
       -Dsonar.qualitygate.wait=true
       -Dsonar.host.url="${SONAR_HOST_URL}"
   needs:

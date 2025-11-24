@@ -1,48 +1,30 @@
 import logging
-from dataclasses import dataclass
-from hashlib import sha256
 from pathlib import Path
 from typing import Any
 
 import yaml
-from rich.console import Console
-from rich.table import Table
 
-from prompt_unifier.constants import BAK_GLOB_PATTERN, CONTINUE_DIR
-from prompt_unifier.handlers.protocol import ToolHandler
+from prompt_unifier.constants import CONTINUE_DIR
+from prompt_unifier.handlers.base_handler import BaseToolHandler, VerificationResult
+from prompt_unifier.handlers.handler_utils import console
 from prompt_unifier.models.prompt import PromptFrontmatter
 from prompt_unifier.models.rule import RuleFrontmatter
 
 logger = logging.getLogger(__name__)
 
-console = Console()
 
-# Color constants matching RichFormatter patterns
-ERROR_COLOR = "red"
-WARNING_COLOR = "yellow"
-SUCCESS_COLOR = "green"
-
-
-@dataclass
-class VerificationResult:
-    """Data class for storing verification result details."""
-
-    file_name: str
-    content_type: str
-    status: str  # "passed", "failed", "warning"
-    details: str
-
-
-class ContinueToolHandler(ToolHandler):
+class ContinueToolHandler(BaseToolHandler):
     """
     Tool handler for Continue AI assistant.
     Deploys prompts and rules to the appropriate Continue directories.
     """
 
     def __init__(self, base_path: Path | None = None):
+        super().__init__()
         self.name = "continue"
         # CRITICAL CHANGE: Default base_path is now Path.cwd() instead of Path.home()
         self.base_path = base_path if base_path else Path.cwd()
+        self.tool_dir_constant = CONTINUE_DIR
         self.prompts_dir = self.base_path / CONTINUE_DIR / "prompts"
         self.rules_dir = self.base_path / CONTINUE_DIR / "rules"
 
@@ -53,99 +35,6 @@ class ContinueToolHandler(ToolHandler):
         if not self.rules_dir.exists():
             self.rules_dir.mkdir(parents=True, exist_ok=True)
             console.print(f"[cyan]Created Continue rules directory: {self.rules_dir}[/cyan]")
-
-    def validate_tool_installation(self) -> bool:
-        """
-        Validates that the Continue tool installation is accessible.
-
-        Checks that:
-        1. base_path exists or can be created
-        2. CONTINUE_DIR/ directory exists or can be created
-        3. Required subdirectories (prompts/, rules/) are accessible
-
-        Returns:
-            bool: True if validation succeeds
-
-        Raises:
-            PermissionError: If directories cannot be created due to permissions
-            OSError: If directories cannot be created for other reasons
-
-        Examples:
-            >>> handler = ContinueToolHandler()
-            >>> handler.validate_tool_installation()
-            True
-        """
-        try:
-            # Check if base_path exists and is accessible
-            if not self.base_path.exists():
-                console.print(
-                    f"[yellow]Base path does not exist, attempting to create: "
-                    f"{self.base_path}[/yellow]"
-                )
-                self.base_path.mkdir(parents=True, exist_ok=True)
-                console.print(f"[green]Created base path: {self.base_path}[/green]")
-
-            # Check if .continue directory exists
-            continue_dir = self.base_path / CONTINUE_DIR
-            if not continue_dir.exists():
-                console.print(
-                    f"[yellow]Continue directory does not exist, "
-                    f"attempting to create: {continue_dir}[/yellow]"
-                )
-                continue_dir.mkdir(parents=True, exist_ok=True)
-                console.print(f"[green]Created Continue directory: {continue_dir}[/green]")
-
-            # Verify prompts and rules directories are accessible
-            if not self.prompts_dir.exists():
-                self.prompts_dir.mkdir(parents=True, exist_ok=True)
-                console.print(f"[green]Created prompts directory: {self.prompts_dir}[/green]")
-
-            if not self.rules_dir.exists():
-                self.rules_dir.mkdir(parents=True, exist_ok=True)
-                console.print(f"[green]Created rules directory: {self.rules_dir}[/green]")
-
-            # Verify directories are writable by attempting to create a test file
-            test_file = self.prompts_dir / ".write_test"
-            try:
-                test_file.touch()
-                test_file.unlink()
-            except OSError as e:
-                console.print(
-                    f"[red]Error: Continue installation at {self.base_path} is not writable[/red]"
-                )
-                console.print(f"[red]Details: {e}[/red]")
-                raise PermissionError(
-                    f"Continue installation at {self.base_path} is not writable: {e}"
-                ) from e
-
-            console.print(f"[green]Continue installation validated at: {self.base_path}[/green]")
-            return True
-
-        except PermissionError as e:
-            console.print(
-                f"[red]Permission error validating Continue installation at {self.base_path}[/red]"
-            )
-            console.print(f"[red]Details: {e}[/red]")
-            console.print(
-                f"[yellow]Suggestion: Check directory permissions for {self.base_path}[/yellow]"
-            )
-            raise
-
-        except OSError as e:
-            console.print(f"[red]Error validating Continue installation at {self.base_path}[/red]")
-            console.print(f"[red]Details: {e}[/red]")
-            console.print(
-                f"[yellow]Suggestion: Ensure {self.base_path} is a valid path "
-                f"and accessible[/yellow]"
-            )
-            raise
-
-    def _backup_file(self, file_path: Path) -> None:
-        """Creates a backup of the given file."""
-        if file_path.exists():
-            backup_path = file_path.with_suffix(file_path.suffix + ".bak")
-            file_path.rename(backup_path)
-            console.print(f"[yellow]Backed up {file_path.name} to {backup_path.name}[/yellow]")
 
     def _process_prompt_content(self, prompt: PromptFrontmatter, body: str) -> str:
         """
@@ -201,54 +90,6 @@ class ContinueToolHandler(ToolHandler):
         frontmatter_str = yaml.safe_dump(continue_frontmatter, sort_keys=False)
         # Remove trailing newline from YAML dump to avoid blank line before closing ---
         return f"---\n{frontmatter_str.rstrip()}\n---\n{body}"
-
-    def clean_orphaned_files(self, deployed_filenames: set[str]) -> int:
-        """
-        Remove files in prompts/rules directories that are not in the deployed set.
-        Also removes any .bak backup files recursively (including in subdirectories).
-
-        Note: Orphaned .md files are only removed from the root directory to preserve
-        files from previous deployments with different tag filters.
-
-        Args:
-            deployed_filenames: Set of filenames that were just deployed.
-
-        Returns:
-            Number of files removed.
-        """
-        removed_count = 0
-
-        # Remove .bak files recursively in prompts directory (including subdirectories)
-        # glob("BAK_GLOB_PATTERN") only matches files, not directories
-        for file_path in self.prompts_dir.glob(BAK_GLOB_PATTERN):
-            file_path.unlink()
-            console.print(f"  [dim]Removed backup file: {file_path.name}[/dim]")
-            removed_count += 1
-
-        # Remove orphaned .md files ONLY in root prompts directory (not subdirectories)
-        # glob("*.md") only matches files, not directories
-        for file_path in self.prompts_dir.glob("*.md"):
-            if file_path.name not in deployed_filenames:
-                file_path.unlink()
-                console.print(f"  [yellow]Removed orphaned prompt: {file_path.name}[/yellow]")
-                removed_count += 1
-
-        # Remove .bak files recursively in rules directory (including subdirectories)
-        # glob("BAK_GLOB_PATTERN") only matches files, not directories
-        for file_path in self.rules_dir.glob(BAK_GLOB_PATTERN):
-            file_path.unlink()
-            console.print(f"  [dim]Removed backup file: {file_path.name}[/dim]")
-            removed_count += 1
-
-        # Remove orphaned .md files ONLY in root rules directory (not subdirectories)
-        # glob("*.md") only matches files, not directories
-        for file_path in self.rules_dir.glob("*.md"):
-            if file_path.name not in deployed_filenames:
-                file_path.unlink()
-                console.print(f"  [yellow]Removed orphaned rule: {file_path.name}[/yellow]")
-                removed_count += 1
-
-        return removed_count
 
     def deploy(
         self,
@@ -307,20 +148,6 @@ class ContinueToolHandler(ToolHandler):
         console.print(
             f"[green]Deployed {content.title} ({content_type}) to {target_file_path}[/green]"
         )
-
-    def get_status(self) -> str:
-        """
-        Returns the status of the Continue handler.
-        """
-        if self.prompts_dir.exists() and self.rules_dir.exists():
-            return "active"
-        return "inactive"
-
-    def get_name(self) -> str:
-        """
-        Returns the name of the handler.
-        """
-        return self.name
 
     def verify_deployment(self, content_name: str, content_type: str) -> bool:
         """
@@ -481,166 +308,6 @@ class ContinueToolHandler(ToolHandler):
             details="File verified successfully",
         )
 
-    def aggregate_verification_results(self, results: list[VerificationResult]) -> dict[str, int]:
-        """
-        Aggregates verification results into summary counts.
-
-        Args:
-            results: List of VerificationResult objects.
-
-        Returns:
-            Dictionary with counts for passed, failed, warnings, and total.
-        """
-        summary = {
-            "passed": 0,
-            "failed": 0,
-            "warnings": 0,
-            "total": len(results),
-        }
-
-        for result in results:
-            if result.status == "passed":
-                summary["passed"] += 1
-            elif result.status == "failed":
-                summary["failed"] += 1
-            elif result.status == "warning":
-                summary["warnings"] += 1
-
-        return summary
-
-    def display_verification_report(
-        self,
-        results: list[VerificationResult],
-        console: Console | None = None,
-    ) -> None:
-        """
-        Displays a Rich-formatted verification report.
-
-        Args:
-            results: List of VerificationResult objects to display.
-            console: Optional Console instance for output. Uses module console if None.
-        """
-        output_console = globals()["console"] if console is None else console
-
-        # Display header with handler name
-        output_console.print()
-        output_console.print(f"[bold]Verification Report: {self.name}[/bold]")
-        output_console.print("-" * 60)
-
-        # Build Rich table
-        table = Table(show_header=True, header_style="bold")
-        table.add_column("File", style="dim")
-        table.add_column("Type")
-        table.add_column("Status")
-        table.add_column("Details", style="dim")
-
-        for result in results:
-            # Determine status color
-            if result.status == "passed":
-                status_color = SUCCESS_COLOR
-                status_text = f"[{status_color}]PASSED[/{status_color}]"
-            elif result.status == "failed":
-                status_color = ERROR_COLOR
-                status_text = f"[{status_color}]FAILED[/{status_color}]"
-            else:  # warning
-                status_color = WARNING_COLOR
-                status_text = f"[{status_color}]WARNING[/{status_color}]"
-
-            table.add_row(
-                result.file_name,
-                result.content_type,
-                status_text,
-                result.details,
-            )
-
-        output_console.print(table)
-
-        # Display summary
-        summary = self.aggregate_verification_results(results)
-        output_console.print()
-        output_console.print("[bold]Summary:[/bold]")
-        output_console.print(f"  Total: {summary['total']}")
-        output_console.print(f"  Passed: [{SUCCESS_COLOR}]{summary['passed']}[/{SUCCESS_COLOR}]")
-        output_console.print(f"  Failed: [{ERROR_COLOR}]{summary['failed']}[/{ERROR_COLOR}]")
-        output_console.print(
-            f"  Warnings: [{WARNING_COLOR}]{summary['warnings']}[/{WARNING_COLOR}]"
-        )
-
-        # Show warning message if there are failures
-        if summary["failed"] > 0:
-            output_console.print()
-            output_console.print(
-                f"[{WARNING_COLOR}]Warning: {summary['failed']} verification(s) failed. "
-                f"Review the details above.[/{WARNING_COLOR}]"
-            )
-
-        output_console.print()
-
-    def _remove_empty_directories(self, base_dir: Path) -> None:
-        """
-        Removes empty directories within the base directory, walking bottom-up.
-
-        Args:
-            base_dir: The base directory to clean up empty subdirectories from.
-        """
-        # Walk the directory tree bottom-up to remove empty directories
-        # We need to collect all directories first, then sort them by depth (deepest first)
-        all_dirs = []
-        for dir_path in base_dir.rglob("*"):
-            if dir_path.is_dir():
-                all_dirs.append(dir_path)
-
-        # Sort by depth (deepest first) to ensure we remove nested empty dirs first
-        all_dirs.sort(key=lambda p: len(p.parts), reverse=True)
-
-        for dir_path in all_dirs:
-            try:
-                # Check if directory is empty
-                if not any(dir_path.iterdir()):
-                    dir_path.rmdir()
-                    console.print(f"[dim]Removed empty directory: {dir_path}[/dim]")
-            except OSError:
-                # Directory not empty or other issue, skip
-                pass
-
-    def rollback(self) -> None:
-        """
-        Rolls back the deployment by restoring backup files.
-
-        This method:
-        1. Recursively finds all .bak files in subdirectories using BAK_GLOB_PATTERN pattern
-        2. Restores each backup file to its original location
-        3. Removes empty directories after restoration
-        4. Logs warnings and continues if backup files are missing
-        """
-        # Restore backups in prompts directory recursively
-        for backup_file in self.prompts_dir.glob(BAK_GLOB_PATTERN):
-            original_path = backup_file.with_suffix("")
-            try:
-                backup_file.rename(original_path)
-                console.print(f"[yellow]Restored {original_path.name} from backup[/yellow]")
-            except OSError as e:
-                console.print(
-                    f"[yellow]Warning: Could not restore {backup_file.name}: {e}[/yellow]"
-                )
-                continue
-
-        # Restore backups in rules directory recursively
-        for backup_file in self.rules_dir.glob(BAK_GLOB_PATTERN):
-            original_path = backup_file.with_suffix("")
-            try:
-                backup_file.rename(original_path)
-                console.print(f"[yellow]Restored {original_path.name} from backup[/yellow]")
-            except OSError as e:
-                console.print(
-                    f"[yellow]Warning: Could not restore {backup_file.name}: {e}[/yellow]"
-                )
-                continue
-
-        # Clean up empty directories after restoration
-        self._remove_empty_directories(self.prompts_dir)
-        self._remove_empty_directories(self.rules_dir)
-
     def _determine_target_filename(self, content_name: str, source_filename: str | None) -> str:
         """Determine the target filename for deployment status check.
 
@@ -678,24 +345,6 @@ class ContinueToolHandler(ToolHandler):
         if relative_path and str(relative_path) != ".":
             return base_dir / relative_path / filename
         return base_dir / filename
-
-    def _compare_content_hashes(self, source_content: str, target_file: Path) -> str:
-        """Compare content hashes between source and deployed file.
-
-        Args:
-            source_content: The expected content string.
-            target_file: Path to the deployed file.
-
-        Returns:
-            Status string: "synced", "outdated", or "error".
-        """
-        try:
-            deployed_content = target_file.read_text(encoding="utf-8")
-            source_hash = sha256(source_content.encode("utf-8")).hexdigest()
-            deployed_hash = sha256(deployed_content.encode("utf-8")).hexdigest()
-            return "synced" if source_hash == deployed_hash else "outdated"
-        except (OSError, UnicodeDecodeError):
-            return "error"
 
     def get_deployment_status(
         self,
