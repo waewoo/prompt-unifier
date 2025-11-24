@@ -7,6 +7,7 @@ Git integration commands (init, sync, status).
 
 import logging
 from pathlib import Path
+from typing import Any
 
 import typer
 from rich.console import Console
@@ -615,6 +616,94 @@ def status() -> None:
         console.print()
 
 
+def _resolve_list_storage_dir() -> Path:
+    """Resolve storage directory for list command.
+
+    Returns:
+        Path to storage directory.
+
+    Raises:
+        typer.Exit: If storage directory doesn't exist.
+    """
+    cwd = Path.cwd()
+    config_path = cwd / CONFIG_DIR / CONFIG_FILE
+
+    config_manager = ConfigManager()
+    config = config_manager.load_config(config_path) if config_path.exists() else None
+
+    if config and config.storage_path:
+        storage_dir = Path(config.storage_path).expanduser().resolve()
+    else:
+        storage_dir = Path.home() / CONFIG_DIR / "storage"
+
+    logger.debug(f"Storage path: {storage_dir}")
+
+    if not storage_dir.exists():
+        typer.echo(f"Error: Storage directory '{storage_dir}' does not exist.", err=True)
+        raise typer.Exit(code=1)
+
+    return storage_dir
+
+
+def _scan_directory_for_content(
+    directory: Path,
+    content_type: str,
+    parser: ContentFileParser,
+) -> list[tuple[Any, str, Path]]:
+    """Scan a directory for content files.
+
+    Args:
+        directory: Directory to scan.
+        content_type: Type of content ('prompt' or 'rule').
+        parser: Content file parser.
+
+    Returns:
+        List of (parsed_content, content_type, file_path) tuples.
+    """
+    content_files = []
+    if directory.exists():
+        for md_file in directory.glob("**/*.md"):
+            try:
+                parsed_content = parser.parse_file(md_file)
+                content_files.append((parsed_content, content_type, md_file))
+            except Exception as e:
+                console.print(f"[yellow]Warning: Failed to parse {md_file}: {e}[/yellow]")
+    return content_files
+
+
+def _filter_and_sort_content(
+    content_files: list[tuple[Any, str, Path]],
+    tag: str | None,
+    sort: str,
+) -> list[tuple[Any, str, Path]]:
+    """Filter and sort content files.
+
+    Args:
+        content_files: List of content file tuples.
+        tag: Tag to filter by (or None).
+        sort: Sort order ('date' or 'name').
+
+    Returns:
+        Filtered and sorted content files.
+    """
+    # Filter by tag
+    if tag:
+        content_files = [
+            (c, t, p)
+            for c, t, p in content_files
+            if hasattr(c, "tags") and c.tags and tag in c.tags
+        ]
+        logger.debug(f"Filtered by tag '{tag}': {len(content_files)} files")
+
+    # Sort
+    if sort == "date":
+        content_files.sort(key=lambda x: x[2].stat().st_mtime, reverse=True)
+    else:
+        content_files.sort(key=lambda x: x[0].title)
+
+    return content_files
+
+
 def list_content(
     tool: str | None = DEFAULT_LIST_TOOL_OPTION,
     tag: str | None = DEFAULT_LIST_TAG_OPTION,
@@ -636,52 +725,16 @@ def list_content(
         prompt-unifier list --sort date
     """
     logger.info("Listing content")
+    if tool:
+        logger.warning(f"Tool filtering (--tool {tool}) not yet implemented")
 
     try:
-        # Load configuration to get storage path
-        cwd = Path.cwd()
-        config_path = cwd / CONFIG_DIR / CONFIG_FILE
-
-        if not config_path.exists():
-            # Fallback to default storage if config doesn't exist (e.g. just initialized)
-            # But ideally init should be run.
-            pass
-
-        config_manager = ConfigManager()
-        config = config_manager.load_config(config_path) if config_path.exists() else None
-
-        if config and config.storage_path:
-            storage_dir = Path(config.storage_path).expanduser().resolve()
-        else:
-            storage_dir = Path.home() / CONFIG_DIR / "storage"
-
-        logger.debug(f"Storage path: {storage_dir}")
-
-        if not storage_dir.exists():
-            typer.echo(f"Error: Storage directory '{storage_dir}' does not exist.", err=True)
-            raise typer.Exit(code=1)
+        storage_dir = _resolve_list_storage_dir()
 
         # Scan for content files
         parser = ContentFileParser()
-        content_files = []
-
-        prompts_dir = storage_dir / "prompts"
-        if prompts_dir.exists():
-            for md_file in prompts_dir.glob("**/*.md"):
-                try:
-                    parsed_content = parser.parse_file(md_file)
-                    content_files.append((parsed_content, "prompt", md_file))
-                except Exception as e:
-                    console.print(f"[yellow]Warning: Failed to parse {md_file}: {e}[/yellow]")
-
-        rules_dir = storage_dir / "rules"
-        if rules_dir.exists():
-            for md_file in rules_dir.glob("**/*.md"):
-                try:
-                    parsed_content = parser.parse_file(md_file)
-                    content_files.append((parsed_content, "rule", md_file))
-                except Exception as e:
-                    console.print(f"[yellow]Warning: Failed to parse {md_file}: {e}[/yellow]")
+        content_files = _scan_directory_for_content(storage_dir / "prompts", "prompt", parser)
+        content_files.extend(_scan_directory_for_content(storage_dir / "rules", "rule", parser))
 
         logger.info(f"Found {len(content_files)} content files")
 
@@ -689,35 +742,11 @@ def list_content(
             console.print("[yellow]No prompts or rules found.[/yellow]")
             return
 
-        # Filter by tag
-        if tag:
-            content_files = [
-                (c, t, p)
-                for c, t, p in content_files
-                if hasattr(c, "tags") and c.tags and tag in c.tags
-            ]
-            logger.debug(f"Filtered by tag '{tag}': {len(content_files)} files")
-
-        # Filter by tool (placeholder logic for now as tools are not strictly bound in source)
-        # If we had tool-specific metadata, we'd filter here.
-        if tool:
-            # For now, just warn that tool filtering is limited
-            # console.print(
-            #     f"[dim]Filtering by tool '{tool}' is currently limited to metadata check[/dim]"
-            # )
-            pass
-
-        # Sort
-        if sort == "date":
-            # Sort by file modification time
-            content_files.sort(key=lambda x: x[2].stat().st_mtime, reverse=True)
-        else:
-            # Sort by title (default)
-            content_files.sort(key=lambda x: x[0].title)
+        # Filter and sort
+        content_files = _filter_and_sort_content(content_files, tag, sort)
 
         # Display table
         formatter = RichTableFormatter()
-        # Convert Path to str for formatter
         formatted_files = [(c, t, str(p)) for c, t, p in content_files]
         table = formatter.format_list_table(formatted_files)
         console.print(table)

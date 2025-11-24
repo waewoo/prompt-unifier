@@ -1,3 +1,4 @@
+import logging
 from dataclasses import dataclass
 from hashlib import sha256
 from pathlib import Path
@@ -7,10 +8,12 @@ import yaml
 from rich.console import Console
 from rich.table import Table
 
-from prompt_unifier.constants import CONTINUE_DIR
+from prompt_unifier.constants import BAK_GLOB_PATTERN, CONTINUE_DIR
 from prompt_unifier.handlers.protocol import ToolHandler
 from prompt_unifier.models.prompt import PromptFrontmatter
 from prompt_unifier.models.rule import RuleFrontmatter
+
+logger = logging.getLogger(__name__)
 
 console = Console()
 
@@ -216,8 +219,8 @@ class ContinueToolHandler(ToolHandler):
         removed_count = 0
 
         # Remove .bak files recursively in prompts directory (including subdirectories)
-        # glob("**/*.bak") only matches files, not directories
-        for file_path in self.prompts_dir.glob("**/*.bak"):
+        # glob("BAK_GLOB_PATTERN") only matches files, not directories
+        for file_path in self.prompts_dir.glob(BAK_GLOB_PATTERN):
             file_path.unlink()
             console.print(f"  [dim]Removed backup file: {file_path.name}[/dim]")
             removed_count += 1
@@ -231,8 +234,8 @@ class ContinueToolHandler(ToolHandler):
                 removed_count += 1
 
         # Remove .bak files recursively in rules directory (including subdirectories)
-        # glob("**/*.bak") only matches files, not directories
-        for file_path in self.rules_dir.glob("**/*.bak"):
+        # glob("BAK_GLOB_PATTERN") only matches files, not directories
+        for file_path in self.rules_dir.glob(BAK_GLOB_PATTERN):
             file_path.unlink()
             console.print(f"  [dim]Removed backup file: {file_path.name}[/dim]")
             removed_count += 1
@@ -354,7 +357,7 @@ class ContinueToolHandler(ToolHandler):
 
     def verify_deployment_with_details(
         self,
-        content_name: str,  # noqa: ARG002
+        content_name: str,
         content_type: str,
         file_name: str,
         relative_path: Path | None = None,
@@ -372,6 +375,9 @@ class ContinueToolHandler(ToolHandler):
         Returns:
             VerificationResult with status and details.
         """
+        # Log verification with content_name for identification
+        logger.debug(f"Verifying deployment: '{content_name}' ({content_type}) at '{file_name}'")
+
         # Ensure file_name has .md extension
         actual_file_name = file_name if file_name.endswith(".md") else f"{file_name}.md"
 
@@ -584,13 +590,13 @@ class ContinueToolHandler(ToolHandler):
         Rolls back the deployment by restoring backup files.
 
         This method:
-        1. Recursively finds all .bak files in subdirectories using **/*.bak pattern
+        1. Recursively finds all .bak files in subdirectories using BAK_GLOB_PATTERN pattern
         2. Restores each backup file to its original location
         3. Removes empty directories after restoration
         4. Logs warnings and continues if backup files are missing
         """
         # Restore backups in prompts directory recursively
-        for backup_file in self.prompts_dir.glob("**/*.bak"):
+        for backup_file in self.prompts_dir.glob(BAK_GLOB_PATTERN):
             original_path = backup_file.with_suffix("")
             try:
                 backup_file.rename(original_path)
@@ -602,7 +608,7 @@ class ContinueToolHandler(ToolHandler):
                 continue
 
         # Restore backups in rules directory recursively
-        for backup_file in self.rules_dir.glob("**/*.bak"):
+        for backup_file in self.rules_dir.glob(BAK_GLOB_PATTERN):
             original_path = backup_file.with_suffix("")
             try:
                 backup_file.rename(original_path)
@@ -617,13 +623,69 @@ class ContinueToolHandler(ToolHandler):
         self._remove_empty_directories(self.prompts_dir)
         self._remove_empty_directories(self.rules_dir)
 
+    def _determine_target_filename(self, content_name: str, source_filename: str | None) -> str:
+        """Determine the target filename for deployment status check.
+
+        Args:
+            content_name: The name/title of the content item.
+            source_filename: Optional specific filename if different from title.
+
+        Returns:
+            The filename to use for the target file.
+        """
+        if source_filename:
+            return source_filename if source_filename.endswith(".md") else f"{source_filename}.md"
+        return f"{content_name}.md"
+
+    def _determine_target_file_path(
+        self, content_type: str, filename: str, relative_path: Path | None
+    ) -> Path | None:
+        """Determine the target file path for deployment status check.
+
+        Args:
+            content_type: Type of content ("prompt" or "rule").
+            filename: The filename to use.
+            relative_path: Relative subdirectory path where the file was deployed.
+
+        Returns:
+            The target file path, or None if content_type is invalid.
+        """
+        if content_type == "prompt":
+            base_dir = self.prompts_dir
+        elif content_type == "rule":
+            base_dir = self.rules_dir
+        else:
+            return None
+
+        if relative_path and str(relative_path) != ".":
+            return base_dir / relative_path / filename
+        return base_dir / filename
+
+    def _compare_content_hashes(self, source_content: str, target_file: Path) -> str:
+        """Compare content hashes between source and deployed file.
+
+        Args:
+            source_content: The expected content string.
+            target_file: Path to the deployed file.
+
+        Returns:
+            Status string: "synced", "outdated", or "error".
+        """
+        try:
+            deployed_content = target_file.read_text(encoding="utf-8")
+            source_hash = sha256(source_content.encode("utf-8")).hexdigest()
+            deployed_hash = sha256(deployed_content.encode("utf-8")).hexdigest()
+            return "synced" if source_hash == deployed_hash else "outdated"
+        except (OSError, UnicodeDecodeError):
+            return "error"
+
     def get_deployment_status(
         self,
         content_name: str,
         content_type: str,
         source_content: str,
         source_filename: str | None = None,
-        relative_path: Path | None = None,  # Added relative_path parameter
+        relative_path: Path | None = None,
     ) -> str:
         """
         Check the deployment status of a content item.
@@ -638,44 +700,13 @@ class ContinueToolHandler(ToolHandler):
         Returns:
             Status string: "synced", "outdated", "missing", or "error".
         """
-        # Determine target filename
-        if source_filename:
-            filename = (
-                source_filename if source_filename.endswith(".md") else f"{source_filename}.md"
-            )
-        else:
-            filename = f"{content_name}.md"
+        filename = self._determine_target_filename(content_name, source_filename)
+        target_file = self._determine_target_file_path(content_type, filename, relative_path)
 
-        # Determine target directory and file path, accounting for relative_path
-        if content_type == "prompt":
-            base_dir = self.prompts_dir
-        elif content_type == "rule":
-            base_dir = self.rules_dir
-        else:
+        if target_file is None:
             return "error"
 
-        if relative_path and str(relative_path) != ".":
-            target_file = base_dir / relative_path / filename
-        else:
-            target_file = base_dir / filename
-
-        # Check existence
         if not target_file.exists():
             return "missing"
 
-        try:
-            # Read deployed content
-            deployed_content = target_file.read_text(encoding="utf-8")
-
-            # Compare content hashes for robustness against whitespace issues
-            # (though currently we expect exact matches, hashing is good practice)
-            source_hash = sha256(source_content.encode("utf-8")).hexdigest()
-            deployed_hash = sha256(deployed_content.encode("utf-8")).hexdigest()
-
-            if source_hash == deployed_hash:
-                return "synced"
-            else:
-                return "outdated"
-
-        except (OSError, UnicodeDecodeError):
-            return "error"
+        return self._compare_content_hashes(source_content, target_file)

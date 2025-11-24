@@ -7,6 +7,12 @@ timestamp, and last synced commit hash.
 
 from pydantic import BaseModel, Field
 
+# Example constants for documentation/schema examples
+_EXAMPLE_REPO_URL = "https://github.com/example/prompts.git"
+_EXAMPLE_REPO1_URL = "https://github.com/repo1/prompts.git"
+_EXAMPLE_REPO2_URL = "https://github.com/repo2/prompts.git"
+_EXAMPLE_TIMESTAMP = "2024-11-18T14:30:00Z"
+
 
 class HandlerConfig(BaseModel):
     """Configuration model for individual tool handler settings.
@@ -65,13 +71,13 @@ class RepositoryConfig(BaseModel):
 
     Examples:
         >>> # Repository with URL only
-        >>> repo = RepositoryConfig(url="https://github.com/example/prompts.git")
+        >>> repo = RepositoryConfig(url=_EXAMPLE_REPO_URL)
         >>> repo.url
         'https://github.com/example/prompts.git'
 
         >>> # Repository with all options
         >>> repo = RepositoryConfig(
-        ...     url="https://github.com/example/prompts.git",
+        ...     url=_EXAMPLE_REPO_URL,
         ...     branch="develop",
         ...     auth_config={"method": "token", "token": "ghp_123"},
         ...     include_patterns=["*.md", "python/**"],
@@ -120,14 +126,14 @@ class RepositoryConfig(BaseModel):
         "json_schema_extra": {
             "examples": [
                 {
-                    "url": "https://github.com/example/prompts.git",
+                    "url": _EXAMPLE_REPO_URL,
                 },
                 {
-                    "url": "https://github.com/example/prompts.git",
+                    "url": _EXAMPLE_REPO_URL,
                     "branch": "main",
                 },
                 {
-                    "url": "https://github.com/example/prompts.git",
+                    "url": _EXAMPLE_REPO_URL,
                     "branch": "develop",
                     "auth_config": {"method": "token", "token": "ghp_xxxxx"},
                     "include_patterns": ["*.md", "python/**"],
@@ -164,17 +170,17 @@ class GitConfig(BaseModel):
         >>> from prompt_unifier.models.git_config import RepositoryConfig
         >>> config = GitConfig(
         ...     repos=[
-        ...         RepositoryConfig(url="https://github.com/repo1/prompts.git"),
-        ...         RepositoryConfig(url="https://github.com/repo2/prompts.git", branch="dev"),
+        ...         RepositoryConfig(url=_EXAMPLE_REPO1_URL),
+        ...         RepositoryConfig(url=_EXAMPLE_REPO2_URL, branch="dev"),
         ...     ],
-        ...     last_sync_timestamp="2024-11-18T14:30:00Z",
+        ...     last_sync_timestamp=_EXAMPLE_TIMESTAMP,
         ... )
         >>> len(config.repos)
         2
 
         >>> # Configuration with custom handler base paths
         >>> config = GitConfig(
-        ...     repos=[RepositoryConfig(url="https://github.com/example/prompts.git")],
+        ...     repos=[RepositoryConfig(url=_EXAMPLE_REPO_URL)],
         ...     handlers={
         ...         "continue": HandlerConfig(base_path="$PWD/.continue"),
         ...         "cursor": HandlerConfig(base_path="$HOME/.cursor")
@@ -236,22 +242,22 @@ class GitConfig(BaseModel):
                 },
                 {
                     "repos": [
-                        {"url": "https://github.com/repo1/prompts.git"},
-                        {"url": "https://github.com/repo2/prompts.git", "branch": "develop"},
+                        {"url": _EXAMPLE_REPO1_URL},
+                        {"url": _EXAMPLE_REPO2_URL, "branch": "develop"},
                     ],
-                    "last_sync_timestamp": "2024-11-18T14:30:00Z",
+                    "last_sync_timestamp": _EXAMPLE_TIMESTAMP,
                     "repo_metadata": [
                         {
-                            "url": "https://github.com/repo1/prompts.git",
+                            "url": _EXAMPLE_REPO1_URL,
                             "branch": "main",
                             "commit": "abc1234",
-                            "timestamp": "2024-11-18T14:30:00Z",
+                            "timestamp": _EXAMPLE_TIMESTAMP,
                         },
                         {
-                            "url": "https://github.com/repo2/prompts.git",
+                            "url": _EXAMPLE_REPO2_URL,
                             "branch": "develop",
                             "commit": "def5678",
-                            "timestamp": "2024-11-18T14:30:00Z",
+                            "timestamp": _EXAMPLE_TIMESTAMP,
                         },
                     ],
                     "storage_path": "/home/user/.prompt-unifier/storage",
@@ -259,7 +265,7 @@ class GitConfig(BaseModel):
                     "target_handlers": ["continue", "cursor"],
                 },
                 {
-                    "repos": [{"url": "https://github.com/example/prompts.git"}],
+                    "repos": [{"url": _EXAMPLE_REPO_URL}],
                     "last_sync_timestamp": "2024-11-15T10:30:00Z",
                     "storage_path": "~/.prompt-unifier/storage",
                     "deploy_tags": ["python", "review"],

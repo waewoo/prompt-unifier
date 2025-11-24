@@ -96,12 +96,12 @@ class RichFormatter:
         self.console.print("━" * 80)
         self.console.print()
 
-    def _display_file_result(self, result: ValidationResult, verbose: bool = False) -> None:  # noqa: ARG002
+    def _display_file_result(self, result: ValidationResult, verbose: bool = False) -> None:
         """Display the validation result for a single file.
 
         Args:
             result: The validation result for the file
-            verbose: If True, show detailed information
+            verbose: If True, show detailed information including full file path
         """
         # Display file name with status symbol
         if result.status == "passed":
@@ -113,9 +113,12 @@ class RichFormatter:
             status_text = "FAILED"
             status_color = self.ERROR_COLOR
 
+        # Show full path in verbose mode, otherwise just filename
+        display_name = str(result.file) if verbose else result.file.name
+
         self.console.print(
             f"[{status_color}]{status_symbol}[/{status_color}] "
-            f"{result.file.name} "
+            f"{display_name} "
             f"[{status_color}]({status_text})[/{status_color}]"
         )
 

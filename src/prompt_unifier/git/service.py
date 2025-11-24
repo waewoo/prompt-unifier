@@ -12,7 +12,7 @@ import time
 from collections.abc import Callable
 from datetime import UTC, datetime
 from pathlib import Path
-from typing import TYPE_CHECKING, TypeVar
+from typing import TYPE_CHECKING, NoReturn, TypeVar
 
 import git
 
@@ -112,6 +112,92 @@ def _classify_clone_error(error_msg: str) -> str:
         return "not_found"
 
     return "generic"
+
+
+def _check_empty_repository(repo: git.Repo, repo_url: str) -> None:
+    """Check if repository is empty and raise appropriate error.
+
+    Args:
+        repo: The cloned git repository.
+        repo_url: URL of the repository for error messages.
+
+    Raises:
+        ValueError: If repository has no commits.
+    """
+    try:
+        _ = repo.head.commit
+    except ValueError as e:
+        if "reference at 'HEAD' does not exist" in str(e).lower():
+            raise ValueError(
+                f"Failed to clone repository: {repo_url}\n\n"
+                "Repository is empty (no commits found).\n\n"
+                "The repository exists and authentication succeeded, but it has "
+                "no content.\n\n"
+                "To fix this:\n"
+                "1. Add a prompts/ directory to the repository\n"
+                "2. Create some prompt files in prompts/\n"
+                "3. Commit and push the changes\n"
+                "4. Try syncing again\n\n"
+                "Example structure:\n"
+                "  my-prompts-repo/\n"
+                "    prompts/\n"
+                "      example.md\n"
+                "    rules/  (optional)\n"
+                "      rule.md"
+            ) from e
+        raise
+
+
+def _checkout_branch(repo: git.Repo, branch: str, repo_url: str) -> None:
+    """Checkout a specific branch in the repository.
+
+    Args:
+        repo: The cloned git repository.
+        branch: Branch name to checkout.
+        repo_url: URL of the repository for error messages.
+
+    Raises:
+        ValueError: If branch checkout fails.
+    """
+    try:
+        repo.git.checkout(branch)
+    except git.exc.GitCommandError as e:
+        raise ValueError(
+            f"Failed to checkout branch '{branch}' in repository: {repo_url}\n\n"
+            f"Error: {e}\n\n"
+            "Please verify:\n"
+            "- The branch name is correct\n"
+            "- The branch exists in the repository"
+        ) from e
+
+
+def _handle_clone_error(error: Exception, repo_url: str) -> NoReturn:
+    """Handle clone error by classifying and raising appropriate ValueError.
+
+    Args:
+        error: The exception that occurred.
+        repo_url: URL of the repository for error messages.
+
+    Raises:
+        ValueError: With appropriate error message based on error type.
+    """
+    error_type = _classify_clone_error(str(error))
+
+    if error_type == "auth":
+        raise ValueError(_get_auth_error_message(repo_url)) from error
+    elif error_type == "network":
+        raise ValueError(_get_network_error_message(repo_url)) from error
+    elif error_type == "not_found":
+        raise ValueError(_get_not_found_error_message(repo_url)) from error
+    else:
+        raise ValueError(
+            f"Failed to clone repository: {repo_url}\n\n"
+            f"Error: {error}\n\n"
+            "Please check:\n"
+            "- Repository URL is correct\n"
+            "- You have network connectivity\n"
+            "- You have access to the repository"
+        ) from error
 
 
 def _collect_repo_files(temp_path: Path) -> list[str]:
@@ -254,7 +340,7 @@ class GitService:
         self,
         repo_url: str,
         branch: str | None = None,
-        auth_config: dict[str, str] | None = None,  # noqa: ARG002  # Reserved for future use
+        auth_config: dict[str, str] | None = None,
     ) -> tuple[Path, git.Repo]:
         """Clone repository to temporary directory with retry logic.
 
@@ -291,6 +377,11 @@ class GitService:
             ...     branch="develop"
             ... )
         """
+        # Log auth_config if provided (reserved for future authentication support)
+        if auth_config:
+            auth_keys = list(auth_config.keys())
+            logger.debug(f"Auth config provided but not yet implemented: {auth_keys}")
+
         # Create temporary directory for clone
         temp_dir = Path(tempfile.mkdtemp())
 
@@ -308,41 +399,11 @@ class GitService:
             repo = retry_with_backoff(clone_operation, max_attempts=3)
 
             # Check if repository is empty (no commits)
-            try:
-                _ = repo.head.commit
-            except ValueError as e:
-                if "reference at 'HEAD' does not exist" in str(e).lower():
-                    raise ValueError(
-                        f"Failed to clone repository: {repo_url}\n\n"
-                        "Repository is empty (no commits found).\n\n"
-                        "The repository exists and authentication succeeded, but it has "
-                        "no content.\n\n"
-                        "To fix this:\n"
-                        "1. Add a prompts/ directory to the repository\n"
-                        "2. Create some prompt files in prompts/\n"
-                        "3. Commit and push the changes\n"
-                        "4. Try syncing again\n\n"
-                        "Example structure:\n"
-                        "  my-prompts-repo/\n"
-                        "    prompts/\n"
-                        "      example.md\n"
-                        "    rules/  (optional)\n"
-                        "      rule.md"
-                    ) from e
-                raise
+            _check_empty_repository(repo, repo_url)
 
             # Checkout specific branch if requested
             if branch:
-                try:
-                    repo.git.checkout(branch)
-                except git.exc.GitCommandError as e:
-                    raise ValueError(
-                        f"Failed to checkout branch '{branch}' in repository: {repo_url}\n\n"
-                        f"Error: {e}\n\n"
-                        "Please verify:\n"
-                        "- The branch name is correct\n"
-                        "- The branch exists in the repository"
-                    ) from e
+                _checkout_branch(repo, branch, repo_url)
 
             return temp_dir, repo
 
@@ -358,23 +419,7 @@ class GitService:
                 raise
 
             # Classify and raise appropriate error
-            error_type = _classify_clone_error(str(e))
-
-            if error_type == "auth":
-                raise ValueError(_get_auth_error_message(repo_url)) from e
-            elif error_type == "network":
-                raise ValueError(_get_network_error_message(repo_url)) from e
-            elif error_type == "not_found":
-                raise ValueError(_get_not_found_error_message(repo_url)) from e
-            else:
-                raise ValueError(
-                    f"Failed to clone repository: {repo_url}\n\n"
-                    f"Error: {e}\n\n"
-                    "Please check:\n"
-                    "- Repository URL is correct\n"
-                    "- You have network connectivity\n"
-                    "- You have access to the repository"
-                ) from e
+            _handle_clone_error(e, repo_url)
 
     def get_latest_commit(self, repo: git.Repo) -> str:
         """Get latest commit hash from repository in short SHA format.

@@ -111,17 +111,17 @@ handlers:
         cli_override_path = tmp_path / "cli_override_path"
 
         with patch("prompt_unifier.cli.commands.Path.cwd", return_value=tmp_path):
-            with patch("prompt_unifier.cli.helpers.ContinueToolHandler") as MockHandler:  # noqa: N806
+            with patch("prompt_unifier.cli.helpers.ContinueToolHandler") as mock_handler_cls:
                 mock_handler_instance = MagicMock()
-                MockHandler.return_value = mock_handler_instance
+                mock_handler_cls.return_value = mock_handler_instance
                 mock_handler_instance.get_name.return_value = "continue"
                 mock_handler_instance.get_status.return_value = "active"
 
                 runner.invoke(app, ["deploy", "--base-path", str(cli_override_path)])
 
                 # Verify handler was instantiated with CLI path, not configured path
-                MockHandler.assert_called_once()
-                call_kwargs = MockHandler.call_args[1] if MockHandler.call_args[1] else {}
+                mock_handler_cls.assert_called_once()
+                call_kwargs = mock_handler_cls.call_args[1] if mock_handler_cls.call_args[1] else {}
                 if "base_path" in call_kwargs:
                     assert call_kwargs["base_path"] == cli_override_path
 
@@ -178,22 +178,22 @@ handlers:
         cli_path = tmp_path / "cli_path"
 
         with patch("prompt_unifier.cli.commands.Path.cwd", return_value=tmp_path):
-            with patch("prompt_unifier.cli.helpers.ContinueToolHandler") as MockHandler:  # noqa: N806
+            with patch("prompt_unifier.cli.helpers.ContinueToolHandler") as mock_handler_cls:
                 mock_handler_instance = MagicMock()
-                MockHandler.return_value = mock_handler_instance
+                mock_handler_cls.return_value = mock_handler_instance
                 mock_handler_instance.get_name.return_value = "continue"
 
                 # Test 1: CLI flag has highest priority
                 runner.invoke(app, ["deploy", "--base-path", str(cli_path)])
-                call_kwargs = MockHandler.call_args[1] if MockHandler.call_args[1] else {}
+                call_kwargs = mock_handler_cls.call_args[1] if mock_handler_cls.call_args[1] else {}
                 if "base_path" in call_kwargs:
                     assert call_kwargs["base_path"] == cli_path
 
-                MockHandler.reset_mock()
+                mock_handler_cls.reset_mock()
 
                 # Test 2: Config path used when no CLI flag
                 runner.invoke(app, ["deploy"])
-                call_kwargs = MockHandler.call_args[1] if MockHandler.call_args[1] else {}
+                call_kwargs = mock_handler_cls.call_args[1] if mock_handler_cls.call_args[1] else {}
                 if "base_path" in call_kwargs:
                     # Should use configured path (after env var expansion)
                     assert str(configured_path) in str(call_kwargs["base_path"])
@@ -215,15 +215,15 @@ handlers:
 """)
 
         with patch("prompt_unifier.cli.commands.Path.cwd", return_value=tmp_path):
-            with patch("prompt_unifier.cli.helpers.ContinueToolHandler") as MockHandler:  # noqa: N806
+            with patch("prompt_unifier.cli.helpers.ContinueToolHandler") as mock_handler_cls:
                 mock_handler_instance = MagicMock()
-                MockHandler.return_value = mock_handler_instance
+                mock_handler_cls.return_value = mock_handler_instance
                 mock_handler_instance.get_name.return_value = "continue"
 
                 runner.invoke(app, ["deploy"])
 
                 # Verify env vars were expanded
-                call_kwargs = MockHandler.call_args[1] if MockHandler.call_args[1] else {}
+                call_kwargs = mock_handler_cls.call_args[1] if mock_handler_cls.call_args[1] else {}
                 if "base_path" in call_kwargs:
                     base_path_str = str(call_kwargs["base_path"])
                     # $PWD should be expanded to actual path
@@ -265,16 +265,16 @@ target_handlers: ["continue"]
 """)
 
         with patch("prompt_unifier.cli.commands.Path.cwd", return_value=tmp_path):
-            with patch("prompt_unifier.cli.helpers.ContinueToolHandler") as MockHandler:  # noqa: N806
+            with patch("prompt_unifier.cli.helpers.ContinueToolHandler") as mock_handler_cls:
                 mock_handler_instance = MagicMock()
-                MockHandler.return_value = mock_handler_instance
+                mock_handler_cls.return_value = mock_handler_instance
                 mock_handler_instance.get_name.return_value = "continue"
 
                 runner.invoke(app, ["deploy"])
 
                 # When no base_path in config and no CLI flag,
                 # should use None (handler defaults to cwd)
-                call_kwargs = MockHandler.call_args[1] if MockHandler.call_args[1] else {}
+                call_kwargs = mock_handler_cls.call_args[1] if mock_handler_cls.call_args[1] else {}
                 # Either no base_path key (None) or explicitly None
                 base_path_value = call_kwargs.get("base_path", None)
                 # If None is passed, handler will default to Path.cwd()

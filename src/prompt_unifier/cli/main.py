@@ -30,6 +30,11 @@ from prompt_unifier.utils import configure_logging
 # Version
 __version__ = "0.1.0"
 
+# Default options for CLI commands
+DEFAULT_REPOS_OPTION = typer.Option(
+    None, "--repo", help="Git repository URL (can be specified multiple times)"
+)
+
 
 def version_callback(value: bool) -> None:
     """Display version and exit."""
@@ -48,7 +53,7 @@ app = typer.Typer(
 
 @app.callback()
 def main_callback(
-    version: bool = typer.Option(  # noqa: ARG001
+    version: bool = typer.Option(
         False,
         "--version",
         "-V",
@@ -72,6 +77,8 @@ def main_callback(
     ),
 ) -> None:
     """Prompt Unifier CLI - Manage and validate AI prompt templates."""
+    # version is handled by callback, mark as used
+    del version
     # Configure logging based on verbosity level and optional log file
     configure_logging(verbosity=verbose, log_file=log_file)
 
@@ -122,9 +129,7 @@ def init(
 
 @app.command(name="sync", help="Sync prompts from Git repositories")
 def sync(
-    repos: list[str] | None = typer.Option(  # noqa: B008
-        None, "--repo", help="Git repository URL (can be specified multiple times)"
-    ),
+    repos: list[str] | None = DEFAULT_REPOS_OPTION,
     storage_path: str | None = typer.Option(
         None,
         "--storage-path",

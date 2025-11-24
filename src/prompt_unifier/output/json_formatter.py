@@ -26,7 +26,7 @@ class JSONFormatter:
     def format_summary(
         self,
         summary: ValidationSummary,
-        directory: Path,  # noqa: ARG002
+        directory: Path,
     ) -> str:
         """Format a validation summary as JSON string.
 
@@ -56,6 +56,7 @@ class JSONFormatter:
         """
         # Build the JSON structure
         output = {
+            "directory": str(directory),
             "summary": {
                 "total_files": summary.total_files,
                 "passed": summary.passed,

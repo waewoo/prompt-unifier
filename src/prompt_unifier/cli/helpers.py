@@ -250,7 +250,7 @@ def deploy_content_to_handler(
 
         except Exception as e:
             console.print(
-                f"  [red]✗[/red] Failed to deploy {parsed_content.title} " f"({content_type}): {e}"
+                f"  [red]✗[/red] Failed to deploy {parsed_content.title} ({content_type}): {e}"
             )
             logger.error(f"Failed to deploy {parsed_content.title}: {e}")
             _attempt_rollback(handler)
@@ -578,6 +578,42 @@ def display_status_header(config: GitConfig, storage_dir: Path) -> None:
     console.print("━" * 80)
 
 
+def _get_repo_commit(config: GitConfig, repo_url: str) -> str | None:
+    """Get commit hash for a repository from metadata.
+
+    Args:
+        config: GitConfig object.
+        repo_url: Repository URL to find commit for.
+
+    Returns:
+        Commit hash or None if not found.
+    """
+    if not hasattr(config, "repo_metadata") or not config.repo_metadata:
+        return None
+
+    for metadata in config.repo_metadata:
+        if metadata.get("url") == repo_url and "commit" in metadata:
+            return metadata["commit"]
+    return None
+
+
+def _display_single_repo(config: GitConfig, idx: int, repo_config: Any) -> None:
+    """Display information for a single repository.
+
+    Args:
+        config: GitConfig object.
+        idx: Repository index.
+        repo_config: Repository configuration.
+    """
+    console.print(f"  {idx}. {repo_config.url}")
+    if repo_config.branch:
+        console.print(f"     Branch: {repo_config.branch}")
+
+    commit = _get_repo_commit(config, repo_config.url)
+    if commit:
+        console.print(f"     Commit: {commit}")
+
+
 def _display_repository_info(config: GitConfig) -> None:
     """Display repository information from config.
 
@@ -587,17 +623,7 @@ def _display_repository_info(config: GitConfig) -> None:
     if config.repos and len(config.repos) > 0:
         console.print(f"Repositories: {len(config.repos)}")
         for idx, repo_config in enumerate(config.repos, 1):
-            console.print(f"  {idx}. {repo_config.url}")
-            if repo_config.branch:
-                console.print(f"     Branch: {repo_config.branch}")
-
-            # Display commit info from repo_metadata if available
-            if hasattr(config, "repo_metadata") and config.repo_metadata:
-                for metadata in config.repo_metadata:
-                    if metadata.get("url") == repo_config.url:
-                        if "commit" in metadata:
-                            console.print(f"     Commit: {metadata['commit']}")
-                        break
+            _display_single_repo(config, idx, repo_config)
     else:
         console.print("Repositories: [yellow]Not configured[/yellow]")
         console.print()
@@ -792,7 +818,7 @@ def display_duplicate_titles_error(duplicates: dict[str, list[Path]]) -> None:
             console.print(f"    - {file_path}")
         console.print()
     console.print(
-        "[yellow]Please ensure each prompt/rule has a unique title " "before deploying.[/yellow]"
+        "[yellow]Please ensure each prompt/rule has a unique title before deploying.[/yellow]"
     )
 
 
@@ -875,7 +901,7 @@ def _display_handler_completion(handler_name: str, deployed_count: int) -> None:
     """
     if deployed_count > 0:
         console.print(
-            f"[green]✓ Deployment to {handler_name} completed " f"({deployed_count} items).[/green]"
+            f"[green]✓ Deployment to {handler_name} completed ({deployed_count} items).[/green]"
         )
     else:
         console.print(f"[yellow]⚠ No items deployed to {handler_name}.[/yellow]")
