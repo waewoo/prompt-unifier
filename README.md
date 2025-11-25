@@ -242,8 +242,12 @@ Copies the synchronized prompts and rules to the configuration directories of yo
 - **Default Handler:** `continue`
 - **Supported Handlers:** `continue`, `kilocode`
 - **Default Destinations:** 
-  - Continue: `./.continue/` (in your current project)
-  - Kilo Code: `./.kilocode/` (in your current project)
+  - **Continue**: Deploys to `./.continue/` in your current project.
+    - Prompts: `./.continue/prompts/`
+    - Rules: `./.continue/rules/`
+  - **Kilo Code**: Deploys to `./.kilocode/` in your current project.
+    - Prompts (Workflows): `./.kilocode/workflows/`
+    - Rules: `./.kilocode/rules/`
 - **Base Path Override:** Can be overridden via CLI <code>--base-path</code> or handler-specific configuration in <code>config.yaml</code>.
 
 **Handler-Specific Behavior:**
