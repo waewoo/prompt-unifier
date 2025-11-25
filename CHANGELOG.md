@@ -4,6 +4,16 @@ All notable changes to this project will be documented in this file.
 
 This project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## v1.3.0 (2025-11-25)
+
+### Feat
+
+- **handlers**: implement Kilo Code tool handler for pure Markdown deployment
+
+### Refactor
+
+- Reduce cognitive complexity in SonarQube reported functions
+
 ## v1.2.1 (2025-11-24)
 
 ### Fix
