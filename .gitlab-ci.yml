@@ -42,7 +42,9 @@ lint:
   stage: quality
   script:
     # Ruff en mode GitLab Code Quality
-    - poetry run ruff check src/ tests/ --output-format=gitlab > gl-code-quality-ruff.json || true
+    - make lint-ruff CI_OUTPUT_FORMAT=gitlab
+    # Markdown linter
+    - make lint-md
   artifacts:
     reports:
       codequality: gl-code-quality-ruff.json

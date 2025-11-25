@@ -78,8 +78,19 @@ clean-ci:
 	@echo "GitLab CI cache cleaned."
 
 # Run Ruff linter checks
-lint:
-	poetry run ruff check src/ tests/
+lint: lint-ruff lint-md
+
+# Run Ruff linter
+lint-ruff:
+	@if [ "$(CI_OUTPUT_FORMAT)" = "gitlab" ]; then \
+		poetry run ruff check src/ tests/ --output-format=gitlab > gl-code-quality-ruff.json || true; \
+	else \
+		poetry run ruff check src/ tests/; \
+	fi
+
+# Run Markdown linter
+lint-md:
+	poetry run pre-commit run mdformat --all-files
 
 # Run mypy static type checker
 typecheck:
@@ -95,7 +106,7 @@ ci-lint:
 	@gitlab-ci-local --preview > /dev/null
 
 # Run all quality checks in sequence
-check: lint typecheck test ci-lint
+check: lint-ruff lint-md typecheck test ci-lint
 
 # Remove build artifacts, caches, and temporary files
 clean:

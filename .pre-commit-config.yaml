@@ -67,3 +67,14 @@ repos:
         language: system
         files: \.gitlab-ci\.yml$
         pass_filenames: false
+
+  # mdformat - Consistent Markdown formatting
+  - repo: https://github.com/executablebooks/mdformat
+    rev: 0.7.17
+    hooks:
+      - id: mdformat
+        additional_dependencies:
+            - mdformat-gfm
+            - mdformat-frontmatter
+        args: [--wrap=100]
+        exclude: (^\..*|agent-os/.*)

@@ -2,18 +2,20 @@
 
 **STOP. READ THIS FIRST.**
 
-You are working on the `prompt-unifier` project. You MUST follow this protocol for ALL feature requests.
+You are working on the `prompt-unifier` project. You MUST follow this protocol for ALL feature
+requests.
 
 ## Mandatory Feature Addition Protocol
 
 When the developer asks to add ANY new feature, execute this checklist IN ORDER:
 
 ### STEP 1: Roadmap Update (MANDATORY)
+
 - [ ] Ask: "Is this feature in `@agent-os/product/roadmap.md`?"
 - [ ] If NO: "I will add it to the roadmap now. Confirming..."
 - [ ] Add to roadmap with:
   - Feature name
-  - Description (1-2 sentences)  
+  - Description (1-2 sentences)
   - Priority: High/Medium/Low
   - Status: Planned
   - Target milestone
@@ -21,6 +23,7 @@ When the developer asks to add ANY new feature, execute this checklist IN ORDER:
 - [ ] Show the roadmap entry for approval
 
 ### STEP 2: Agent OS Workflow (MANDATORY)
+
 - [ ] Ask: "Do you have a spec for this in `@agent-os/specs/`?"
 - [ ] If NO, guide through Agent OS phases:
   - **Vague idea?** → `@agent-os/commands/shape-spec/shape-spec.md run this`
@@ -30,22 +33,26 @@ When the developer asks to add ANY new feature, execute this checklist IN ORDER:
   - **Ready to code?** → `@agent-os/commands/implement-tasks/implement-tasks.md run this`
 
 ### STEP 3: Implementation
+
 - [ ] Only proceed after STEP 1 & 2 complete
 - [ ] Follow standards in `@agent-os/standards/`
 - [ ] Apply TDD practices from project conventions
 
 ### STEP 4: Post-Implementation
+
 - [ ] Update roadmap status (Planned → In Progress → Completed)
 - [ ] Verify spec documentation is current
 - [ ] Run `make check` before committing
 
 **DO NOT skip steps. DO NOT implement without roadmap entry and spec.**
 
----
+______________________________________________________________________
 
 # Project Overview
 
-`prompt-unifier` is a Python CLI tool for managing AI prompt templates and coding rules. It uses YAML frontmatter for prompts/rules, supporting version control, validation, and deployment workflows.
+`prompt-unifier` is a Python CLI tool for managing AI prompt templates and coding rules. It uses
+YAML frontmatter for prompts/rules, supporting version control, validation, and deployment
+workflows.
 
 ## Tech Stack
 
@@ -61,26 +68,13 @@ When the developer asks to add ANY new feature, execute this checklist IN ORDER:
 
 ## Project Structure
 
-prompt-unifier/
-├── src/prompt_unifier/ # Main source code
-│ ├── cli/ # CLI commands
-│ ├── models/ # Pydantic models
-│ ├── services/ # Business logic
-│ └── utils/ # Utilities
-├── tests/ # Test suite
-├── agent-os/ # Agent OS configuration
-│ ├── product/ # Product con│ │ ├── mission.md
-│ │ ├── roadmap.md
-│ │ └── tech-stack.md
-│ ├── standards/ # Development standards
-│ ├── specs/ # Feature specs
-│ └── commands/ # Agent OS commands
-├── pyproject.toml
-├── Makefile
-└── GEMINI.md # This file
+prompt-unifier/ ├── src/prompt_unifier/ # Main source code │ ├── cli/ # CLI commands │ ├── models/ #
+Pydantic models │ ├── services/ # Business logic │ └── utils/ # Utilities ├── tests/ # Test suite
+├── agent-os/ # Agent OS configuration │ ├── product/ # Product con│ │ ├── mission.md │ │ ├──
+roadmap.md │ │ └── tech-stack.md │ ├── standards/ # Development standards │ ├── specs/ # Feature
+specs │ └── commands/ # Agent OS commands ├── pyproject.toml ├── Makefile └── GEMINI.md # This file
 
-
----
+______________________________________________________________________
 
 # Development Methodology: Agent OS
 
@@ -102,7 +96,6 @@ Initialize project strategy and architecture.
 
 @agent-os/commands/plan-product/plan-product.md run this
 
-
 **When**: Project start or Agent OS installation
 
 ### Repeatable Feature Cycle (Phases 1-5)
@@ -113,7 +106,6 @@ Transform vague ideas into clear requirements.
 
 @agent-os/commands/shape-spec/shape-spec.md run this
 
-
 **Skip if**: Requirements already clear
 
 #### Phase 2: Write Spec (Required)
@@ -121,7 +113,6 @@ Transform vague ideas into clear requirements.
 Create detailed feature specification.
 
 @agent-os/commands/write-spec/write-spec.md run this
-
 
 **Output**: Spec in `@agent-os/specs/[feature-name]/`
 
@@ -131,24 +122,20 @@ Break spec into actionable task list.
 
 @agent-os/commands/create-tasks/create-tasks.md run this
 
-
 **Output**: Prioritized, grouped tasks
 
 #### Phase 4: Implement Tasks (Choose One)
 
-**Simple implementation:**
-@agent-os/commands/implement-tasks/implement-tasks.md run this
-
+**Simple implementation:** @agent-os/commands/implement-tasks/implement-tasks.md run this
 
 **OR**
 
 **Complex orchestration (Claude Code only):**
 @agent-os/commands/orchestrate-tasks/orchestrate-tasks.md run this
 
-
 **Important**: Use implement-tasks OR orchestrate-tasks, not both.
 
----
+______________________________________________________________________
 
 # Building and Running
 
@@ -156,24 +143,21 @@ Break spec into actionable task list.
 
 make install
 
-
 ## CLI Usage
 
-poetry run prompt-unifier --help
-poetry run prompt-unifier <command>
-
+poetry run prompt-unifier --help poetry run prompt-unifier <command>
 
 ## Development Commands
 
-| Command | Purpose |
-|---------|---------|
-| `make test` | Run test suite |
-| `make lint` | Check linting |
-| `make format` | Format code |
-| `make typecheck` | Run mypy |
-| `make check` | All checks (lint + types + tests) |
-| `make changelog` | Generate changelog |
-| `make release` | Create a new release |
+| Command          | Purpose                           |
+| ---------------- | --------------------------------- |
+| `make test`      | Run test suite                    |
+| `make lint`      | Check linting                     |
+| `make format`    | Format code                       |
+| `make typecheck` | Run mypy                          |
+| `make check`     | All checks (lint + types + tests) |
+| `make changelog` | Generate changelog                |
+| `make release`   | Create a new release              |
 
 ### GitLab CI Local Testing
 
@@ -181,13 +165,14 @@ To run GitLab CI/CD jobs locally, you can use `gitlab-ci-local`. This requires N
 Install `gitlab-ci-local` globally: `npm install -g gitlab-ci-local`
 
 Then use the following `make` targets:
+
 - `make test-ci` | Run tests in GitLab CI environment (Docker, with cache)
 - `make test-ci-shell` | Run tests with shell executor (faster, less accurate)
 - `make test-ci-job JOB=<name>` | Run specific GitLab CI job
 - `make test-ci-list` | List all available GitLab CI jobs
 - `make clean-ci` | Clean GitLab CI local cache and volumes
 
----
+______________________________________________________________________
 
 # Development Conventions
 
@@ -201,9 +186,9 @@ Then use the following `make` targets:
 ## Testing Strategy (TDD)
 
 1. Write failing test first
-2. Implement minimal code to pass
-3. Refactor while keeping tests green
-4. Tests in `tests/` mirror `src/` structure
+1. Implement minimal code to pass
+1. Refactor while keeping tests green
+1. Tests in `tests/` mirror `src/` structure
 
 ## Dependency Management
 
@@ -215,6 +200,7 @@ Then use the following `make` targets:
 ## Pre-commit Hooks
 
 Configured in `.pre-commit-config.yaml`:
+
 - Ruff linting and formatting
 - mypy type checking
 - detect-secrets security scanning
@@ -228,51 +214,55 @@ Install hooks: `pre-commit install`
 - Keep commits atomic and focused
 - Reference issues/specs in commit messages
 
----
+______________________________________________________________________
 
 # Product Context (Agent OS)
 
 ## Mission
+
 `@agent-os/product/mission.md`
 
 ## Roadmap
+
 `@agent-os/product/roadmap.md`
 
 **YOU MUST update this file when adding features (see Protocol above).**
 
 ## Tech Stack
+
 `@agent-os/product/tech-stack.md`
 
 ## Standards
+
 `@agent-os/standards/`
 
 Auto-loaded by Agent OS commands.
 
 ## Specs
+
 `@agent-os/specs/`
 
 Each feature has its own directory with spec files.
 
----
+______________________________________________________________________
 
 # Quick Reference
 
 ## When Developer Says...
 
-| Request | Your Response |
-|---------|---------------|
-| "Add a feature" | Execute Mandatory Protocol → Check roadmap → Guide through Agent OS phases |
-| "I have an idea" | `@agent-os/commands/shape-spec/shape-spec.md` |
-| "Implement X" | "Do we have a spec? Is it in the roadmap?" |
-| "Fix bug" | Check if in roadmap, create spec if significant |
-| "Refactor" | Verify against standards, update docs |
+| Request          | Your Response                                                              |
+| ---------------- | -------------------------------------------------------------------------- |
+| "Add a feature"  | Execute Mandatory Protocol → Check roadmap → Guide through Agent OS phases |
+| "I have an idea" | `@agent-os/commands/shape-spec/shape-spec.md`                              |
+| "Implement X"    | "Do we have a spec? Is it in the roadmap?"                                 |
+| "Fix bug"        | Check if in roadmap, create spec if significant                            |
+| "Refactor"       | Verify against standards, update docs                                      |
 
 ## Memory Commands
 
-/memory refresh # Reload this file
-/memory show # Display loaded con/memory list # Show all GEMINI.md files
+/memory refresh # Reload this file /memory show # Display loaded con/memory list # Show all
+GEMINI.md files
 
-
----
+______________________________________________________________________
 
 **Remember**: Roadmap update is MANDATORY before any implementation. No exceptions.

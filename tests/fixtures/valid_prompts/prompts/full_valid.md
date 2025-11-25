@@ -12,6 +12,7 @@ author: Test Author
 This is a complete prompt with all fields including optional ones.
 
 It demonstrates:
+
 - Semantic versioning
 - Multiple tags
 - Author attribution

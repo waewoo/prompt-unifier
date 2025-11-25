@@ -63,7 +63,8 @@ This project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.htm
 
 ### BREAKING CHANGE
 
-- -v flag now controls verbosity level instead of showing version. use -V or --version for version information.
+- -v flag now controls verbosity level instead of showing version. use -V or --version for version
+  information.
 
 ### Feat
 
@@ -75,7 +76,8 @@ This project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.htm
 ### Feat
 
 - **utils**: add cross-platform path normalization for Windows compatibility
-- Introduce `list` and `status` CLI commands with rich UI, enabled by a new handler protocol supporting detailed deployment status checks.
+- Introduce `list` and `status` CLI commands with rich UI, enabled by a new handler protocol
+  supporting detailed deployment status checks.
 - **deploy**: add multi-tool support to deploy command
 
 ## v0.5.1 (2025-11-18)

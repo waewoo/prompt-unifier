@@ -10,11 +10,13 @@ applies_to: [python, fastapi, flask]
 # API Design Patterns
 
 ## Resource Naming
+
 - Use plural nouns for collections: `/users`, `/posts`
 - Use singular for singletons: `/profile`
 - Use kebab-case for multi-word resources: `/user-profiles`
 
 ## HTTP Methods
+
 - GET: Retrieve resources (idempotent)
 - POST: Create new resources
 - PUT: Replace entire resource
@@ -22,6 +24,7 @@ applies_to: [python, fastapi, flask]
 - DELETE: Remove resource
 
 ## Response Codes
+
 - 200 OK: Successful GET/PUT/PATCH
 - 201 Created: Successful POST
 - 204 No Content: Successful DELETE

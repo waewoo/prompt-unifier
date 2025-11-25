@@ -1,16 +1,17 @@
 # Security Guide for Developers
 
-This guide explains how to use the security tools in this project and provides best practices for secure development.
+This guide explains how to use the security tools in this project and provides best practices for
+secure development.
 
 ## Table of Contents
 
 1. [Overview of Security Tools](#overview-of-security-tools)
-2. [Getting Started](#getting-started)
-3. [Pre-commit Hooks](#pre-commit-hooks)
-4. [Handling Detected Secrets](#handling-detected-secrets)
-5. [Fixing Bandit Issues](#fixing-bandit-issues)
-6. [Best Practices](#best-practices)
-7. [Common Errors and Solutions](#common-errors-and-solutions)
+1. [Getting Started](#getting-started)
+1. [Pre-commit Hooks](#pre-commit-hooks)
+1. [Handling Detected Secrets](#handling-detected-secrets)
+1. [Fixing Bandit Issues](#fixing-bandit-issues)
+1. [Best Practices](#best-practices)
+1. [Common Errors and Solutions](#common-errors-and-solutions)
 
 ## Overview of Security Tools
 
@@ -18,19 +19,19 @@ This project uses a multi-layered security approach:
 
 ### Local Security (Pre-commit Hooks)
 
-| Tool | Purpose | Documentation |
-|------|---------|---------------|
+| Tool               | Purpose                                                   | Documentation                                    |
+| ------------------ | --------------------------------------------------------- | ------------------------------------------------ |
 | **detect-secrets** | Prevents committing secrets (API keys, tokens, passwords) | [GitHub](https://github.com/Yelp/detect-secrets) |
-| **bandit** | Python SAST - finds security vulnerabilities in code | [Docs](https://bandit.readthedocs.io/) |
+| **bandit**         | Python SAST - finds security vulnerabilities in code      | [Docs](https://bandit.readthedocs.io/)           |
 
 ### CI/CD Security (GitLab Pipeline)
 
-| Tool | Purpose | Stage |
-|------|---------|-------|
-| **detect-secrets** | Scans for secrets in MR | security |
-| **bandit** | SAST scanning | security |
-| **safety** | CVE database for Python packages | security |
-| **pip-audit** | Comprehensive dependency scanning | security |
+| Tool               | Purpose                           | Stage    |
+| ------------------ | --------------------------------- | -------- |
+| **detect-secrets** | Scans for secrets in MR           | security |
+| **bandit**         | SAST scanning                     | security |
+| **safety**         | CVE database for Python packages  | security |
+| **pip-audit**      | Comprehensive dependency scanning | security |
 
 ## Getting Started
 
@@ -57,6 +58,7 @@ poetry run pre-commit run --all-files
 ```
 
 You should see all checks pass:
+
 ```
 ruff.....................................................................Passed
 ruff-format..............................................................Passed
@@ -70,13 +72,14 @@ Bandit security linter...................................................Passed
 ### What Runs on Every Commit?
 
 1. **Ruff** - Linting and formatting
-2. **mypy** - Type checking
-3. **detect-secrets** - Secret detection
-4. **bandit** - Security vulnerability scanning
+1. **mypy** - Type checking
+1. **detect-secrets** - Secret detection
+1. **bandit** - Security vulnerability scanning
 
 ### Bypassing Hooks (NOT RECOMMENDED)
 
-You can bypass hooks with `git commit --no-verify`, but **this is strongly discouraged**. Security checks exist for a reason!
+You can bypass hooks with `git commit --no-verify`, but **this is strongly discouraged**. Security
+checks exist for a reason!
 
 ### Running Hooks Manually
 
@@ -110,6 +113,7 @@ Check the file and line number mentioned in the error.
 ### Step 2: Remove the Secret
 
 **Option A: Remove it completely** (preferred)
+
 ```python
 # Bad - hardcoded secret
 api_key = "sk-1234567890abcdef"
@@ -120,6 +124,7 @@ api_key = os.getenv("API_KEY")
 ```
 
 **Option B: Use configuration file** (excluded from git)
+
 ```python
 # Good - load from config (in .gitignore)
 from config import load_config
@@ -226,12 +231,14 @@ password = "test_password_for_fixtures"  # nosec B105 - test fixture only
 ### 1. Credential Management
 
 **DO:**
+
 - Store secrets in environment variables
 - Use SSH keys for Git authentication
 - Use secure credential managers (e.g., Vault, AWS Secrets Manager)
 - Rotate credentials regularly
 
 **DON'T:**
+
 - Hardcode secrets in code
 - Commit `.env` files with real credentials
 - Share credentials via email or chat
@@ -293,6 +300,7 @@ poetry update <package-name>
 **Cause:** Version mismatch between baseline and detect-secrets version
 
 **Solution:**
+
 ```bash
 # Regenerate baseline with current version
 poetry run detect-secrets scan . > .secrets.baseline
@@ -306,6 +314,7 @@ poetry run pre-commit autoupdate
 **Cause:** Test fixtures flagged as secrets
 
 **Solution:**
+
 ```bash
 # Add to baseline
 poetry run detect-secrets scan --update .secrets.baseline
@@ -319,6 +328,7 @@ poetry run detect-secrets audit .secrets.baseline
 **Cause:** Using pre-commit repo instead of local Poetry environment
 
 **Solution:** Already configured to use local hook in `.pre-commit-config.yaml`:
+
 ```yaml
 - repo: local
   hooks:
@@ -332,6 +342,7 @@ poetry run detect-secrets audit .secrets.baseline
 **Cause:** Hooks not installed
 
 **Solution:**
+
 ```bash
 # Install hooks
 poetry run pre-commit install
@@ -345,6 +356,7 @@ poetry run pre-commit run --all-files
 **Cause:** Dev dependencies with known CVEs
 
 **Solution:**
+
 ```bash
 # Check severity
 poetry run safety check
@@ -398,8 +410,8 @@ rm test_vuln.py
 All security checks also run in GitLab CI on every merge request:
 
 1. **Secrets scan** - Blocks merge if secrets detected
-2. **SAST scan** - Blocks merge if vulnerabilities found
-3. **Dependency scan** - Blocks merge if critical CVEs found
+1. **SAST scan** - Blocks merge if vulnerabilities found
+1. **Dependency scan** - Blocks merge if critical CVEs found
 
 See `docs/ci-security.md` for details on interpreting CI security reports.
 
@@ -414,10 +426,11 @@ See `docs/ci-security.md` for details on interpreting CI security reports.
 ## Questions?
 
 If you have questions about security practices or tools:
-1. Check this guide first
-2. Review the main [SECURITY.md](../SECURITY.md)
-3. Ask in team chat or create an issue
 
----
+1. Check this guide first
+1. Review the main [SECURITY.md](../SECURITY.md)
+1. Ask in team chat or create an issue
+
+______________________________________________________________________
 
 **Remember:** Security is everyone's responsibility. When in doubt, ask!

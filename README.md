@@ -1,26 +1,37 @@
 # Prompt Unifier
 
-[![PyPI Version](https://img.shields.io/pypi/v/prompt-unifier.svg)](https://pypi.org/project/prompt-unifier/) [![Python Version](https://img.shields.io/pypi/pyversions/prompt-unifier.svg)](https://pypi.org/project/prompt-unifier/) [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT) [![Code Coverage](https://img.shields.io/badge/coverage-95%25-brightgreen)](./htmlcov) [![pipeline status](https://img.shields.io/gitlab/pipeline-status/waewoo%2Fprompt-unifier?branch=main)](https://gitlab.com/waewoo/prompt-unifier/-/pipelines)
+[![PyPI Version](https://img.shields.io/pypi/v/prompt-unifier.svg)](https://pypi.org/project/prompt-unifier/)
+[![Python Version](https://img.shields.io/pypi/pyversions/prompt-unifier.svg)](https://pypi.org/project/prompt-unifier/)
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
+[![Code Coverage](https://img.shields.io/badge/coverage-95%25-brightgreen)](./htmlcov)
+[![pipeline status](https://img.shields.io/gitlab/pipeline-status/waewoo%2Fprompt-unifier?branch=main)](https://gitlab.com/waewoo/prompt-unifier/-/pipelines)
 
-A Python CLI tool for managing AI prompt templates and coding rules with YAML frontmatter, enabling version control, validation, and deployment workflows.
+A Python CLI tool for managing AI prompt templates and coding rules with YAML frontmatter, enabling
+version control, validation, and deployment workflows.
 
----
+______________________________________________________________________
 
 ## What is Prompt Unifier?
 
-Managing AI prompts across a team can be chaotic, with templates scattered across local files, wikis, and chat threads. This leads to a lack of version control, standardization, and a single source of truth.
+Managing AI prompts across a team can be chaotic, with templates scattered across local files,
+wikis, and chat threads. This leads to a lack of version control, standardization, and a single
+source of truth.
 
-**Prompt Unifier** solves this by providing a centralized, Git-based workflow to **sync**, **validate**, and **deploy** prompt and rule files to your favorite AI coding assistants.
+**Prompt Unifier** solves this by providing a centralized, Git-based workflow to **sync**,
+**validate**, and **deploy** prompt and rule files to your favorite AI coding assistants.
 
 ## Features
 
 - ✅ **Git-Based Versioning**: Sync prompts from one or multiple Git repositories.
 - ✅ **Centralized Management**: Use a single source of truth for all your prompts and rules.
 - ✅ **Validation**: Catch errors in your prompt files before deploying them.
-- ✅ **Easy Deployment**: A single command to deploy prompts to supported handlers (like **Continue**).
-- ✅ **Structured Organization**: Recursively discovers files, preserving your subdirectory structure.
+- ✅ **Easy Deployment**: A single command to deploy prompts to supported handlers (like
+  **Continue**).
+- ✅ **Structured Organization**: Recursively discovers files, preserving your subdirectory
+  structure.
 - ✅ **Multi-Repository Support**: Combine company-wide prompts with team-specific ones seamlessly.
-- ✅ **Centralized Logging**: Global verbose mode (`-v`, `-vv`) and file logging (`--log-file`) for debugging.
+- ✅ **Centralized Logging**: Global verbose mode (`-v`, `-vv`) and file logging (`--log-file`) for
+  debugging.
 
 ## Current Handler Support
 
@@ -29,11 +40,13 @@ Managing AI prompts across a team can be chaotic, with templates scattered acros
 - **Continue** - Full support with YAML frontmatter preservation
 - **Kilo Code** - Full support with pure Markdown deployment (no YAML frontmatter)
 
-We plan to integrate with more AI tools and platforms in the future to provide a wider range of deployment options.
+We plan to integrate with more AI tools and platforms in the future to provide a wider range of
+deployment options.
 
 ## How it Works: The Workflow
 
-Prompt Unifier streamlines the management and deployment of your AI prompts and rules through a clear, three-stage workflow:
+Prompt Unifier streamlines the management and deployment of your AI prompts and rules through a
+clear, three-stage workflow:
 
 ```text
 ┌───────────────────────────┐         ┌───────────────────────┐         ┌────────────────────────────┐
@@ -48,9 +61,17 @@ Prompt Unifier streamlines the management and deployment of your AI prompts and 
                  (Version Control & Source of Truth)
 ```
 
-1.  **Sync from Remote Repositories**: You define one or more Git repositories containing your structured prompts and rules. **Prompt Unifier** fetches these, resolving conflicts with a "last-wins" strategy, and stores them in a centralized local directory. This ensures all your content is version-controlled and readily available.
-2.  **Local Storage**: All synced prompts and rules reside in a dedicated local storage area (e.g., `~/.prompt-unifier/storage`). This acts as your single source of truth, where content is validated and prepared for deployment.
-3.  **Deploy to AI Tool Configuration**: With a simple command, the tool copies the relevant prompts and rules from your local storage to the specific configuration directories of your AI assistant (e.g., `~/.continue/prompts` for the **Continue** handler). This makes your standardized and validated content immediately available for use within your AI development environment.
+1. **Sync from Remote Repositories**: You define one or more Git repositories containing your
+   structured prompts and rules. **Prompt Unifier** fetches these, resolving conflicts with a
+   "last-wins" strategy, and stores them in a centralized local directory. This ensures all your
+   content is version-controlled and readily available.
+1. **Local Storage**: All synced prompts and rules reside in a dedicated local storage area (e.g.,
+   `~/.prompt-unifier/storage`). This acts as your single source of truth, where content is
+   validated and prepared for deployment.
+1. **Deploy to AI Tool Configuration**: With a simple command, the tool copies the relevant prompts
+   and rules from your local storage to the specific configuration directories of your AI assistant
+   (e.g., `~/.continue/prompts` for the **Continue** handler). This makes your standardized and
+   validated content immediately available for use within your AI development environment.
 
 ## Installation
 
@@ -61,6 +82,7 @@ pip install prompt-unifier
 ```
 
 **Prerequisites:**
+
 - Python 3.11+
 - Git 2.x+
 - Poetry (for development)
@@ -90,14 +112,17 @@ prompt-unifier status
 
 An example repository with prompts and rules is available as a template:
 
-**[prompt-unifier-data](https://gitlab.com/waewoo/prompt-unifier-data)** - A collection of DevOps-focused prompts and coding rules ready to use with Prompt Unifier.
+**[prompt-unifier-data](https://gitlab.com/waewoo/prompt-unifier-data)** - A collection of
+DevOps-focused prompts and coding rules ready to use with Prompt Unifier.
 
 This repository includes:
+
 - Structured prompts and rules with proper YAML frontmatter
 - GitLab CI pipeline for validation
 - Auto-bump release mechanism with semantic versioning
 
-You can fork this repository to create your own prompt collection, or use it directly as a starting point.
+You can fork this repository to create your own prompt collection, or use it directly as a starting
+point.
 
 ## Core Concepts
 
@@ -108,6 +133,7 @@ The tool manages two types of files, both using **YAML frontmatter**.
 AI prompt templates, typically stored in a `prompts/` directory within your Git repository.
 
 **Example: `prompts/backend/api-design.md`**
+
 ```markdown
 ---
 title: api-design-review
@@ -125,6 +151,7 @@ You are an expert API designer. Please review the following API design...
 Coding standards and best practices, typically stored in a `rules/` directory.
 
 **Example: `rules/testing/pytest-best-practices.md`**
+
 ```markdown
 ---
 title: pytest-best-practices
@@ -147,10 +174,11 @@ The CLI provides several commands to manage your prompts.
 
 These options can be used with any command:
 
--   <code>--verbose</code>, <code>-v</code>: Increase verbosity level. Use `-v` for INFO, `-vv` for DEBUG.
--   <code>--log-file TEXT</code>: Write logs to a file for persistent debugging.
--   <code>--version</code>, <code>-V</code>: Show version and exit.
--   <code>--help</code>: Show help message and exit.
+- <code>--verbose</code>, <code>-v</code>: Increase verbosity level. Use `-v` for INFO, `-vv` for
+  DEBUG.
+- <code>--log-file TEXT</code>: Write logs to a file for persistent debugging.
+- <code>--version</code>, <code>-V</code>: Show version and exit.
+- <code>--help</code>: Show help message and exit.
 
 ```bash
 # Run any command with verbose output
@@ -165,7 +193,9 @@ prompt-unifier -vv --log-file debug.log sync --repo https://github.com/example/p
 Creates a <code>.prompt-unifier/config.yaml</code> file in your current directory. This file tracks which repositories you sync from and your deployment settings. It also sets up a local storage directory (default: <code>~/.prompt-unifier/storage/</code>) with <code>prompts/</code>, <code>rules/</code> subdirectories and a <code>.gitignore</code> file.
 
 **Options:**
--   <code>--storage-path TEXT</code>: Specify a custom storage directory path instead of the default.
+
+- <code>--storage-path TEXT</code>: Specify a custom storage directory path instead of the default.
+
 </details>
 
 <details><summary><code>prompt-unifier sync</code> - Synchronize from Git</summary>
@@ -173,11 +203,12 @@ Creates a <code>.prompt-unifier/config.yaml</code> file in your current director
 Clones or pulls prompts from one or more Git repositories into a centralized local storage path. You can specify repositories via the command line or in the <code>config.yaml</code> file. The configuration is updated with metadata about the synced repositories.
 
 **Options:**
--   <code>--repo TEXT</code>: Git repository URL (can be specified multiple times).
--   <code>--storage-path TEXT</code>: Override the default storage path for this sync.
 
-**Multi-Repository Sync with Last-Wins Strategy:**
-When multiple repositories are synced, files with identical paths will be overwritten by content from later repositories in the sync order.
+- <code>--repo TEXT</code>: Git repository URL (can be specified multiple times).
+- <code>--storage-path TEXT</code>: Override the default storage path for this sync.
+
+**Multi-Repository Sync with Last-Wins Strategy:** When multiple repositories are synced, files with
+identical paths will be overwritten by content from later repositories in the sync order.
 
 ```bash
 prompt-unifier sync \
@@ -185,6 +216,7 @@ prompt-unifier sync \
   --repo https://github.com/team/team-prompts.git \
   --storage-path /custom/path/storage
 ```
+
 </details>
 
 <details><summary><code>prompt-unifier status</code> - Check sync status</summary>
@@ -197,11 +229,14 @@ Displays the synchronization status, including when each repository was last syn
 Checks prompt and rule files for correct YAML frontmatter, required fields, and valid syntax. You can validate the central storage or a local directory of files.
 
 **Options:**
--   <code>[DIRECTORY]</code>: Optional. Directory to validate (defaults to synchronized storage).
--   <code>--json</code>: Output validation results in JSON format.
--   <code>--type TEXT</code>, <code>-t TEXT</code>: Specify content type to validate: 'all', 'prompts', or 'rules' [default: 'all'].
 
-Use the global <code>-v</code> flag for verbose output (e.g., <code>prompt-unifier -v validate</code>).
+- <code>\[DIRECTORY\]</code>: Optional. Directory to validate (defaults to synchronized storage).
+- <code>--json</code>: Output validation results in JSON format.
+- <code>--type TEXT</code>, <code>-t TEXT</code>: Specify content type to validate: 'all',
+  'prompts', or 'rules' \[default: 'all'\].
+
+Use the global <code>-v</code> flag for verbose output (e.g., <code>prompt-unifier -v
+validate</code>).
 
 ```bash
 # Validate the central storage
@@ -210,6 +245,7 @@ prompt-unifier validate
 # Validate a local directory
 prompt-unifier validate ./my-prompts/
 ```
+
 </details>
 
 <details><summary><code>prompt-unifier list</code> - List content</summary>
@@ -217,9 +253,10 @@ prompt-unifier validate ./my-prompts/
 Displays a table of all available prompts and rules in your centralized storage. You can filter and sort the content using various options.
 
 **Options:**
--   <code>--tool</code>, <code>-t TEXT</code>: Filter content by target tool handler.
--   <code>--tag TEXT</code>: Filter content by a specific tag.
--   <code>--sort</code>, <code>-s TEXT</code>: Sort content by 'name' (default) or 'date'.
+
+- <code>--tool</code>, <code>-t TEXT</code>: Filter content by target tool handler.
+- <code>--tag TEXT</code>: Filter content by a specific tag.
+- <code>--sort</code>, <code>-s TEXT</code>: Sort content by 'name' (default) or 'date'.
 
 Use the global <code>-v</code> flag for verbose output (e.g., <code>prompt-unifier -v list</code>).
 
@@ -233,6 +270,7 @@ prompt-unifier -v list --tag python
 # List content sorted by date
 prompt-unifier list --sort date
 ```
+
 </details>
 
 <details><summary><code>prompt-unifier deploy</code> - Deploy to handlers</summary>
@@ -241,28 +279,35 @@ Copies the synchronized prompts and rules to the configuration directories of yo
 
 - **Default Handler:** `continue`
 - **Supported Handlers:** `continue`, `kilocode`
-- **Default Destinations:** 
+- **Default Destinations:**
   - **Continue**: Deploys to `./.continue/` in your current project.
     - Prompts: `./.continue/prompts/`
     - Rules: `./.continue/rules/`
   - **Kilo Code**: Deploys to `./.kilocode/` in your current project.
     - Prompts (Workflows): `./.kilocode/workflows/`
     - Rules: `./.kilocode/rules/`
-- **Base Path Override:** Can be overridden via CLI <code>--base-path</code> or handler-specific configuration in <code>config.yaml</code>.
+- **Base Path Override:** Can be overridden via CLI <code>--base-path</code> or handler-specific
+  configuration in <code>config.yaml</code>.
 
 **Handler-Specific Behavior:**
+
 - **Continue**: Preserves YAML frontmatter in deployed files
-- **Kilo Code**: Converts to pure Markdown (no YAML frontmatter), uses flat directory structure with directory-prefixed file naming
+- **Kilo Code**: Converts to pure Markdown (no YAML frontmatter), uses flat directory structure with
+  directory-prefixed file naming
 
 **Deployment Options:**
--   <code>--name TEXT</code>: Deploy only a specific prompt or rule by name.
--   <code>--tags TEXT</code>: Filter content to deploy by tags (comma-separated).
--   <code>--handlers TEXT</code>: Specify target handlers for deployment (comma-separated). Supported: 'continue', 'kilocode'.
--   <code>--base-path PATH</code>: Custom base path for handler deployment (overrides config.yaml).
--   <code>--clean</code>: Remove orphaned prompts/rules in destination that are not in your source (creates backups before removal).
--   <code>--dry-run</code>: Preview deployment without executing any file operations.
 
-After deployment, a detailed verification report is provided, outlining the status of each deployed item.
+- <code>--name TEXT</code>: Deploy only a specific prompt or rule by name.
+- <code>--tags TEXT</code>: Filter content to deploy by tags (comma-separated).
+- <code>--handlers TEXT</code>: Specify target handlers for deployment (comma-separated). Supported:
+  'continue', 'kilocode'.
+- <code>--base-path PATH</code>: Custom base path for handler deployment (overrides config.yaml).
+- <code>--clean</code>: Remove orphaned prompts/rules in destination that are not in your source
+  (creates backups before removal).
+- <code>--dry-run</code>: Preview deployment without executing any file operations.
+
+After deployment, a detailed verification report is provided, outlining the status of each deployed
+item.
 
 ```bash
 # Deploy only prompts tagged "python", with cleanup, and preview changes
@@ -274,39 +319,43 @@ prompt-unifier deploy --handlers kilocode
 # Deploy to both Continue and Kilo Code
 prompt-unifier deploy --handlers continue,kilocode
 ```
+
 </details>
 
 ## Development Setup
 
 If you want to contribute to the development of `prompt-unifier`:
 
-1.  **Clone the repository:**
-    ```bash
-    git clone https://gitlab.com/waewoo/prompt-unifier.git
-    cd prompt-unifier
-    ```
+1. **Clone the repository:**
 
-2.  **Install dependencies using Poetry:**
-    ```bash
-    poetry install
-    ```
+   ```bash
+   git clone https://gitlab.com/waewoo/prompt-unifier.git
+   cd prompt-unifier
+   ```
 
-3.  **Install pre-commit hooks:**
-    This will run linters and formatters automatically before each commit.
-    ```bash
-    poetry run pre-commit install
-    ```
+1. **Install dependencies using Poetry:**
+
+   ```bash
+   poetry install
+   ```
+
+1. **Install pre-commit hooks:** This will run linters and formatters automatically before each
+   commit.
+
+   ```bash
+   poetry run pre-commit install
+   ```
 
 ### Running Checks
 
 This project uses a `Makefile` for common development tasks:
 
--   `make install`: Install dependencies.
--   `make test`: Run the test suite.
--   `make lint`: Check for linting issues with Ruff.
--   `make format`: Format code with Ruff.
--   `make typecheck`: Run static type analysis with mypy.
--   `make check`: Run all checks (lint, types, tests).
+- `make install`: Install dependencies.
+- `make test`: Run the test suite.
+- `make lint`: Check for linting issues with Ruff.
+- `make format`: Format code with Ruff.
+- `make typecheck`: Run static type analysis with mypy.
+- `make check`: Run all checks (lint, types, tests).
 
 ## Contributing
 

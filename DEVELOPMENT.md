@@ -1,8 +1,9 @@
 # Development Guide
 
-This document provides technical details for developers working on the `prompt-unifier` codebase. For guidelines on submitting changes, see [CONTRIBUTING.md](CONTRIBUTING.md).
+This document provides technical details for developers working on the `prompt-unifier` codebase.
+For guidelines on submitting changes, see [CONTRIBUTING.md](CONTRIBUTING.md).
 
----
+______________________________________________________________________
 
 ## Table of Contents
 
@@ -17,17 +18,17 @@ This document provides technical details for developers working on the `prompt-u
 - [Logging System](#logging-system)
 - [Adding New Tool Handlers](#adding-new-tool-handlers)
 
----
+______________________________________________________________________
 
 ## Development Setup
 
 ### Prerequisites
 
-| Requirement | Version | Check Installation      |
-|-------------|---------|-------------------------|
-| **Python**  | 3.11+   | `python --version`      |
-| **Poetry**  | 1.7+    | `poetry --version`      |
-| **Git**     | 2.x+    | `git --version`         |
+| Requirement | Version | Check Installation |
+| ----------- | ------- | ------------------ |
+| **Python**  | 3.11+   | `python --version` |
+| **Poetry**  | 1.7+    | `poetry --version` |
+| **Git**     | 2.x+    | `git --version`    |
 
 ### 1. Clone the Repository
 
@@ -38,7 +39,8 @@ cd prompt-unifier
 
 ### 2. Install Dependencies
 
-This project uses [Poetry](https://python-poetry.org/) for dependency management. The `Makefile` provides a convenient way to install everything.
+This project uses [Poetry](https://python-poetry.org/) for dependency management. The `Makefile`
+provides a convenient way to install everything.
 
 ```bash
 # This runs `poetry install`
@@ -47,13 +49,14 @@ make install
 
 ### 3. Install Pre-commit Hooks
 
-Pre-commit hooks automatically run linters and formatters before each commit to enforce code quality.
+Pre-commit hooks automatically run linters and formatters before each commit to enforce code
+quality.
 
 ```bash
 poetry run pre-commit install
 ```
 
----
+______________________________________________________________________
 
 ## Core Workflow
 
@@ -67,7 +70,7 @@ All common tasks are managed through the `Makefile`.
 - `make typecheck`: Run static type analysis with mypy.
 - `make test`: Run the full test suite and generate a coverage report.
 
----
+______________________________________________________________________
 
 ## Testing
 
@@ -91,7 +94,8 @@ poetry run pytest -v
 
 ### Test Coverage
 
-A minimum of **95% test coverage** is required. After running `make test`, you can view a detailed HTML report by opening `htmlcov/index.html` in your browser.
+A minimum of **95% test coverage** is required. After running `make test`, you can view a detailed
+HTML report by opening `htmlcov/index.html` in your browser.
 
 ```bash
 # For macOS users
@@ -101,23 +105,25 @@ open htmlcov/index.html
 xdg-open htmlcov/index.html
 ```
 
----
+______________________________________________________________________
 
 ## Code Style and Quality
 
 Code quality is enforced automatically by pre-commit hooks and the CI pipeline.
 
-- **Linting & Formatting**: We use [Ruff](https://github.com/astral-sh/ruff) for fast linting and formatting. Configuration is in `pyproject.toml`.
+- **Linting & Formatting**: We use [Ruff](https://github.com/astral-sh/ruff) for fast linting and
+  formatting. Configuration is in `pyproject.toml`.
 - **Type Checking**: We use [mypy](http://mypy-lang.org/) in `strict` mode for static type analysis.
 
 You can run these checks manually at any time:
+
 ```bash
 make lint
 make typecheck
 make format
 ```
 
----
+______________________________________________________________________
 
 ## CI/CD Pipeline
 
@@ -125,34 +131,40 @@ The project uses GitLab CI for continuous integration. The pipeline is defined i
 
 ### Local CI Testing
 
-You can run the CI pipeline locally using `gitlab-ci-local`, which is helpful for debugging pipeline issues without making commits.
+You can run the CI pipeline locally using `gitlab-ci-local`, which is helpful for debugging pipeline
+issues without making commits.
 
 **Prerequisites:**
+
 - Node.js and npm
 - `npm install -g gitlab-ci-local`
 
 **Makefile Commands:**
+
 - `make test-ci`: Run the full test suite in a Docker environment mirroring the CI setup.
-- `make test-ci-job JOB=<name>`: Run a specific job from the pipeline (e.g., `make test-ci-job JOB=lint`).
+- `make test-ci-job JOB=<name>`: Run a specific job from the pipeline (e.g.,
+  `make test-ci-job JOB=lint`).
 - `make test-ci-list`: List all available jobs in the pipeline.
 
 ### Pipeline Stages
 
 The pipeline typically includes these stages:
-1.  **lint**: Checks code style.
-2.  **typecheck**: Runs static type analysis.
-3.  **test**: Executes the pytest suite and checks coverage.
-4.  **security**: Runs security scans for vulnerabilities and secrets.
 
----
+1. **lint**: Checks code style.
+1. **typecheck**: Runs static type analysis.
+1. **test**: Executes the pytest suite and checks coverage.
+1. **security**: Runs security scans for vulnerabilities and secrets.
+
+______________________________________________________________________
 
 ## Release Process
 
 Releases are managed using `commitizen` and are automated via the `Makefile`.
 
 To create a new release:
-1.  Ensure you are on the `main` branch and all changes are committed.
-2.  Run the `make release` command with the type of version bump.
+
+1. Ensure you are on the `main` branch and all changes are committed.
+1. Run the `make release` command with the type of version bump.
 
 ```bash
 # Create a patch release (e.g., 0.4.0 -> 0.4.1)
@@ -163,13 +175,14 @@ make release VERSION_BUMP=minor
 ```
 
 This command will:
-1.  Run all quality checks (`make check`).
-2.  Bump the version number in `pyproject.toml` and `src/prompt_unifier/__init__.py`.
-3.  Commit the version bump.
-4.  Create a new Git tag.
-5.  Push the commit and tag to the `main` branch.
 
----
+1. Run all quality checks (`make check`).
+1. Bump the version number in `pyproject.toml` and `src/prompt_unifier/__init__.py`.
+1. Commit the version bump.
+1. Create a new Git tag.
+1. Push the commit and tag to the `main` branch.
+
+______________________________________________________________________
 
 ## Project Structure
 
@@ -194,11 +207,12 @@ prompt-unifier/
 └── README.md             # User-facing documentation
 ```
 
----
+______________________________________________________________________
 
 ## Architecture
 
-The data flows from your Git repositories to a central storage location on your machine, and then is deployed to the AI tools in your project.
+The data flows from your Git repositories to a central storage location on your machine, and then is
+deployed to the AI tools in your project.
 
 ```text
 ┌──────────────────────────┐      ┌───────────────────────────┐      ┌───────────────────────────┐
@@ -218,11 +232,12 @@ The data flows from your Git repositories to a central storage location on your 
 └──────────────────────────┘      └───────────────────────────┘
 ```
 
----
+______________________________________________________________________
 
 ## Logging System
 
-The project uses a centralized logging system based on Python's built-in `logging` module with Rich integration for colored terminal output.
+The project uses a centralized logging system based on Python's built-in `logging` module with Rich
+integration for colored terminal output.
 
 ### Configuration
 
@@ -261,58 +276,75 @@ def my_function():
 ### Log Levels
 
 | Level   | Verbosity | Use Case                                      |
-|---------|-----------|-----------------------------------------------|
+| ------- | --------- | --------------------------------------------- |
 | WARNING | Default   | Important issues, deprecations                |
 | INFO    | `-v`      | Progress info, file counts, operation status  |
 | DEBUG   | `-vv`     | Detailed tracing, variable values, full paths |
 
 ### Implementation Details
 
-- **Console output**: Uses `rich.logging.RichHandler` writing to stderr (keeps stdout clean for JSON/piping)
+- **Console output**: Uses `rich.logging.RichHandler` writing to stderr (keeps stdout clean for
+  JSON/piping)
 - **File output**: Plain text format with timestamps for parsing
 - **Module**: `src/prompt_unifier/utils/logging_config.py`
 
 ### Adding Logging to New Modules
 
 1. Import logging and create a logger:
+
    ```python
    import logging
    logger = logging.getLogger(__name__)
    ```
 
-2. Use appropriate log levels:
+1. Use appropriate log levels:
+
    - `logger.debug()` for detailed tracing
    - `logger.info()` for progress/status
    - `logger.warning()` for issues that don't stop execution
    - `logger.error()` for errors (usually followed by exception handling)
 
----
+______________________________________________________________________
 
 ## Adding New Tool Handlers
 
-This section provides a comprehensive guide for adding support for new AI tools to `prompt-unifier`. By following this tutorial, you'll learn how to create a handler that deploys prompts and rules to your target tool.
+This section provides a comprehensive guide for adding support for new AI tools to `prompt-unifier`.
+By following this tutorial, you'll learn how to create a handler that deploys prompts and rules to
+your target tool.
 
 ### Overview: The Handler Architecture
 
-`prompt-unifier` uses the **Strategy Pattern with Template Method** to support multiple AI tools. Each tool (Continue, Cursor, Windsurf, etc.) has its own "handler" - a class that knows how to deploy prompts and rules to that specific tool's expected locations and formats.
+`prompt-unifier` uses the **Strategy Pattern with Template Method** to support multiple AI tools.
+Each tool (Continue, Cursor, Windsurf, etc.) has its own "handler" - a class that knows how to
+deploy prompts and rules to that specific tool's expected locations and formats.
 
 The architecture consists of four main components:
 
 1. **ToolHandler Protocol**: Defines the interface that all handlers must implement
-2. **BaseToolHandler**: Abstract base class providing common functionality (backup, rollback, verification, etc.)
-3. **Concrete Handlers**: Tool-specific implementations (e.g., `ContinueToolHandler`, `KiloCodeToolHandler`) that inherit from `BaseToolHandler`
-4. **ToolHandlerRegistry**: Manages handler registration and retrieval
+1. **BaseToolHandler**: Abstract base class providing common functionality (backup, rollback,
+   verification, etc.)
+1. **Concrete Handlers**: Tool-specific implementations (e.g., `ContinueToolHandler`,
+   `KiloCodeToolHandler`) that inherit from `BaseToolHandler`
+1. **ToolHandlerRegistry**: Manages handler registration and retrieval
 
-This design allows you to add support for new tools without modifying existing code or duplicating common logic - you simply create a new handler class that inherits from `BaseToolHandler`, implement tool-specific methods, and register it.
+This design allows you to add support for new tools without modifying existing code or duplicating
+common logic - you simply create a new handler class that inherits from `BaseToolHandler`, implement
+tool-specific methods, and register it.
 
 #### Existing Handlers
 
-The project currently includes two fully-implemented handlers that serve as excellent reference implementations:
+The project currently includes two fully-implemented handlers that serve as excellent reference
+implementations:
 
-- **`ContinueToolHandler`** (`src/prompt_unifier/handlers/continue_handler.py`): Deploys to Continue AI assistant with YAML frontmatter preservation
-- **`KiloCodeToolHandler`** (`src/prompt_unifier/handlers/kilo_code_handler.py`): Deploys to Kilo Code with pure Markdown conversion (no YAML frontmatter) and flat directory structure with directory-prefixed file naming
+- **`ContinueToolHandler`** (`src/prompt_unifier/handlers/continue_handler.py`): Deploys to Continue
+  AI assistant with YAML frontmatter preservation
+- **`KiloCodeToolHandler`** (`src/prompt_unifier/handlers/kilo_code_handler.py`): Deploys to Kilo
+  Code with pure Markdown conversion (no YAML frontmatter) and flat directory structure with
+  directory-prefixed file naming
 
-When creating a new handler, refer to these implementations for best practices and patterns. Both handlers inherit from `BaseToolHandler` and only implement tool-specific logic, demonstrating the power of the base class architecture.
+When creating a new handler, refer to these implementations for best practices and patterns. Both
+handlers inherit from `BaseToolHandler` and only implement tool-specific logic, demonstrating the
+power of the base class architecture.
 
 #### Benefits of BaseToolHandler
 
@@ -325,39 +357,42 @@ The `BaseToolHandler` abstract base class (`src/prompt_unifier/handlers/base_han
 - ✅ **Directory management** utilities
 - ✅ **Consistent error handling** patterns
 
-This means you only need to implement **tool-specific** logic (content transformation, deployment paths) while inheriting all common functionality.
+This means you only need to implement **tool-specific** logic (content transformation, deployment
+paths) while inheriting all common functionality.
 
 ### Understanding BaseToolHandler
 
-The `BaseToolHandler` abstract base class (defined in `src/prompt_unifier/handlers/base_handler.py`) provides all common functionality that handlers need. When you inherit from it, you get these methods automatically:
+The `BaseToolHandler` abstract base class (defined in `src/prompt_unifier/handlers/base_handler.py`)
+provides all common functionality that handlers need. When you inherit from it, you get these
+methods automatically:
 
 #### Methods Inherited Automatically
 
 You **don't need to implement** these methods - they're already provided by `BaseToolHandler`:
 
-| Method | Purpose |
-|--------|---------|
-| `get_name()` | Returns the handler's unique identifier |
-| `get_status()` | Returns "active" if directories exist, "inactive" otherwise |
-| `_backup_file(file_path)` | Creates `.bak` backup of existing files |
-| `validate_tool_installation()` | Validates directories exist and are writable |
-| `rollback()` | Restores all `.bak` files after failed deployment |
-| `clean_orphaned_files(deployed_filenames)` | Removes files not in deployment set |
-| `_remove_empty_directories(base_dir)` | Cleans up empty subdirectories |
-| `aggregate_verification_results(results)` | Aggregates verification counts |
-| `display_verification_report(results)` | Shows formatted Rich table with results |
-| `_compare_content_hashes(source, target)` | Compares SHA-256 hashes for sync status |
+| Method                                     | Purpose                                                     |
+| ------------------------------------------ | ----------------------------------------------------------- |
+| `get_name()`                               | Returns the handler's unique identifier                     |
+| `get_status()`                             | Returns "active" if directories exist, "inactive" otherwise |
+| `_backup_file(file_path)`                  | Creates `.bak` backup of existing files                     |
+| `validate_tool_installation()`             | Validates directories exist and are writable                |
+| `rollback()`                               | Restores all `.bak` files after failed deployment           |
+| `clean_orphaned_files(deployed_filenames)` | Removes files not in deployment set                         |
+| `_remove_empty_directories(base_dir)`      | Cleans up empty subdirectories                              |
+| `aggregate_verification_results(results)`  | Aggregates verification counts                              |
+| `display_verification_report(results)`     | Shows formatted Rich table with results                     |
+| `_compare_content_hashes(source, target)`  | Compares SHA-256 hashes for sync status                     |
 
 #### Methods You Must Implement
 
 Your handler **must implement** these tool-specific methods:
 
-| Method | Purpose | Example |
-|--------|---------|---------|
-| `__init__(base_path)` | Set up directories and call `super().__init__()` | Set `self.name`, `self.base_path`, `self.prompts_dir`, `self.rules_dir`, `self.tool_dir_constant` |
-| `deploy(content, content_type, body, ...)` | Deploy content to tool's directory structure | Transform content, write to correct path |
-| `verify_deployment_with_details(...)` | Verify deployment with tool-specific checks | Check frontmatter format, required fields |
-| `get_deployment_status(...)` | Check if content is synced/outdated/missing | Use `_compare_content_hashes()` from base class |
+| Method                                     | Purpose                                          | Example                                                                                           |
+| ------------------------------------------ | ------------------------------------------------ | ------------------------------------------------------------------------------------------------- |
+| `__init__(base_path)`                      | Set up directories and call `super().__init__()` | Set `self.name`, `self.base_path`, `self.prompts_dir`, `self.rules_dir`, `self.tool_dir_constant` |
+| `deploy(content, content_type, body, ...)` | Deploy content to tool's directory structure     | Transform content, write to correct path                                                          |
+| `verify_deployment_with_details(...)`      | Verify deployment with tool-specific checks      | Check frontmatter format, required fields                                                         |
+| `get_deployment_status(...)`               | Check if content is synced/outdated/missing      | Use `_compare_content_hashes()` from base class                                                   |
 
 #### Shared Utilities in Base Handler
 
@@ -367,6 +402,7 @@ Your handler **must implement** these tool-specific methods:
 - **Color constants**: `ERROR_COLOR`, `WARNING_COLOR`, `SUCCESS_COLOR`
 
 Import these as needed:
+
 ```python
 from prompt_unifier.handlers.base_handler import BaseToolHandler, VerificationResult
 ```
@@ -374,17 +410,19 @@ from prompt_unifier.handlers.base_handler import BaseToolHandler, VerificationRe
 #### Shared Console
 
 The shared console instance is in `handler_utils.py`:
+
 ```python
 from prompt_unifier.handlers.handler_utils import console
 ```
 
 Use it for all output in your handler.
 
----
+______________________________________________________________________
 
 ### Tutorial: Creating a New Handler
 
-Let's create a complete handler for a hypothetical "ExampleAI" tool. This demonstrates the minimal code needed with `BaseToolHandler`.
+Let's create a complete handler for a hypothetical "ExampleAI" tool. This demonstrates the minimal
+code needed with `BaseToolHandler`.
 
 #### Step 1: Create the Handler File
 
@@ -726,13 +764,14 @@ class ExampleToolHandler(BaseToolHandler):
 ```
 
 **Key Points:**
+
 - ✅ Only **~250 lines** vs **~450 lines** without `BaseToolHandler`
 - ✅ No backup/rollback logic - inherited from base class
 - ✅ No verification reporting - inherited from base class
 - ✅ No status methods - inherited from base class
 - ✅ Focus **only** on tool-specific transformation logic
 
----
+______________________________________________________________________
 
 ### Testing Your Handler
 
@@ -871,7 +910,7 @@ poetry run pytest tests/handlers/test_example_handler.py \
     --cov=prompt_unifier.handlers.example_handler
 ```
 
----
+______________________________________________________________________
 
 ### CLI Integration
 
@@ -880,6 +919,7 @@ Register your handler in the `deploy` command.
 #### Step 1: Add Constant
 
 Add to `src/prompt_unifier/constants.py`:
+
 ```python
 EXAMPLE_AI_DIR = ".example-ai"
 ```
@@ -887,6 +927,7 @@ EXAMPLE_AI_DIR = ".example-ai"
 #### Step 2: Import Handler
 
 In `src/prompt_unifier/cli/commands.py`:
+
 ```python
 from prompt_unifier.handlers.example_handler import ExampleToolHandler
 ```
@@ -894,6 +935,7 @@ from prompt_unifier.handlers.example_handler import ExampleToolHandler
 #### Step 3: Register Handler
 
 In the `deploy()` function (around line 1100):
+
 ```python
 # Resolve base paths
 example_base_path = resolve_handler_base_path("example")
@@ -917,6 +959,7 @@ registry.register(example_handler)
 #### Step 4: Export Handler
 
 In `src/prompt_unifier/handlers/__init__.py`:
+
 ```python
 from prompt_unifier.handlers.example_handler import ExampleToolHandler
 
@@ -929,7 +972,7 @@ __all__ = [
 ]
 ```
 
----
+______________________________________________________________________
 
 ### File Structure Checklist
 
@@ -941,64 +984,69 @@ When adding a handler:
 - [ ] `src/prompt_unifier/handlers/__init__.py` - Export handler
 - [ ] `src/prompt_unifier/cli/commands.py` - Register in deploy command
 
----
+______________________________________________________________________
 
 ### Naming Conventions
 
-| Item | Pattern | Example |
-|------|---------|---------|
-| Handler class | `<Tool>ToolHandler` | `CursorToolHandler` |
-| Handler file | `<tool>_handler.py` | `cursor_handler.py` |
-| Test file | `test_<tool>_handler.py` | `test_cursor_handler.py` |
-| Handler name | `<tool>` (lowercase) | `"cursor"` |
-| Directory constant | `<TOOL>_DIR` | `CURSOR_DIR = ".cursor"` |
+| Item               | Pattern                  | Example                  |
+| ------------------ | ------------------------ | ------------------------ |
+| Handler class      | `<Tool>ToolHandler`      | `CursorToolHandler`      |
+| Handler file       | `<tool>_handler.py`      | `cursor_handler.py`      |
+| Test file          | `test_<tool>_handler.py` | `test_cursor_handler.py` |
+| Handler name       | `<tool>` (lowercase)     | `"cursor"`               |
+| Directory constant | `<TOOL>_DIR`             | `CURSOR_DIR = ".cursor"` |
 
----
+______________________________________________________________________
 
 ### Best Practices
 
 1. **Always inherit from `BaseToolHandler`** - Don't duplicate common logic
-2. **Call `super().__init__()`** in your `__init__` method
-3. **Set required attributes**: `self.name`, `self.base_path`, `self.tool_dir_constant`, `self.prompts_dir`, `self.rules_dir`
-4. **Use inherited methods**: `self._backup_file()`, `self._compare_content_hashes()`, etc.
-5. **Import from the right places**:
+1. **Call `super().__init__()`** in your `__init__` method
+1. **Set required attributes**: `self.name`, `self.base_path`, `self.tool_dir_constant`,
+   `self.prompts_dir`, `self.rules_dir`
+1. **Use inherited methods**: `self._backup_file()`, `self._compare_content_hashes()`, etc.
+1. **Import from the right places**:
    - `from prompt_unifier.handlers.base_handler import BaseToolHandler, VerificationResult`
    - `from prompt_unifier.handlers.handler_utils import console`
-6. **Test inherited functionality** - Verify base class methods work correctly
-7. **Focus on tool-specific logic** - Content transformation, validation rules
-8. **Write comprehensive tests** - Aim for 95%+ coverage
+1. **Test inherited functionality** - Verify base class methods work correctly
+1. **Focus on tool-specific logic** - Content transformation, validation rules
+1. **Write comprehensive tests** - Aim for 95%+ coverage
 
----
+______________________________________________________________________
 
 ### Troubleshooting
 
 **Handler not showing up:**
+
 - Check it's registered in `commands.py`
 - Verify `get_name()` returns correct identifier
 - Ensure exported in `__init__.py`
 
 **Base class methods not working:**
+
 - Did you call `super().__init__()`?
 - Are required attributes set correctly?
 
 **Tests failing:**
+
 - Use `tmp_path` fixture for isolation
 - Test both tool-specific AND inherited methods
 - Check path separators on different OSes
 
----
+______________________________________________________________________
 
 ### Migration Guide (For Existing Code)
 
 If you have an old handler not using `BaseToolHandler`, migrate it:
 
 1. **Change inheritance**: `class MyHandler(ToolHandler):` → `class MyHandler(BaseToolHandler):`
-2. **Add super call**: Add `super().__init__()` at start of `__init__`
-3. **Set required attributes**: Add `self.tool_dir_constant = MY_TOOL_DIR`
-4. **Update imports**: Import `VerificationResult` from `base_handler` instead of `handler_utils`
-5. **Remove duplicate methods**: Delete `get_name()`, `get_status()`, `_backup_file()`, `rollback()`, `clean_orphaned_files()`, `validate_tool_installation()`, verification methods
-6. **Update tests**: Remove tests for methods now inherited, keep tool-specific tests
-7. **Run `make check`**: Ensure everything still works
+1. **Add super call**: Add `super().__init__()` at start of `__init__`
+1. **Set required attributes**: Add `self.tool_dir_constant = MY_TOOL_DIR`
+1. **Update imports**: Import `VerificationResult` from `base_handler` instead of `handler_utils`
+1. **Remove duplicate methods**: Delete `get_name()`, `get_status()`, `_backup_file()`,
+   `rollback()`, `clean_orphaned_files()`, `validate_tool_installation()`, verification methods
+1. **Update tests**: Remove tests for methods now inherited, keep tool-specific tests
+1. **Run `make check`**: Ensure everything still works
 
 **Example Before/After:**
 
@@ -1036,4 +1084,3 @@ class MyHandler(BaseToolHandler):
 ```
 
 Result: **~50% less code**, **100% same functionality**!
-

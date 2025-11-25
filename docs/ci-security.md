@@ -1,15 +1,16 @@
 # CI/CD Security Pipeline Documentation
 
-This document explains the security scanning jobs in the GitLab CI/CD pipeline, how to read security reports, and how to fix failing security jobs.
+This document explains the security scanning jobs in the GitLab CI/CD pipeline, how to read security
+reports, and how to fix failing security jobs.
 
 ## Table of Contents
 
 1. [Pipeline Overview](#pipeline-overview)
-2. [Security Jobs](#security-jobs)
-3. [Reading Security Reports](#reading-security-reports)
-4. [Fixing Failing Jobs](#fixing-failing-jobs)
-5. [Baseline Management](#baseline-management)
-6. [Exemption Process](#exemption-process)
+1. [Security Jobs](#security-jobs)
+1. [Reading Security Reports](#reading-security-reports)
+1. [Fixing Failing Jobs](#fixing-failing-jobs)
+1. [Baseline Management](#baseline-management)
+1. [Exemption Process](#exemption-process)
 
 ## Pipeline Overview
 
@@ -20,6 +21,7 @@ security → lint → typecheck → test
 ```
 
 All security jobs:
+
 - Run on **merge requests** and **main** branch
 - Have `allow_failure: false` - **blocking** merge if they fail
 - Generate **artifacts** (JSON reports) preserved for 1 week
@@ -34,6 +36,7 @@ All security jobs:
 **Tool:** detect-secrets v1.5.0
 
 **Configuration:**
+
 ```yaml
 secrets-scan:
   stage: security
@@ -44,8 +47,9 @@ secrets-scan:
 ```
 
 **What it checks:**
+
 - GitLab/GitHub personal access tokens
-- AWS credentials (AKIA*, SECRET_ACCESS_KEY)
+- AWS credentials (AKIA\*, SECRET_ACCESS_KEY)
 - SSH private keys
 - Database connection strings with passwords
 - API keys (Stripe, Slack, Discord, etc.)
@@ -56,7 +60,7 @@ secrets-scan:
 
 **Runtime:** ~10-30 seconds
 
----
+______________________________________________________________________
 
 ### 2. sast-scan (Static Application Security Testing)
 
@@ -65,6 +69,7 @@ secrets-scan:
 **Tool:** Bandit v1.8.6
 
 **Configuration:**
+
 ```yaml
 sast-scan:
   stage: security
@@ -77,6 +82,7 @@ sast-scan:
 ```
 
 **What it checks:**
+
 - SQL injection vulnerabilities (B608)
 - Use of dangerous functions: eval(), exec(), compile() (B307)
 - Insecure deserialization: pickle, yaml.load() (B301)
@@ -87,27 +93,31 @@ sast-scan:
 - Insecure file permissions (B103)
 
 **Severity Levels:**
+
 - **High** - Critical security issue, blocks merge
 - **Medium** - Serious issue, blocks merge
 - **Low** - Informational, allows merge
 
 **Artifacts:**
+
 - `bandit-report.json` - Machine-readable SAST report
 - Available in GitLab Security Dashboard
 
 **Runtime:** ~20-40 seconds
 
----
+______________________________________________________________________
 
 ### 3. dependency-scan
 
 **Purpose:** Detect vulnerable packages in dependencies
 
 **Tools:**
+
 - Safety v3.7.0 (CVE database)
 - pip-audit v2.9.0 (comprehensive scanning)
 
 **Configuration:**
+
 ```yaml
 dependency-scan:
   stage: security
@@ -120,36 +130,40 @@ dependency-scan:
 ```
 
 **What it checks:**
+
 - Known CVEs in direct dependencies
 - Known CVEs in transitive dependencies
 - Severity: Critical, High, Medium, Low
 - Exploits in the wild
 
 **Failure criteria:**
+
 - **Critical** vulnerabilities → Blocks merge
 - **High** vulnerabilities → Blocks merge (by default)
 - **Medium/Low** → Informational only
 
 **Artifacts:**
+
 - `safety-report.json` - Safety scan results
 - `pip-audit-report.json` - pip-audit scan results
 
 **Runtime:** ~30-60 seconds
 
----
+______________________________________________________________________
 
 ## Reading Security Reports
 
 ### Accessing Reports in GitLab
 
 1. **Go to Merge Request** → Pipelines tab
-2. **Click on failed pipeline** → View jobs
-3. **Click on failed job** → See console output
-4. **Download artifacts** → Browse → Download JSON reports
+1. **Click on failed pipeline** → View jobs
+1. **Click on failed job** → See console output
+1. **Download artifacts** → Browse → Download JSON reports
 
 ### Understanding Secrets Scan Output
 
 **Example failure:**
+
 ```
 [detect-secrets] Potential secret detected!
   File: src/config.py
@@ -160,15 +174,17 @@ dependency-scan:
 ```
 
 **Action required:**
-1. Remove the secret from the file
-2. Use environment variables instead
-3. Update the code to load from secure storage
 
----
+1. Remove the secret from the file
+1. Use environment variables instead
+1. Update the code to load from secure storage
+
+______________________________________________________________________
 
 ### Understanding SAST Scan Output
 
 **Example console output:**
+
 ```
 Run started:2025-11-12 18:30:24
 
@@ -184,16 +200,18 @@ Test results:
 ```
 
 **Key information:**
+
 - **Issue ID:** B608 - Look up in Bandit docs
 - **Severity/Confidence:** How serious and how certain
 - **Location:** Exact file and line number
 - **More Info:** Link to documentation with fix examples
 
----
+______________________________________________________________________
 
 ### Understanding Dependency Scan Output
 
 **Example Safety output:**
+
 ```
 +==============================================================================+
 | REPORT                                                                        |
@@ -209,11 +227,12 @@ Test results:
 ```
 
 **Action required:**
-1. Update the package: `poetry update requests`
-2. Test that everything still works
-3. Commit the updated `poetry.lock`
 
----
+1. Update the package: `poetry update requests`
+1. Test that everything still works
+1. Commit the updated `poetry.lock`
+
+______________________________________________________________________
 
 ## Fixing Failing Jobs
 
@@ -224,12 +243,14 @@ Test results:
 **Steps to fix:**
 
 1. **Identify the secret:**
+
    ```bash
    # Check the job output for file and line number
    # File: src/config.py, Line: 23
    ```
 
-2. **Remove the secret:**
+1. **Remove the secret:**
+
    ```python
    # Before (BAD)
    api_key = "sk-1234567890abcdef"
@@ -239,14 +260,16 @@ Test results:
    api_key = os.getenv("API_KEY")
    ```
 
-3. **Re-run the pipeline:**
+1. **Re-run the pipeline:**
+
    ```bash
    git add src/config.py
    git commit -m "fix: use env var for API key"
    git push
    ```
 
-4. **If it's a false positive (test fixture):**
+1. **If it's a false positive (test fixture):**
+
    ```bash
    # Add to baseline
    poetry run detect-secrets scan --update .secrets.baseline
@@ -257,7 +280,7 @@ Test results:
    git push
    ```
 
----
+______________________________________________________________________
 
 ### SAST Scan Failed
 
@@ -268,12 +291,14 @@ Test results:
 **Steps to fix:**
 
 1. **Review the finding:**
+
    ```
    Issue: [B608] Possible SQL injection
    Location: src/database.py:45
    ```
 
-2. **Fix the vulnerability:**
+1. **Fix the vulnerability:**
+
    ```python
    # Before (VULNERABLE)
    query = f"SELECT * FROM users WHERE id = {user_id}"
@@ -284,12 +309,14 @@ Test results:
    db.execute(query, (user_id,))
    ```
 
-3. **Test locally:**
+1. **Test locally:**
+
    ```bash
    poetry run bandit -r src/
    ```
 
-4. **Commit and push:**
+1. **Commit and push:**
+
    ```bash
    git add src/database.py
    git commit -m "fix(security): use parameterized queries to prevent SQL injection"
@@ -297,12 +324,13 @@ Test results:
    ```
 
 **If it's a false positive:**
+
 ```python
 # Add nosec comment with explanation
 password = "test_fixture_password"  # nosec B105 - test data only
 ```
 
----
+______________________________________________________________________
 
 ### Dependency Scan Failed
 
@@ -311,12 +339,14 @@ password = "test_fixture_password"  # nosec B105 - test data only
 **Steps to fix:**
 
 1. **Check the vulnerability:**
+
    ```bash
    # Run locally
    poetry run safety check
    ```
 
-2. **Update the vulnerable package:**
+1. **Update the vulnerable package:**
+
    ```bash
    # Update specific package
    poetry update <package-name>
@@ -325,7 +355,8 @@ password = "test_fixture_password"  # nosec B105 - test data only
    poetry update
    ```
 
-3. **Verify the fix:**
+1. **Verify the fix:**
+
    ```bash
    # Re-run safety check
    poetry run safety check
@@ -334,7 +365,8 @@ password = "test_fixture_password"  # nosec B105 - test data only
    poetry run pytest
    ```
 
-4. **Commit and push:**
+1. **Commit and push:**
+
    ```bash
    git add poetry.lock
    git commit -m "fix(security): update <package> to address CVE-2023-xxxxx"
@@ -342,17 +374,19 @@ password = "test_fixture_password"  # nosec B105 - test data only
    ```
 
 **If update breaks compatibility:**
+
 - Check if there's a backported security patch
 - Consider alternative packages
 - Document the risk in a security review issue
 
----
+______________________________________________________________________
 
 ## Baseline Management
 
 ### What is a Baseline?
 
 The `.secrets.baseline` file contains **audited** potential secrets that are actually:
+
 - Test fixtures
 - Example data in documentation
 - False positives (e.g., variable names containing "password")
@@ -360,28 +394,33 @@ The `.secrets.baseline` file contains **audited** potential secrets that are act
 ### When to Update Baseline
 
 **Legitimate reasons:**
+
 1. Adding new test fixtures with fake credentials
-2. Adding example code to documentation
-3. False positives from detect-secrets
+1. Adding example code to documentation
+1. False positives from detect-secrets
 
 **Steps to update:**
 
 1. **Generate updated baseline:**
+
    ```bash
    poetry run detect-secrets scan --update .secrets.baseline
    ```
 
-2. **Audit new findings:**
+1. **Audit new findings:**
+
    ```bash
    poetry run detect-secrets audit .secrets.baseline
    ```
 
    For each finding:
+
    - Press `y` if it's a **real secret** (should be removed!)
    - Press `n` if it's a **false positive** (add to baseline)
    - Press `s` to skip for now
 
-3. **Commit the baseline:**
+1. **Commit the baseline:**
+
    ```bash
    git add .secrets.baseline
    git commit -m "chore: update secrets baseline for test fixtures"
@@ -389,13 +428,14 @@ The `.secrets.baseline` file contains **audited** potential secrets that are act
 
 **Important:** Baseline changes should be reviewed by another team member!
 
----
+______________________________________________________________________
 
 ## Exemption Process
 
 ### When to Request Exemption
 
 **Valid reasons:**
+
 - False positive that can't be fixed
 - Known security trade-off (documented)
 - Dependency vulnerability with no fix available (risk accepted)
@@ -403,16 +443,19 @@ The `.secrets.baseline` file contains **audited** potential secrets that are act
 ### How to Request Exemption
 
 1. **Create a security review issue:**
+
    - Title: `[Security Review] Exemption request for <finding>`
    - Description: Explain why it's safe or necessary
    - Assign to: Security champion or team lead
 
-2. **Document the decision:**
+1. **Document the decision:**
+
    - Add comment in code explaining why it's safe
    - Add to `.secrets.baseline` if applicable
    - Use `# nosec <code>` for Bandit findings
 
-3. **Get approval:**
+1. **Get approval:**
+
    - At least one other developer must approve
    - Security champion must approve for High/Critical findings
 
@@ -425,18 +468,18 @@ The `.secrets.baseline` file contains **audited** potential secrets that are act
 result = eval(sanitized_expression)  # nosec B307 - validated input only
 ```
 
----
+______________________________________________________________________
 
 ## Performance
 
 Typical pipeline times:
 
-| Job | Average Time | Timeout |
-|-----|-------------|---------|
-| secrets-scan | 20s | 5 min |
-| sast-scan | 35s | 10 min |
-| dependency-scan | 45s | 10 min |
-| **Total Security Stage** | **~2 min** | 25 min |
+| Job                      | Average Time | Timeout |
+| ------------------------ | ------------ | ------- |
+| secrets-scan             | 20s          | 5 min   |
+| sast-scan                | 35s          | 10 min  |
+| dependency-scan          | 45s          | 10 min  |
+| **Total Security Stage** | **~2 min**   | 25 min  |
 
 ## Artifacts
 
@@ -453,19 +496,21 @@ Download from: MR → Pipelines → Job → Browse artifacts
 ### GitLab Security Dashboard
 
 View aggregated security findings:
+
 1. Go to project → Security & Compliance → Security Dashboard
-2. Filter by severity, type, or branch
-3. Track remediation over time
+1. Filter by severity, type, or branch
+1. Track remediation over time
 
 ### Metrics
 
 Track these metrics:
+
 - Number of secrets detected per month
 - Mean time to remediation (MTTR)
 - False positive rate
 - Dependency update lag
 
----
+______________________________________________________________________
 
 ## Troubleshooting
 
@@ -474,6 +519,7 @@ Track these metrics:
 **Cause:** Network issues downloading dependencies
 
 **Solution:**
+
 ```yaml
 # Increase timeout in .gitlab-ci.yml
 timeout: 10 minutes
@@ -484,6 +530,7 @@ timeout: 10 minutes
 **Cause:** Using wrong Python version in CI
 
 **Solution:** Ensure all jobs use same image:
+
 ```yaml
 image: python:3.11-slim
 ```
@@ -493,6 +540,7 @@ image: python:3.11-slim
 **Cause:** Job fails before artifact creation
 
 **Solution:** Use `when: always` in artifacts:
+
 ```yaml
 artifacts:
   when: always
@@ -500,7 +548,7 @@ artifacts:
     - bandit-report.json
 ```
 
----
+______________________________________________________________________
 
 ## Additional Resources
 
@@ -512,11 +560,12 @@ artifacts:
 ## Questions?
 
 For help with security pipeline issues:
-1. Check this guide
-2. Review job logs in GitLab
-3. Ask in team chat
-4. Consult [docs/security.md](security.md) for developer guide
 
----
+1. Check this guide
+1. Review job logs in GitLab
+1. Ask in team chat
+1. Consult [docs/security.md](security.md) for developer guide
+
+______________________________________________________________________
 
 **Remember:** Security jobs are there to help you catch issues before they reach production!

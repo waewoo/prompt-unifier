@@ -5,6 +5,7 @@ tags: []
 ---
 
 This prompt is valid but will generate warnings:
+
 - Missing optional 'version' field
-- Missing optional 'author' field  
+- Missing optional 'author' field
 - Empty 'tags' list

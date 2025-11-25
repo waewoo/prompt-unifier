@@ -1,27 +1,28 @@
 # Manual Testing Guide - Prompt Unifier
 
-This guide details all manual tests to be performed to validate all features of the **prompt-unifier** application.
+This guide details all manual tests to be performed to validate all features of the
+**prompt-unifier** application.
 
----
+______________________________________________________________________
 
 ## 📋 Table of Contents
 
-| Section | Description |
-|---------|-------------|
-| [Prerequisites](#prerequisites) | Installation and pre-requisite verification |
-| [Basic Commands](#basic-commands) | Help and global options tests |
-| [Init Command](#init-command) | Project initialization tests |
-| [Sync Command](#sync-command) | Data synchronization tests |
-| [Status Command](#status-command) | Status display tests |
-| [Validate Command](#validate-command) | File validation tests |
-| [Deploy Command](#deploy-command) | Deployment to Continue tests |
-| [Recursive Discovery](#recursive-discovery) | Tests with subdirectories |
-| [Kilo Code Handler Tests](#kilo-code-handler-tests) | Tests for Kilo Code handler |
-| [Error Handling](#error-handling) | Error case tests |
-| [Complete Workflows](#complete-workflows) | Real scenario tests |
-| [Cleanup](#cleanup) | Test resources cleanup |
+| Section                                             | Description                                 |
+| --------------------------------------------------- | ------------------------------------------- |
+| [Prerequisites](#prerequisites)                     | Installation and pre-requisite verification |
+| [Basic Commands](#basic-commands)                   | Help and global options tests               |
+| [Init Command](#init-command)                       | Project initialization tests                |
+| [Sync Command](#sync-command)                       | Data synchronization tests                  |
+| [Status Command](#status-command)                   | Status display tests                        |
+| [Validate Command](#validate-command)               | File validation tests                       |
+| [Deploy Command](#deploy-command)                   | Deployment to Continue tests                |
+| [Recursive Discovery](#recursive-discovery)         | Tests with subdirectories                   |
+| [Kilo Code Handler Tests](#kilo-code-handler-tests) | Tests for Kilo Code handler                 |
+| [Error Handling](#error-handling)                   | Error case tests                            |
+| [Complete Workflows](#complete-workflows)           | Real scenario tests                         |
+| [Cleanup](#cleanup)                                 | Test resources cleanup                      |
 
----
+______________________________________________________________________
 
 ## Prerequisites
 
@@ -42,7 +43,7 @@ poetry run prompt-unifier --version
 
 ✓ **Expected result:** Version display (ex: `0.1.0`)
 
----
+______________________________________________________________________
 
 ## Basic Commands
 
@@ -53,6 +54,7 @@ poetry run prompt-unifier --help
 ```
 
 ✓ **Expected result:**
+
 - List of available commands: `init`, `sync`, `status`, `validate`, `deploy`
 - Short description of each command
 - Global options (`--help`, `--version`, `--verbose`, `--log-file`)
@@ -69,7 +71,7 @@ poetry run prompt-unifier deploy --help
 
 ✓ **Expected result:** Each command displays its description, options and usage examples
 
----
+______________________________________________________________________
 
 ## Init Command
 
@@ -81,6 +83,7 @@ poetry run prompt-unifier init
 ```
 
 ✓ **Expected result:**
+
 - ✓ Message "Initialization complete"
 - Creation of `.prompt-unifier/config.yaml`
 - Creation of `~/.prompt-unifier/storage/{prompts,rules}` with `.gitignore`
@@ -112,7 +115,7 @@ poetry run prompt-unifier init  # Fails - already initialized
 
 ✓ **Expected result:** Message "Already initialized (all components exist)" (Code: 0)
 
----
+______________________________________________________________________
 
 ## Sync Command
 
@@ -133,7 +136,9 @@ poetry run prompt-unifier sync --repo git@gitlab.com:waewoo/prompt-unifier-data.
 ```
 
 ✓ **Expected result:**
-- Messages: "Syncing prompts..." → "Cloning repository..." → "Extracting prompts..." → "✓ Sync complete"
+
+- Messages: "Syncing prompts..." → "Cloning repository..." → "Extracting prompts..." → "✓ Sync
+  complete"
 - Config updated with `repos`, `last_sync_timestamp`, `repo_metadata`
 - Files in `~/.prompt-unifier/storage/prompts/`
 
@@ -172,6 +177,7 @@ poetry run prompt-unifier sync \
 ```
 
 ✓ **Expected result:**
+
 - All three repositories synced successfully
 - Last-wins merge strategy: if multiple repos have the same file, last repo wins
 - Config updated with all three repositories in `repos` list
@@ -213,7 +219,7 @@ poetry run prompt-unifier sync --repo https://invalid-url.com/repo.git
 
 ✗ **Expected result:** Network error (Code: 1)
 
----
+______________________________________________________________________
 
 ## Status Command
 
@@ -235,6 +241,7 @@ poetry run prompt-unifier status
 ```
 
 ✓ **Expected result:**
+
 - Displays storage path
 - "Repository: Not configured"
 - Message suggesting to run `sync`
@@ -248,6 +255,7 @@ poetry run prompt-unifier status
 ```
 
 ✓ **Expected result:**
+
 - Repository URL
 - "Last sync: X minutes ago"
 - "✓ Up to date" or "⚠ Updates available (X commits behind)"
@@ -264,13 +272,14 @@ poetry run prompt-unifier status
 ```
 
 ✓ **Expected result:**
+
 - Multiple repository URLs listed with individual commit info
 - Each repository shows its branch and last commit
 - "Last sync: X minutes ago" (overall sync timestamp)
 - Individual status for each repository if updates available
 - Displays deployment status for synced files
 
----
+______________________________________________________________________
 
 ## Validate Command
 
@@ -357,7 +366,7 @@ poetry run prompt-unifier validate /tmp/test-invalid
 
 ✗ **Expected result:** Validation error with details (Code: 1)
 
----
+______________________________________________________________________
 
 ## List Command
 
@@ -378,7 +387,8 @@ cd /tmp/test-pm-1
 poetry run prompt-unifier -v list
 ```
 
-✓ **Expected result:** A table listing all synced prompts and rules, with INFO-level logging output showing storage path and file counts.
+✓ **Expected result:** A table listing all synced prompts and rules, with INFO-level logging output
+showing storage path and file counts.
 
 ### Test 7.3: List content filtered by --tag
 
@@ -396,7 +406,9 @@ cd /tmp/test-pm-1
 poetry run prompt-unifier list --tool continue
 ```
 
-✓ **Expected result:** A table listing content relevant to the "continue" tool. (This will only work if the content has metadata linking it to a tool, which is not currently implemented in content models)
+✓ **Expected result:** A table listing content relevant to the "continue" tool. (This will only work
+if the content has metadata linking it to a tool, which is not currently implemented in content
+models)
 
 ### Test 7.5: List content sorted by --sort date
 
@@ -405,9 +417,10 @@ cd /tmp/test-pm-1
 poetry run prompt-unifier list --sort date
 ```
 
-✓ **Expected result:** A table listing all synced prompts and rules, sorted by their last modification date.
+✓ **Expected result:** A table listing all synced prompts and rules, sorted by their last
+modification date.
 
----
+______________________________________________________________________
 
 ## Deploy Command
 
@@ -420,7 +433,9 @@ poetry run prompt-unifier deploy --name "code-review" --handlers continue
 ```
 
 ✓ **Expected result:**
-- File `~/.continue/prompts/code-review.md` created with frontmatter (`name`, `description`, `invokable: true`)
+
+- File `~/.continue/prompts/code-review.md` created with frontmatter (`name`, `description`,
+  `invokable: true`)
 - Backup created if file existed (`.md.bak`)
 - Message "✓ Deployment to continue successful" (Code: 0)
 - "Verification Report" displayed, with the deployed file marked as "PASSED"
@@ -444,6 +459,7 @@ poetry run prompt-unifier deploy --name "code-review" --handlers continue --base
 ```
 
 ✓ **Expected result:**
+
 - File `/tmp/custom-continue-path/prompts/code-review.md` created.
 - "Verification Report" displayed, with the deployed file marked as "PASSED".
 
@@ -456,8 +472,10 @@ poetry run prompt-unifier deploy --name "code-review" --handlers continue --dry-
 ```
 
 ✓ **Expected result:**
+
 - Message indicating "Dry-run preview - No files will be modified"
-- A preview table showing `code-review` would be deployed, but no actual files are created or modified in `~/.continue/` or `/tmp/custom-continue-path`.
+- A preview table showing `code-review` would be deployed, but no actual files are created or
+  modified in `~/.continue/` or `/tmp/custom-continue-path`.
 
 ### Test 11.5 (was 9.1): Simple deployment of a prompt
 
@@ -468,7 +486,9 @@ poetry run prompt-unifier deploy --name "code-review" --handlers continue
 ```
 
 ✓ **Expected result:**
-- File `~/.continue/prompts/code-review.md` created with frontmatter (`name`, `description`, `invokable: true`)
+
+- File `~/.continue/prompts/code-review.md` created with frontmatter (`name`, `description`,
+  `invokable: true`)
 - Backup created if file existed (`.md.bak`)
 - Message "✓ Deployment to continue successful" (Code: 0)
 - "Verification Report" displayed, with the deployed file marked as "PASSED"
@@ -480,6 +500,7 @@ poetry run prompt-unifier deploy --name "python-style" --handlers continue
 ```
 
 ✓ **Expected result:** File `~/.continue/rules/python-style.md` created (Code: 0)
+
 - "Verification Report" displayed, with the deployed file marked as "PASSED"
 
 ### Test 11.7 (was 9.3): Deploy with tag filtering
@@ -489,6 +510,7 @@ poetry run prompt-unifier deploy --tags python --handlers continue
 ```
 
 ✓ **Expected result:**
+
 - Only prompts/rules with "python" tag deployed
 - Messages for each filtered item
 - "Verification Report" displayed, with the deployed files marked as "PASSED"
@@ -500,6 +522,7 @@ poetry run prompt-unifier deploy --handlers continue
 ```
 
 ✓ **Expected result:** All prompts AND rules from storage deployed (Code: 0)
+
 - "Verification Report" displayed, with all deployed files marked as "PASSED"
 
 ### Test 11.9 (was 9.5): Deploy non-existent prompt (error)
@@ -516,7 +539,7 @@ poetry run prompt-unifier deploy --name "non-existent" --handlers continue
 poetry run prompt-unifier deploy --name "code-review" --handlers invalid
 ```
 
-✗ **Expected result:** Error "No matching handlers found for ['invalid']" (Code: 1)
+✗ **Expected result:** Error "No matching handlers found for \['invalid'\]" (Code: 1)
 
 ### Test 11.11 (was 9.7): Backup verification
 
@@ -527,6 +550,7 @@ poetry run prompt-unifier deploy --name "code-review" --handlers continue
 ```
 
 ✓ **Expected result:** `.bak` file created with old content (Code: 0)
+
 - "Verification Report" displayed, with the deployed file marked as "PASSED"
 
 ### Test 11.12 (was 9.8): Deploy with no matches
@@ -555,6 +579,7 @@ poetry run prompt-unifier deploy  # Without options - reads config
 ```
 
 ✓ **Expected result:** Only "python" tagged items deployed to continue (Code: 0)
+
 - "Verification Report" displayed, with the deployed files marked as "PASSED"
 
 ### Test 11.14 (was 9.10): Deploy with --clean (cleanup orphans and backups)
@@ -575,13 +600,14 @@ poetry run prompt-unifier deploy --tags python --handlers continue --clean
 ```
 
 ✓ **Expected result:**
+
 - Orphan file permanently deleted
 - All .bak files recursively deleted (including in subdirectories)
 - Message "Cleaned X orphaned file(s)" (includes both orphans and backups)
 - Clean operates recursively through all subdirectories (Code: 0)
 - "Verification Report" displayed, with the deployed files marked as "PASSED"
 
----
+______________________________________________________________________
 
 ## Recursive Discovery
 
@@ -614,9 +640,11 @@ poetry run prompt-unifier deploy --handlers continue
 ```
 
 ✓ **Expected result:**
+
 - All files discovered (root AND subdirectories)
 - Structure preserved: `~/.continue/prompts/backend/api/api-prompt.md`, etc.
-- "Verification Report" displayed, confirming deployed files found at nested paths and marked as "PASSED"
+- "Verification Report" displayed, confirming deployed files found at nested paths and marked as
+  "PASSED"
 
 ### Test 10.2: Duplicate title detection (error)
 
@@ -639,6 +667,7 @@ poetry run prompt-unifier deploy --handlers continue
 ```
 
 ✗ **Expected result:**
+
 - Error "Duplicate titles detected"
 - List of paths with duplicate titles (Code: 1)
 
@@ -663,10 +692,13 @@ poetry run prompt-unifier deploy --tags backend --handlers continue --clean
 ```
 
 ✓ **Expected result:**
+
 - Backup file `deprecated/backup.md.bak` deleted (recursive cleanup of .bak files)
 - Orphaned .md file `old-prompt.md` in root deleted
-- File `deprecated/nested.md` PRESERVED (orphaned .md in subdirectories preserved for tag filter compatibility)
-- Clean removes .bak files recursively but only removes orphaned .md files from root directory (Code: 0)
+- File `deprecated/nested.md` PRESERVED (orphaned .md in subdirectories preserved for tag filter
+  compatibility)
+- Clean removes .bak files recursively but only removes orphaned .md files from root directory
+  (Code: 0)
 - "Verification Report" displayed, with the deployed files marked as "PASSED"
 
 ### Test 10.4: Deep nesting (4+ levels)
@@ -713,7 +745,7 @@ test -f ~/.continue/prompts/legacy.md && echo "✓ Root files work"
 
 ✓ **Expected result:** Root files continue to work (Code: 0)
 
----
+______________________________________________________________________
 
 ## Error Handling
 
@@ -738,7 +770,7 @@ chmod 755 /tmp/no-write
 
 ✓ **Expected result:** Immediate network error (Code: 1)
 
----
+______________________________________________________________________
 
 ## Complete Workflows
 
@@ -785,6 +817,7 @@ poetry run prompt-unifier status
 ```
 
 ✓ **Expected result:**
+
 - Both repositories synced successfully
 - Files from both repos merged in storage (last-wins strategy)
 - Status shows both repositories with individual commit info (Code: 0)
@@ -800,7 +833,7 @@ poetry run prompt-unifier status   # Confirm
 
 ✓ **Expected result:** Each command completes (Code: 0)
 
----
+______________________________________________________________________
 
 ## Kilo Code Handler Tests
 
@@ -813,6 +846,7 @@ poetry run prompt-unifier deploy --handlers kilocode
 ```
 
 ✓ **Expected result:**
+
 - Files deployed to `./.kilocode/workflows/` (prompts) and `./.kilocode/rules/` (rules)
 - All files are pure Markdown (no YAML frontmatter)
 - Files have H1 title (`# Title`) and description
@@ -828,6 +862,7 @@ cat ./.kilocode/workflows/misc-code-review.md
 ```
 
 ✓ **Expected result:**
+
 - File starts with `# Code Review` (H1 title)
 - Description appears as paragraph after title
 - No `---` YAML delimiters in file
@@ -853,6 +888,7 @@ poetry run prompt-unifier deploy --handlers kilocode
 ```
 
 ✓ **Expected result:**
+
 - File deployed as `./.kilocode/workflows/api-api-design.md` (directory prefix: `api-`)
 - Root files use `misc-` prefix
 - Flat structure maintained (no subdirectories in `.kilocode/workflows/`)
@@ -876,6 +912,7 @@ ls -la ./.kilocode/workflows/*.bak
 ```
 
 ✓ **Expected result:**
+
 - Backup file `./.kilocode/workflows/misc-code-review.md.bak` created
 - Original content can be restored from backup
 
@@ -887,6 +924,7 @@ poetry run prompt-unifier deploy --handlers continue,kilocode
 ```
 
 ✓ **Expected result:**
+
 - Files deployed to both `./.continue/` and `./.kilocode/`
 - Continue files preserve YAML frontmatter
 - Kilo Code files are pure Markdown
@@ -908,6 +946,7 @@ poetry run prompt-unifier deploy --tags python --handlers kilocode --clean
 ```
 
 ✓ **Expected result:**
+
 - Orphan `.md` files in root removed
 - All `.bak` files removed recursively
 - Message "Cleaned X orphaned file(s)"
@@ -937,11 +976,13 @@ cat ./.kilocode/rules/misc-complete-rule.md
 ```
 
 ✓ **Expected result:**
-- File contains: `**Category:** testing | **Tags:** python, testing | **Version:** 2.0 | **Author:** Test Author | **Language:** en | **AppliesTo:** *.py, *.js`
+
+- File contains:
+  `**Category:** testing | **Tags:** python, testing | **Version:** 2.0 | **Author:** Test Author | **Language:** en | **AppliesTo:** *.py, *.js`
 - All metadata formatted as Markdown text line
 - No YAML frontmatter
 
----
+______________________________________________________________________
 
 ## Cleanup
 
@@ -961,7 +1002,7 @@ rm -rf ~/.continue/
 echo "✓ Centralized storage cleaned"
 ```
 
----
+______________________________________________________________________
 
 ## 📊 Testing Checklist
 
@@ -1045,23 +1086,23 @@ Cleanup
 └─ [·] Centralized storage
 ```
 
----
+______________________________________________________________________
 
 ## 📝 Test Notes
 
 | Date | Tester | Success | Failures | Observations |
-|------|--------|---------|----------|--------------|
-| | | / | / | |
+| ---- | ------ | ------- | -------- | ------------ |
+|      |        | /       | /        |              |
 
----
+______________________________________________________________________
 
 ## 🔧 Quick Troubleshooting
 
-| Problem | Cause | Solution |
-|---------|-------|----------|
-| "Reference at 'HEAD' does not exist" | Fixed bug | Check current version |
-| Storage not created | Permissions | Check home directory permissions |
-| Missing prompts | No prompts/ folder | Verify repository structure |
-| Corrupted config.yaml | Manual editing | Delete and re-initialize |
-| File conflicts in multi-repo | Multiple repos with same file | Last repo wins (last-wins strategy) |
-| Wrong file version displayed | Multi-repo sync order | Check repo order in config - last repo takes precedence |
+| Problem                              | Cause                         | Solution                                                |
+| ------------------------------------ | ----------------------------- | ------------------------------------------------------- |
+| "Reference at 'HEAD' does not exist" | Fixed bug                     | Check current version                                   |
+| Storage not created                  | Permissions                   | Check home directory permissions                        |
+| Missing prompts                      | No prompts/ folder            | Verify repository structure                             |
+| Corrupted config.yaml                | Manual editing                | Delete and re-initialize                                |
+| File conflicts in multi-repo         | Multiple repos with same file | Last repo wins (last-wins strategy)                     |
+| Wrong file version displayed         | Multi-repo sync order         | Check repo order in config - last repo takes precedence |
