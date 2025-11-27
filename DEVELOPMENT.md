@@ -1059,10 +1059,10 @@ class MyHandler(ToolHandler):
     def __init__(self, base_path: Path | None = None):
         self.name = "mytool"
         # ...
-    
+
     def get_name(self) -> str:
         return self.name
-    
+
     def get_status(self) -> str:
         if self.prompts_dir.exists() and self.rules_dir.exists():
             return "active"
@@ -1078,7 +1078,7 @@ class MyHandler(BaseToolHandler):
         self.name = "mytool"
         self.tool_dir_constant = MYTOOL_DIR  # Add this
         # ...
-    
+
     # get_name() and get_status() removed - inherited
     # 200+ lines of code removed - inherited
 ```

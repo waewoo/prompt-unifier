@@ -1,25 +1,26 @@
 # Makefile for Prompt Unifier CLI
 #
-# This Makefile provides convenient targets for common development tasks:
-# - install: Install dependencies via Poetry
-# - update-deps: Update all dependencies to latest version in pyproject.toml and poetry.lock
-# - test: Run pytest test suite with coverage
-# - test-ci: Run tests in GitLab CI environment locally
-# - test-ci-shell: Run tests locally with shell executor (faster)
-# - lint: Run Ruff linter checks
-# - typecheck: Run mypy static type checker
-# - format: Auto-format code with Ruff
-# - check: Run all quality checks (lint, typecheck, test)
-# - clean: Remove build artifacts and caches
-# - clean-ci: Clean GitLab CI local volumes
+# This Makefile provides convenient targets for common development tasks.
+# It acts as the single entry point for industrialization (BP2I standards).
+#
+# Targets:
+# - install:         Install dependencies and setup pre-commit hooks (First setup)
+# - lint:            Run all static analysis via pre-commit (Fast feedback: lint, format, security)
+# - test:            Run unit tests with coverage (Slow feedback: logic verification)
+# - check:           Run full validation suite (lint + test)
+# - security:        Run all security scans (SAST, secrets, dependencies)
+# - build:           Build distribution packages (wheel and sdist)
+# - release-notes:   Generate release notes for a specific version
+# - clean:           Remove build artifacts and caches
 #
 # Usage: make <target>
 
-.PHONY: install update-deps test test-ci test-ci-shell test-ci-clean lint typecheck format check clean clean-ci run release changelog ci-lint
+.PHONY: install update-deps test test-ci test-ci-shell test-ci-clean lint typecheck format check clean clean-ci run release changelog ci-lint help security security-sast security-secrets security-deps build release-notes
 
-# Install dependencies via Poetry
+# Install dependencies via Poetry and setup pre-commit hooks
 install:
 	poetry install
+	poetry run pre-commit install
 
 # Update all dependencies to latest versions in pyproject.toml and poetry.lock
 update-deps:
@@ -35,7 +36,7 @@ run:
 
 # Run pytest test suite with coverage reporting
 test:
-	poetry run pytest --cov=src/prompt_unifier --cov-report=term-missing --cov-report=html
+	poetry run pytest --cov=src/prompt_unifier --cov-report=term-missing --cov-report=html --cov-report=xml --junitxml=report.xml
 	@# Clean test artifacts from storage
 	@rm -f ~/.prompt-unifier/storage/prompts/test-prompt.md 2>/dev/null || true
 	@rm -f ~/.prompt-unifier/storage/rules/test-rule.md 2>/dev/null || true
@@ -77,26 +78,15 @@ clean-ci:
 	@docker volume rm prompt-unifier-pip-cache 2>/dev/null || true
 	@echo "GitLab CI cache cleaned."
 
-# Run Ruff linter checks
-lint: lint-ruff lint-md
+# Run all static analysis checks via pre-commit (Linting, Formatting, Security, Types)
+lint:
+	poetry run pre-commit run --all-files
 
-# Run Ruff linter
-lint-ruff:
-	@if [ "$(CI_OUTPUT_FORMAT)" = "gitlab" ]; then \
-		poetry run ruff check src/ tests/ --output-format=gitlab > gl-code-quality-ruff.json || true; \
-	else \
-		poetry run ruff check src/ tests/; \
-	fi
-
-# Run Markdown linter
-lint-md:
-	poetry run pre-commit run mdformat --all-files
-
-# Run mypy static type checker
+# Run mypy static type checker (kept for individual running if needed)
 typecheck:
 	poetry run mypy src/
 
-# Auto-format code with Ruff
+# Auto-format code with Ruff (via pre-commit hook directly or standalone)
 format:
 	poetry run ruff format src/ tests/
 
@@ -105,23 +95,57 @@ ci-lint:
 	@echo "Checking GitLab CI configuration syntax..."
 	@gitlab-ci-local --preview > /dev/null
 
-# Run all quality checks in sequence
-check: lint-ruff lint-md typecheck test ci-lint
+# Run all quality checks in sequence (lint + test)
+check: lint test ci-lint
 
-# Remove build artifacts, caches, and temporary files
-clean:
-	find . -type d -name "__pycache__" -exec rm -rf {} + 2>/dev/null || true
-	find . -type d -name ".pytest_cache" -exec rm -rf {} + 2>/dev/null || true
-	find . -type d -name ".ruff_cache" -exec rm -rf {} + 2>/dev/null || true
-	find . -type d -name ".mypy_cache" -exec rm -rf {} + 2>/dev/null || true
-	find . -type d -name "htmlcov" -exec rm -rf {} + 2>/dev/null || true
-	find . -type d -name "dist" -exec rm -rf {} + 2>/dev/null || true
-	find . -type d -name "build" -exec rm -rf {} + 2>/dev/null || true
-	find . -type d -name "*.egg-info" -exec rm -rf {} + 2>/dev/null || true
-	find . -type f -name ".coverage" -delete 2>/dev/null || true
-	find . -type f -name "*.pyc" -delete 2>/dev/null || true
-	find . -type f -name "*.pyo" -delete 2>/dev/null || true
-	find . -type f -name "*.pyd" -delete 2>/dev/null || true
+# ============================================================================
+# SECURITY SCANS
+# ============================================================================
+
+# Run all security scans
+security: security-sast security-secrets security-deps
+
+# Run Bandit SAST scan (matches pre-commit config)
+security-sast:
+	@echo "🔎 Running Bandit SAST scan..."
+	@poetry run bandit -r src/ -f json -o bandit-report.json
+	@poetry run bandit -r src/ -f screen
+
+# Run Detect-Secrets scan (matches pre-commit config)
+security-secrets:
+	@echo "🔑 Running Detect-Secrets scan..."
+	@poetry run detect-secrets scan --baseline .secrets.baseline
+
+# Run dependency vulnerability scans (used in CI)
+security-deps:
+	@echo "📦 Running dependency vulnerability scans..."
+	@echo "   - Safety scan:"
+	@poetry run safety scan --output text || true
+	@echo "   - Pip-audit scan:"
+	@poetry run pip-audit --format json --output pip-audit-report.json || true
+	@poetry run pip-audit
+
+# ============================================================================
+# BUILD & RELEASE
+# ============================================================================
+
+# Build distribution packages
+build:
+	@echo "📦 Building distribution packages..."
+	@poetry build
+
+# Generate release notes for a specific version (used in CI)
+# Usage: make release-notes VERSION=1.2.3
+release-notes:
+	@if [ -z "$(VERSION)" ]; then \
+		echo "Error: VERSION is required"; \
+		exit 1; \
+	fi
+	@poetry run cz changelog --dry-run "$(VERSION)" > RELEASE_NOTES.md 2>/dev/null || { \
+		echo "## Release v$(VERSION)" > RELEASE_NOTES.md; \
+		echo "" >> RELEASE_NOTES.md; \
+		echo "See [CHANGELOG.md](./CHANGELOG.md) for full details." >> RELEASE_NOTES.md; \
+	}
 
 # Generate changelog
 changelog:
@@ -147,22 +171,32 @@ release: check
 	git push origin v$${NEW_VERSION} && \
 	echo "Release v$${NEW_VERSION} created and pushed."
 
+# Remove build artifacts, caches, and temporary files
+clean:
+	find . -type d -name "__pycache__" -exec rm -rf {} + 2>/dev/null || true
+	find . -type d -name ".pytest_cache" -exec rm -rf {} + 2>/dev/null || true
+	find . -type d -name ".ruff_cache" -exec rm -rf {} + 2>/dev/null || true
+	find . -type d -name ".mypy_cache" -exec rm -rf {} + 2>/dev/null || true
+	find . -type d -name "htmlcov" -exec rm -rf {} + 2>/dev/null || true
+	find . -type d -name "dist" -exec rm -rf {} + 2>/dev/null || true
+	find . -type d -name "build" -exec rm -rf {} + 2>/dev/null || true
+	find . -type d -name "*.egg-info" -exec rm -rf {} + 2>/dev/null || true
+	find . -type f -name ".coverage" -delete 2>/dev/null || true
+	find . -type f -name "*.pyc" -delete 2>/dev/null || true
+	find . -type f -name "*.pyo" -delete 2>/dev/null || true
+	find . -type f -name "*.pyd" -delete 2>/dev/null || true
+
 # Help target to display available commands
 help:
 	@echo "Available targets:"
-	@echo "  make install          - Install dependencies via Poetry"
-	@echo "  make update-deps      - Update all dependencies to latest version in pyproject.toml and poetry.lock"
-	@echo "  make test             - Run tests locally with Poetry"
-	@echo "  make test-ci          - Run tests in GitLab CI environment (Docker, with cache)"
-	@echo "  make test-ci-shell    - Run tests with shell executor (faster, less accurate)"
-	@echo "  make test-ci-job JOB=<name> - Run specific GitLab CI job"
-	@echo "  make test-ci-list     - List all available GitLab CI jobs"
-	@echo "  make clean-ci         - Clean GitLab CI local cache and volumes"
-	@echo "  make lint             - Run Ruff linter checks"
-	@echo "  make typecheck        - Run mypy static type checker"
-	@echo "  make format           - Auto-format code with Ruff"
-	@echo "  make check            - Run all quality checks (lint, typecheck, test)"
+	@echo "  make install          - Install dependencies and setup pre-commit hooks"
+	@echo "  make lint             - Run all static analysis (lint, format, security) via pre-commit"
+	@echo "  make test             - Run unit tests via pytest"
+	@echo "  make check            - Run full validation suite (lint + test)"
+	@echo "  make security         - Run all security scans (SAST, secrets, dependencies)"
+	@echo "  make build            - Build distribution packages"
 	@echo "  make clean            - Remove build artifacts and caches"
+	@echo "  make update-deps      - Update all dependencies"
+	@echo "  make format           - Auto-format code"
 	@echo "  make changelog        - Generate changelog"
-	@echo "  make release VERSION_BUMP=<type> - Create and push a new release (patch/minor/major)"
-	@echo "  make run ARGS='<args>' - Run prompt-unifier CLI with arguments"
+	@echo "  make release VERSION_BUMP=<type> - Create and push a new release"

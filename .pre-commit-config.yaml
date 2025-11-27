@@ -13,6 +13,19 @@
 fail_fast: true
 
 repos:
+  # Standard file hygiene hooks
+  - repo: https://github.com/pre-commit/pre-commit-hooks
+    rev: v4.5.0
+    hooks:
+      - id: trailing-whitespace
+        exclude: (^\..*|agent-os/.*)
+      - id: end-of-file-fixer
+        exclude: (^\..*|agent-os/.*)
+      - id: check-yaml
+        exclude: (^\..*|agent-os/.*)
+      - id: check-added-large-files
+        exclude: (^\..*|agent-os/.*)
+
   # Ruff - Fast Python linter and formatter
   - repo: https://github.com/astral-sh/ruff-pre-commit
     rev: v0.3.0
