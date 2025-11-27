@@ -119,8 +119,6 @@ security-secrets:
 # Run dependency vulnerability scans (used in CI)
 security-deps:
 	@echo "📦 Running dependency vulnerability scans..."
-	@echo "   - Safety scan:"
-	@poetry run safety scan --output text || true
 	@echo "   - Pip-audit scan:"
 	@poetry run pip-audit --format json --output pip-audit-report.json || true
 	@poetry run pip-audit

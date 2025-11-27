@@ -113,7 +113,6 @@ ______________________________________________________________________
 
 **Tools:**
 
-- Safety v3.7.0 (CVE database)
 - pip-audit v2.9.0 (comprehensive scanning)
 
 **Configuration:**
@@ -122,11 +121,8 @@ ______________________________________________________________________
 dependency-scan:
   stage: security
   script:
-    - poetry run safety check --json --output safety-report.json || true
-    - poetry run safety check || true
     - poetry run pip-audit --format json --output pip-audit-report.json || true
     - poetry run pip-audit || true
-    - poetry run safety check --severity critical  # Fail on critical
 ```
 
 **What it checks:**
@@ -144,7 +140,6 @@ dependency-scan:
 
 **Artifacts:**
 
-- `safety-report.json` - Safety scan results
 - `pip-audit-report.json` - pip-audit scan results
 
 **Runtime:** ~30-60 seconds
@@ -210,25 +205,18 @@ ______________________________________________________________________
 
 ### Understanding Dependency Scan Output
 
-**Example Safety output:**
+**Example pip-audit output:**
 
 ```
-+==============================================================================+
-| REPORT                                                                        |
-+==============================================================================+
-| package   | installed | affected     | ID                 | CVE           |
-+==============================================================================+
-| requests  | 2.25.0    | <2.26.0      | 51668              | CVE-2023-xxxxx|
-+==============================================================================+
-| vulnerability: Improper Certificate Validation                               |
-| Severity: HIGH                                                                |
-| Fix: upgrade to requests>=2.26.0                                              |
-+==============================================================================+
+Found 1 known vulnerability in 1 package
+Name  | Version | ID             | Fix Versions
+----- | ------- | -------------- | ------------
+flask | 0.12    | PYSEC-2018-100 | 0.12.3
 ```
 
 **Action required:**
 
-1. Update the package: `poetry update requests`
+1. Update the package: `poetry update flask`
 1. Test that everything still works
 1. Commit the updated `poetry.lock`
 
@@ -342,7 +330,7 @@ ______________________________________________________________________
 
    ```bash
    # Run locally
-   poetry run safety check
+   poetry run pip-audit
    ```
 
 1. **Update the vulnerable package:**
@@ -358,8 +346,8 @@ ______________________________________________________________________
 1. **Verify the fix:**
 
    ```bash
-   # Re-run safety check
-   poetry run safety check
+   # Re-run pip-audit
+   poetry run pip-audit
 
    # Run tests
    poetry run pytest
@@ -486,7 +474,6 @@ Typical pipeline times:
 All security jobs preserve artifacts for **1 week**:
 
 - **bandit-report.json** - SAST findings
-- **safety-report.json** - Dependency vulnerabilities (Safety)
 - **pip-audit-report.json** - Dependency vulnerabilities (pip-audit)
 
 Download from: MR → Pipelines → Job → Browse artifacts
@@ -554,7 +541,6 @@ ______________________________________________________________________
 
 - [GitLab Security Scanning Docs](https://docs.gitlab.com/ee/user/application_security/)
 - [Bandit Documentation](https://bandit.readthedocs.io/)
-- [Safety Documentation](https://github.com/pyupio/safety)
 - [detect-secrets Documentation](https://github.com/Yelp/detect-secrets)
 
 ## Questions?

@@ -30,7 +30,6 @@ This project uses a multi-layered security approach:
 | ------------------ | --------------------------------- | -------- |
 | **detect-secrets** | Scans for secrets in MR           | security |
 | **bandit**         | SAST scanning                     | security |
-| **safety**         | CVE database for Python packages  | security |
 | **pip-audit**      | Comprehensive dependency scanning | security |
 
 ## Getting Started
@@ -283,9 +282,6 @@ poetry run detect-secrets scan
 ### 4. Dependency Security
 
 ```bash
-# Check for vulnerable dependencies
-poetry run safety check
-
 # Check with pip-audit
 poetry run pip-audit
 
@@ -349,23 +345,6 @@ poetry run pre-commit install
 
 # Verify
 poetry run pre-commit run --all-files
-```
-
-### Error: Safety reports vulnerabilities in dev dependencies
-
-**Cause:** Dev dependencies with known CVEs
-
-**Solution:**
-
-```bash
-# Check severity
-poetry run safety check
-
-# Update if critical
-poetry update
-
-# Ignore if acceptable risk (dev only)
-# Add to safety policy file
 ```
 
 ## Testing Security Features

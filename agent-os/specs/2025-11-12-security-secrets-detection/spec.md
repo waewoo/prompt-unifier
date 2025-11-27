@@ -110,19 +110,12 @@ skips = ["*/test_*.py"]
 ### 3. Dependency Security Scanning
 
 **Tools:**
-- **Primary:** `safety` - CVE database for Python packages
-- **Alternative:** `pip-audit` - More comprehensive, newer tool
+- **Primary:** `pip-audit` - Comprehensive dependency scanning
+
 
 **Pre-commit Hook (Optional - can be slow):**
 ```yaml
-- repo: local
-  hooks:
-    - id: safety-check
-      name: Safety vulnerability scan
-      entry: poetry run safety check --json
-      language: system
-      pass_filenames: false
-      stages: [manual]  # Run manually or in CI only
+# No pre-commit hook configured for dependency scanning
 ```
 
 **CI/CD Integration (Required):**
@@ -130,11 +123,10 @@ skips = ["*/test_*.py"]
 dependency-scan:
   stage: security
   script:
-    - poetry run safety check --json --output safety-report.json
     - poetry run pip-audit --format json --output pip-audit-report.json
   artifacts:
     reports:
-      dependency_scanning: safety-report.json
+      dependency_scanning: pip-audit-report.json
   allow_failure: false  # Block merge on critical vulnerabilities
 ```
 
@@ -211,20 +203,16 @@ dependency-scan:
   stage: security
   image: python:3.11
   before_script:
-    - pip install poetry safety pip-audit
+    - pip install poetry pip-audit
     - poetry install --no-root
   script:
-    # Safety scan
-    - poetry run safety check --json --output safety-report.json || true
-    - poetry run safety check  # Human-readable
     # pip-audit scan
     - poetry run pip-audit --format json --output pip-audit-report.json || true
     - poetry run pip-audit  # Human-readable
   artifacts:
     reports:
-      dependency_scanning: safety-report.json
+      dependency_scanning: pip-audit-report.json
     paths:
-      - safety-report.json
       - pip-audit-report.json
     expire_in: 1 week
   allow_failure: false
@@ -235,7 +223,7 @@ dependency-scan:
 **Setup Instructions:**
 ```bash
 # Install pre-commit
-poetry add --group dev pre-commit detect-secrets bandit safety pip-audit
+poetry add --group dev pre-commit detect-secrets bandit pip-audit
 
 # Install hooks
 pre-commit install
@@ -409,7 +397,6 @@ detect-secrets audit .secrets.baseline
 - [detect-secrets Documentation](https://github.com/Yelp/detect-secrets)
 - [gitleaks Documentation](https://github.com/gitleaks/gitleaks)
 - [bandit Documentation](https://bandit.readthedocs.io/)
-- [safety Documentation](https://github.com/pyupio/safety)
 - [pip-audit Documentation](https://github.com/pypa/pip-audit)
 - [OWASP Top 10](https://owasp.org/www-project-top-ten/)
 - [GitLab Security Best Practices](https://docs.gitlab.com/ee/user/application_security/)

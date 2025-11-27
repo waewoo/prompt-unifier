@@ -8,14 +8,13 @@
 **Steps:**
 1. Add detect-secrets to dev dependencies
 2. Add bandit to dev dependencies
-3. Add safety to dev dependencies
-4. Add pip-audit to dev dependencies
-5. Add gitleaks to CI docker image (not Poetry dependency)
-6. Update poetry.lock
+3. Add pip-audit to dev dependencies
+4. Add gitleaks to CI docker image (not Poetry dependency)
+5. Update poetry.lock
 
 **Commands:**
 ```bash
-poetry add --group dev detect-secrets bandit safety pip-audit
+poetry add --group dev detect-secrets bandit pip-audit
 poetry lock
 ```
 
@@ -286,23 +285,17 @@ dependency-scan:
   stage: security
   image: python:3.11-slim
   before_script:
-    - pip install poetry safety pip-audit
+    - pip install poetry pip-audit
     - poetry config virtualenvs.create false
     - poetry install --no-root
   script:
-    - echo "Running Safety scan..."
-    - poetry run safety check --json --output safety-report.json || true
-    - poetry run safety check || true
     - echo "Running pip-audit scan..."
     - poetry run pip-audit --format json --output pip-audit-report.json || true
     - poetry run pip-audit || true
-    # Fail if critical vulnerabilities found
-    - poetry run safety check --severity critical
   artifacts:
     reports:
-      dependency_scanning: safety-report.json
+      dependency_scanning: pip-audit-report.json
     paths:
-      - safety-report.json
       - pip-audit-report.json
     expire_in: 1 week
     when: always
@@ -313,7 +306,7 @@ dependency-scan:
 ```
 
 **Acceptance Criteria:**
-- ✅ Runs both safety and pip-audit
+- ✅ Runs pip-audit
 - ✅ Generates JSON reports
 - ✅ Fails on critical vulnerabilities
 - ✅ Saves artifacts
@@ -509,10 +502,9 @@ See [SECURITY.md](SECURITY.md) for details.
 
 **Test Cases:**
 1. Add package with known vulnerability
-2. Verify safety detects it
-3. Verify pip-audit detects it
-4. Check severity classification
-5. Verify CI job fails appropriately
+2. Verify pip-audit detects it
+3. Check severity classification
+4. Verify CI job fails appropriately
 
 **Acceptance Criteria:**
 - ✅ Known vulnerabilities detected
@@ -559,8 +551,7 @@ See [SECURITY.md](SECURITY.md) for details.
 2. Audit and baseline legitimate secrets
 3. Run bandit on src/
 4. Fix any security issues found
-5. Run safety check
-6. Update vulnerable dependencies
+5. Update vulnerable dependencies
 
 **Acceptance Criteria:**
 - ✅ No real secrets in codebase
@@ -580,7 +571,6 @@ See [SECURITY.md](SECURITY.md) for details.
 ```gitignore
 # Security scanning outputs
 bandit-report.json
-safety-report.json
 pip-audit-report.json
 .secrets.baseline.tmp
 ```

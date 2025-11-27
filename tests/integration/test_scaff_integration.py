@@ -194,8 +194,7 @@ vague thing
         low_quality_result = next(r for r in summary.results if "low-quality" in str(r.file))
 
         assert (
-            high_quality_result.scaff_score.total_score
-            > low_quality_result.scaff_score.total_score
+            high_quality_result.scaff_score.total_score > low_quality_result.scaff_score.total_score
         )
 
     def test_batch_validator_integration_with_scaff(self, tmp_path: Path) -> None:

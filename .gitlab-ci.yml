@@ -91,7 +91,7 @@ security-scans:
   image: python:3.11-slim
   before_script:
     - apt-get update && apt-get install -y git make
-    - pip install --quiet poetry safety pip-audit detect-secrets
+    - pip install --quiet poetry pip-audit detect-secrets
     - poetry install --no-root --only main,dev
   script:
     - echo "Running comprehensive security scans via Makefile..."
