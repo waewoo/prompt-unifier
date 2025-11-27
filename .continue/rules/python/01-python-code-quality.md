@@ -23,15 +23,18 @@ This document outlines Python-specific coding standards for all code written in 
 
 ## 1. Code Style and Formatting
 
-- **PEP 8**: All Python code must adhere to the [PEP 8 style guide](https://peps.python.org/pep-0008/).
+- **PEP 8**: All Python code must adhere to the
+  [PEP 8 style guide](https://peps.python.org/pep-0008/).
 - **Formatter**: Use `ruff format` for automatic, consistent code formatting.
 - **Linter**: Use `ruff check` to catch common errors and style issues.
-- **`pre-commit`**: Configure `pre-commit` hooks to run `ruff format` and `ruff check` automatically before each commit to ensure all code in the repository is compliant.
+- **`pre-commit`**: Configure `pre-commit` hooks to run `ruff format` and `ruff check` automatically
+  before each commit to ensure all code in the repository is compliant.
 
 ## 2. Type Hinting
 
 - **Requirement**: All Python functions, methods, and class attributes should have type hints.
-- **Clarity**: Type hints improve code readability, allow for static analysis with tools like `mypy`, and reduce runtime errors.
+- **Clarity**: Type hints improve code readability, allow for static analysis with tools like
+  `mypy`, and reduce runtime errors.
 - **Static Analysis**: Use `mypy` as a static type checker to enforce type correctness.
 
 ```python
@@ -49,7 +52,9 @@ def process_user_data(df: pd.DataFrame, logical_date: str) -> int:
 ## 3. Docstrings
 
 - **Requirement**: All public functions, classes, and modules must have a docstring.
-- **Format**: Use the [Google Python Style Guide](https://google.github.io/styleguide/pyguide.html#3.8-comments-and-docstrings) for docstrings.
+- **Format**: Use the
+  [Google Python Style Guide](https://google.github.io/styleguide/pyguide.html#3.8-comments-and-docstrings)
+  for docstrings.
 - **Content**:
   - A brief summary of the object's purpose.
   - `Args:` section describing each argument.
@@ -75,9 +80,12 @@ def get_active_users(db_connection, min_logins: int = 10) -> pd.DataFrame:
 ## 4. Error Handling and Logging
 
 ### Logging
-- **Use the `logging` module**: Use Python's standard `logging` module. Do not use `print()` for application output.
+
+- **Use the `logging` module**: Use Python's standard `logging` module. Do not use `print()` for
+  application output.
 - **Accessing the Logger**: Get the logger via `logging.getLogger(__name__)`.
-- **Log Levels**: Use appropriate log levels (`INFO`, `WARNING`, `ERROR`, `CRITICAL`) to convey the importance of the message.
+- **Log Levels**: Use appropriate log levels (`INFO`, `WARNING`, `ERROR`, `CRITICAL`) to convey the
+  importance of the message.
 
 ```python
 import logging
@@ -95,8 +103,11 @@ def my_python_function():
 ```
 
 ### Exception Handling
-- **Fail Explicitly**: If a function cannot complete its objective, it should raise an exception. Do not swallow exceptions with a bare `except: pass`.
-- **Custom Exceptions**: For business logic, define custom, specific exceptions to provide clear context on what failed.
+
+- **Fail Explicitly**: If a function cannot complete its objective, it should raise an exception. Do
+  not swallow exceptions with a bare `except: pass`.
+- **Custom Exceptions**: For business logic, define custom, specific exceptions to provide clear
+  context on what failed.
 
 ## 5. Efficiency and Performance
 
@@ -104,6 +115,8 @@ def my_python_function():
   - Processing data in chunks.
   - Using more memory-efficient data types.
 - **Database Queries**:
-  - Avoid fetching entire large tables into memory. Use `WHERE` clauses to filter data at the source.
+  - Avoid fetching entire large tables into memory. Use `WHERE` clauses to filter data at the
+    source.
   - Use server-side cursors for very large query results if your database connector supports it.
-- **Avoid Unnecessary Imports**: Only import modules that are needed for the specific function or module.
+- **Avoid Unnecessary Imports**: Only import modules that are needed for the specific function or
+  module.

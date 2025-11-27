@@ -17,15 +17,19 @@ language: python
 ---
 # Airflow Testing Standards
 
-This document outlines the standards for testing Airflow DAGs, operators, and business logic to ensure pipeline reliability and correctness.
+This document outlines the standards for testing Airflow DAGs, operators, and business logic to
+ensure pipeline reliability and correctness.
 
 ## 1. DAG Integrity Tests
 
-These are essential, lightweight tests that should run for every DAG in your repository. They check for structural and syntactical correctness.
+These are essential, lightweight tests that should run for every DAG in your repository. They check
+for structural and syntactical correctness.
 
 ### DAG Bag Loading Test
+
 - **Purpose**: To ensure that the Airflow scheduler can parse your DAG file without errors.
-- **Implementation**: Use `airflow.models.dagbag.DagBag` to load all DAGs and check for import errors.
+- **Implementation**: Use `airflow.models.dagbag.DagBag` to load all DAGs and check for import
+  errors.
 
 ```python
 # In tests/dags/test_dag_integrity.py
@@ -43,8 +47,10 @@ def test_no_import_errors(dagbag):
 ```
 
 ### Required DAG Arguments Test
+
 - **Purpose**: To enforce standards, such as ensuring every DAG has an owner and tags.
-- **Implementation**: Iterate through the loaded DAGs and assert that required arguments are present.
+- **Implementation**: Iterate through the loaded DAGs and assert that required arguments are
+  present.
 
 ```python
 # In tests/dags/test_dag_integrity.py
@@ -56,6 +62,7 @@ def test_all_dags_have_required_args(dagbag):
 ```
 
 ### Acyclicity Test
+
 - **Purpose**: To ensure there are no circular dependencies in your DAGs.
 - **Implementation**: Call the `test_cycle()` method on each DAG object.
 
@@ -72,9 +79,13 @@ def test_dags_are_acyclic(dagbag):
 
 ## 2. Unit Testing Business Logic
 
-- **Principle**: The core business logic (e.g., the data transformation code called by a `PythonOperator`) should be in a separate, importable module and have its own dedicated unit tests.
-- **Decoupling**: This is the most important aspect of testing Airflow pipelines. The DAG is the orchestrator; the logic should be testable independently of Airflow.
-- **Mocking**: Use standard Python mocking libraries (like `unittest.mock`) to mock any external dependencies (e.g., database connections, API calls).
+- **Principle**: The core business logic (e.g., the data transformation code called by a
+  `PythonOperator`) should be in a separate, importable module and have its own dedicated unit
+  tests.
+- **Decoupling**: This is the most important aspect of testing Airflow pipelines. The DAG is the
+  orchestrator; the logic should be testable independently of Airflow.
+- **Mocking**: Use standard Python mocking libraries (like `unittest.mock`) to mock any external
+  dependencies (e.g., database connections, API calls).
 
 ```python
 # In my_project/etl/transform.py
@@ -92,7 +103,7 @@ def test_transform_user_data():
         "first_name": ["John"],
         "last_name": ["Doe"],
     })
-    
+
     # Act
     result_df = transform_user_data(input_df)
 
@@ -104,12 +115,18 @@ def test_transform_user_data():
 ## 3. Task and Operator Testing
 
 ### Testing Task Logic
+
 - **Purpose**: To test the logic of a single Airflow task in isolation.
-- **Implementation**: For a `PythonOperator`, you can import the callable function and test it directly. For other operators, you may need to instantiate the operator and call its `execute` method with a mocked context.
+- **Implementation**: For a `PythonOperator`, you can import the callable function and test it
+  directly. For other operators, you may need to instantiate the operator and call its `execute`
+  method with a mocked context.
 
 ### Mocking Connections and Hooks
-- **Principle**: When testing a task that uses an Airflow Hook (e.g., `PostgresHook`), you must mock the hook to prevent the test from making real external calls.
-- **Implementation**: Use `pytest.mock.patch` or `unittest.mock.patch` to replace the hook class with a `MagicMock`.
+
+- **Principle**: When testing a task that uses an Airflow Hook (e.g., `PostgresHook`), you must mock
+  the hook to prevent the test from making real external calls.
+- **Implementation**: Use `pytest.mock.patch` or `unittest.mock.patch` to replace the hook class
+  with a `MagicMock`.
 
 ```python
 # In dags/my_dag.py
@@ -132,7 +149,7 @@ def test_get_user_count_task(mocker):
         "dags.my_dag.PostgresHook",
         return_value=mock_hook_instance,
     )
-    
+
     # Act
     from dags.my_dag import get_user_count
     result = get_user_count()
@@ -147,10 +164,10 @@ def test_get_user_count_task(mocker):
 - **Purpose**: To verify that rerunning a task produces the same outcome.
 - **Implementation**: This often requires an integration test setup. The basic pattern is:
   1. Set up an initial state (e.g., a target database table is empty).
-  2. Run the task once.
-  3. Assert the target state is correct (e.g., the table has 10 rows).
-  4. Run the exact same task again.
-  5. Assert the target state is still correct (e.g., the table still has 10 rows, not 20).
+  1. Run the task once.
+  1. Assert the target state is correct (e.g., the table has 10 rows).
+  1. Run the exact same task again.
+  1. Assert the target state is still correct (e.g., the table still has 10 rows, not 20).
 
 ```python
 def test_load_to_db_is_idempotent(database_connection):
@@ -160,10 +177,10 @@ def test_load_to_db_is_idempotent(database_connection):
     """
     # Arrange
     task = my_dag.get_task("load_to_db")
-    
+
     # Act 1: Run the task the first time
     task.execute(context={})
-    
+
     # Assert 1: Check the state
     count1 = database_connection.execute("SELECT COUNT(*) FROM target_table").scalar()
     assert count1 == 100

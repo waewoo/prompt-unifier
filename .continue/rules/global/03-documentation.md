@@ -17,14 +17,17 @@ language: en
 ---
 # Global Documentation Standards
 
-This document provides the standards for documenting projects, code, and infrastructure. Good documentation is essential for maintainability, onboarding, and incident response.
+This document provides the standards for documenting projects, code, and infrastructure. Good
+documentation is essential for maintainability, onboarding, and incident response.
 
 ## 1. README Files
 
 Every repository, module, and component must have a `README.md` file at its root.
 
 ### Repository README
+
 The main `README.md` at the root of a repository should include:
+
 - **Project Title**: What the project is.
 - **Description**: A brief explanation of what the project does and the problem it solves.
 - **Getting Started**: How to set up a local development environment.
@@ -34,14 +37,16 @@ The main `README.md` at the root of a repository should include:
 - **Architecture**: A link to more detailed architecture documentation.
 
 ### Module/Role/Component README
+
 README files for sub-components (e.g., a Terraform module, an Ansible role) should be more focused:
+
 - **Purpose**: What the component does.
 - **Inputs**: Variables, parameters, and their types/defaults.
 - **Outputs**: Values returned by the component.
 - **Dependencies**: Any other components or tools required.
 - **Example Usage**: A clear, copy-pasteable code snippet showing how to use the component.
 
-```terraform
+````terraform
 # Example for a Terraform module README
 
 ## AWS S3 Bucket Module
@@ -59,21 +64,22 @@ module "private_bucket" {
     Team        = "data-eng"
   }
 }
-```
+````
 
 ### Inputs
 
-| Name          | Description                 | Type   | Default | Required |
-|---------------|-----------------------------|--------|---------|----------|
-| `bucket_name` | The name of the S3 bucket.  | `string` | `null`  | yes      |
-| `tags`          | A map of tags to assign.    | `map(string)` | `{}`    | no       |
+| Name          | Description                | Type          | Default | Required |
+| ------------- | -------------------------- | ------------- | ------- | -------- |
+| `bucket_name` | The name of the S3 bucket. | `string`      | `null`  | yes      |
+| `tags`        | A map of tags to assign.   | `map(string)` | `{}`    | no       |
 
 ### Outputs
 
-| Name        | Description                   |
-|-------------|-------------------------------|
-| `bucket_id` | The ID (name) of the bucket.  |
-| `bucket_arn`| The ARN of the bucket.        |
+| Name         | Description                  |
+| ------------ | ---------------------------- |
+| `bucket_id`  | The ID (name) of the bucket. |
+| `bucket_arn` | The ARN of the bucket.       |
+
 ```
 
 ## 2. Architecture Documentation

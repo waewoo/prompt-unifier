@@ -18,14 +18,19 @@ language: python
 ---
 # Python API Client Design
 
-This document provides best practices for designing Python clients that interact with external HTTP APIs. Adhering to these standards ensures that API interactions are robust, resilient, performant, and maintainable.
+This document provides best practices for designing Python clients that interact with external HTTP
+APIs. Adhering to these standards ensures that API interactions are robust, resilient, performant,
+and maintainable.
 
 ## 1. Use Session Objects
 
-- **Principle**: Use a `requests.Session` object (for synchronous code) or an `httpx.AsyncClient` (for asynchronous code) instead of making direct calls like `requests.get()`.
+- **Principle**: Use a `requests.Session` object (for synchronous code) or an `httpx.AsyncClient`
+  (for asynchronous code) instead of making direct calls like `requests.get()`.
 - **Benefit**:
-  - **Connection Pooling**: Session objects reuse the underlying TCP connection, which significantly improves performance for applications that make multiple requests to the same host.
-  - **Configuration**: Allows you to configure default headers, authentication, and other settings for a group of requests.
+  - **Connection Pooling**: Session objects reuse the underlying TCP connection, which significantly
+    improves performance for applications that make multiple requests to the same host.
+  - **Configuration**: Allows you to configure default headers, authentication, and other settings
+    for a group of requests.
 
 ```python
 # Good: Using a Session object
@@ -51,9 +56,13 @@ def get_item_bad(item_id: int):
 
 ## 2. Implement Retry Logic with Exponential Backoff
 
-- **Principle**: Network requests can fail for transient reasons (e.g., temporary network glitch, rate limiting). Automatically retry failed requests.
-- **Exponential Backoff**: Increase the delay between retries exponentially to avoid overwhelming the server.
-- **Implementation**: Use a library like `tenacity` or implement a custom decorator. Only retry on specific, safe-to-retry errors (e.g., 5xx server errors, connection errors), not on 4xx client errors.
+- **Principle**: Network requests can fail for transient reasons (e.g., temporary network glitch,
+  rate limiting). Automatically retry failed requests.
+- **Exponential Backoff**: Increase the delay between retries exponentially to avoid overwhelming
+  the server.
+- **Implementation**: Use a library like `tenacity` or implement a custom decorator. Only retry on
+  specific, safe-to-retry errors (e.g., 5xx server errors, connection errors), not on 4xx client
+  errors.
 
 ```python
 from tenacity import retry, stop_after_attempt, wait_exponential
@@ -74,9 +83,12 @@ def make_resilient_request(url: str):
 
 ## 3. Handle HTTP Status Codes Gracefully
 
-- **Principle**: Your code must check the HTTP status code of the response and handle it appropriately.
-- **`raise_for_status()`**: Use `response.raise_for_status()` to automatically raise an `HTTPError` for 4xx and 5xx responses.
-- **Specific Handling**: Catch specific status codes for more granular logic (e.g., handle `404 Not Found` differently from `403 Forbidden`).
+- **Principle**: Your code must check the HTTP status code of the response and handle it
+  appropriately.
+- **`raise_for_status()`**: Use `response.raise_for_status()` to automatically raise an `HTTPError`
+  for 4xx and 5xx responses.
+- **Specific Handling**: Catch specific status codes for more granular logic (e.g., handle
+  `404 Not Found` differently from `403 Forbidden`).
 
 ```python
 def get_resource(resource_id: int):
@@ -97,7 +109,8 @@ def get_resource(resource_id: int):
 ## 4. Use Custom Exceptions
 
 - **Principle**: Create a hierarchy of custom exceptions for your API client.
-- **Benefit**: Allows consumers of your client to handle specific API-related errors gracefully, without having to parse generic `HTTPError` exceptions.
+- **Benefit**: Allows consumers of your client to handle specific API-related errors gracefully,
+  without having to parse generic `HTTPError` exceptions.
 
 ```python
 class ApiClientError(Exception):
@@ -115,14 +128,18 @@ class ResourceNotFoundError(ApiClientError):
 
 ## 5. Centralize Configuration and Authentication
 
-- **Configuration**: Do not hardcode URLs, endpoints, or other configuration. Pass them into the client's constructor or load them from a central configuration source.
-- **Authentication**: Encapsulate authentication logic within the client. The caller should not have to worry about how to add an API key or refresh a token.
+- **Configuration**: Do not hardcode URLs, endpoints, or other configuration. Pass them into the
+  client's constructor or load them from a central configuration source.
+- **Authentication**: Encapsulate authentication logic within the client. The caller should not have
+  to worry about how to add an API key or refresh a token.
 
 ## 6. Timeouts
 
 - **Principle**: Always specify a `timeout` for all network requests.
-- **Reason**: Prevents your application from hanging indefinitely if the remote server is unresponsive.
-- **Implementation**: Set a `timeout` in seconds on the request call (e.g., `requests.get(url, timeout=10)`).
+- **Reason**: Prevents your application from hanging indefinitely if the remote server is
+  unresponsive.
+- **Implementation**: Set a `timeout` in seconds on the request call (e.g.,
+  `requests.get(url, timeout=10)`).
 
 ```python
 try:

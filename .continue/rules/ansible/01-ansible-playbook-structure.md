@@ -18,11 +18,13 @@ language: yaml
 ---
 # Ansible Playbook Structure
 
-This document outlines best practices for structuring Ansible playbooks, promoting consistency, reusability, and reliable configuration management.
+This document outlines best practices for structuring Ansible playbooks, promoting consistency,
+reusability, and reliable configuration management.
 
 ## 1. Playbook Organization
 
 ### Directory Structure
+
 - **Principle**: Organize playbooks and related files in a logical, hierarchical structure.
 - **Benefit**: Improves discoverability, reduces conflicts, and simplifies maintenance.
 
@@ -54,8 +56,11 @@ This document outlines best practices for structuring Ansible playbooks, promoti
 ```
 
 ### Main Playbook (`site.yml`)
-- **Principle**: Use a main `site.yml` playbook as the entry point that orchestrates other playbooks or roles.
-- **Benefit**: Provides a single point of execution and a high-level overview of the entire automation process.
+
+- **Principle**: Use a main `site.yml` playbook as the entry point that orchestrates other playbooks
+  or roles.
+- **Benefit**: Provides a single point of execution and a high-level overview of the entire
+  automation process.
 
 ```yaml
 # playbooks/site.yml
@@ -67,6 +72,7 @@ This document outlines best practices for structuring Ansible playbooks, promoti
 ## 2. Playbook Components
 
 ### Hosts
+
 - **Principle**: Clearly define the target hosts or groups for each play.
 - **Benefit**: Ensures tasks are executed on the correct machines.
 
@@ -81,6 +87,7 @@ This document outlines best practices for structuring Ansible playbooks, promoti
 ```
 
 ### Variables (`vars`)
+
 - **Principle**: Define variables at the appropriate scope (play, role, group, host).
 - **Benefit**: Promotes reusability and makes playbooks configurable.
 - **Hierarchy**: Understand Ansible's variable precedence.
@@ -98,10 +105,14 @@ This document outlines best practices for structuring Ansible playbooks, promoti
 ```
 
 ### Tasks (`tasks`)
+
 - **Principle**: Each task should have a clear, descriptive `name`.
-- **Idempotence**: Design tasks to be idempotent. Running a task multiple times should result in the same system state without causing unintended side effects.
-  - **Use Modules**: Prefer Ansible modules that are inherently idempotent (e.g., `apt`, `yum`, `file`, `service`, `copy`).
-  - **`changed_when`**: Use `changed_when` to explicitly define when a task should report a change, especially for `command` or `shell` modules.
+- **Idempotence**: Design tasks to be idempotent. Running a task multiple times should result in the
+  same system state without causing unintended side effects.
+  - **Use Modules**: Prefer Ansible modules that are inherently idempotent (e.g., `apt`, `yum`,
+    `file`, `service`, `copy`).
+  - **`changed_when`**: Use `changed_when` to explicitly define when a task should report a change,
+    especially for `command` or `shell` modules.
   - **`when`**: Use `when` conditions to execute tasks only when necessary.
 
 ```yaml
@@ -118,7 +129,9 @@ This document outlines best practices for structuring Ansible playbooks, promoti
 ```
 
 ### Handlers (`handlers`)
-- **Principle**: Use handlers for actions that should only be triggered when a change occurs (e.g., restarting a service after a configuration file update).
+
+- **Principle**: Use handlers for actions that should only be triggered when a change occurs (e.g.,
+  restarting a service after a configuration file update).
 - **Benefit**: Ensures services are only restarted when necessary, reducing downtime.
 
 ```yaml
@@ -139,6 +152,7 @@ This document outlines best practices for structuring Ansible playbooks, promoti
 ## 3. Inventory Management
 
 ### Static Inventory (`hosts.ini`)
+
 - **Principle**: Use a static inventory file for smaller, stable environments.
 - **Format**: INI or YAML.
 
@@ -153,7 +167,9 @@ db1.example.com
 ```
 
 ### Dynamic Inventory
-- **Principle**: For cloud environments or large, frequently changing infrastructure, use dynamic inventory scripts or plugins.
+
+- **Principle**: For cloud environments or large, frequently changing infrastructure, use dynamic
+  inventory scripts or plugins.
 - **Benefit**: Automatically discovers hosts, reducing manual effort and errors.
 - **Examples**: AWS EC2, Azure RM, GCP Compute Engine inventory plugins.
 
@@ -161,6 +177,7 @@ db1.example.com
 
 - **Playbooks**: `snake_case` (e.g., `webservers.yml`, `deploy_app.yml`).
 - **Roles**: `snake_case` (e.g., `nginx`, `common`).
-- **Tasks**: Descriptive, starting with a verb (e.g., "Ensure Nginx is installed", "Copy application configuration").
+- **Tasks**: Descriptive, starting with a verb (e.g., "Ensure Nginx is installed", "Copy application
+  configuration").
 - **Variables**: `snake_case` (e.g., `nginx_port`, `app_version`).
 - **Groups**: `snake_case` (e.g., `webservers`, `databases`).

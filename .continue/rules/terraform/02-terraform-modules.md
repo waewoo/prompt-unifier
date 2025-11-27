@@ -18,17 +18,21 @@ language: hcl
 ---
 # Terraform Module Standards
 
-This document outlines the best practices for creating and consuming Terraform modules, which are key to building scalable and maintainable infrastructure as code.
+This document outlines the best practices for creating and consuming Terraform modules, which are
+key to building scalable and maintainable infrastructure as code.
 
 ## 1. Module Structure
 
 A well-structured module is easy to understand, use, and maintain.
 
 - **`main.tf`**: Contains the primary resources defined by the module.
-- **`variables.tf`**: Defines all input variables for the module. Each variable must have a `description`, `type`, and `default` value (if applicable).
-- **`outputs.tf`**: Defines all output values exposed by the module. Each output must have a `description`.
+- **`variables.tf`**: Defines all input variables for the module. Each variable must have a
+  `description`, `type`, and `default` value (if applicable).
+- **`outputs.tf`**: Defines all output values exposed by the module. Each output must have a
+  `description`.
 - **`versions.tf`**: Specifies the required Terraform version and provider versions for the module.
-- **`README.md`**: A comprehensive README is crucial for module usability. (See Global Documentation Standards for details).
+- **`README.md`**: A comprehensive README is crucial for module usability. (See Global Documentation
+  Standards for details).
 - **`LICENSE`**: Include a license file.
 - **`examples/`**: (Optional but recommended) A directory containing example usage of the module.
 
@@ -51,10 +55,14 @@ A well-structured module is easy to understand, use, and maintain.
 ## 2. Input Variables (`variables.tf`)
 
 - **Descriptive Names**: Variable names should clearly indicate their purpose.
-- **Type Constraints**: Always specify a `type` for variables (e.g., `string`, `number`, `bool`, `list(string)`, `map(string)`, `object`).
-- **Descriptions**: Every variable must have a `description` explaining its purpose, accepted values, and any constraints.
-- **Default Values**: Provide sensible `default` values where possible to make the module easier to use. If a variable is mandatory, omit the `default`.
-- **Sensitive Variables**: Mark sensitive variables (e.g., passwords) with `sensitive = true` to prevent them from being displayed in `terraform plan` or `terraform apply` output.
+- **Type Constraints**: Always specify a `type` for variables (e.g., `string`, `number`, `bool`,
+  `list(string)`, `map(string)`, `object`).
+- **Descriptions**: Every variable must have a `description` explaining its purpose, accepted
+  values, and any constraints.
+- **Default Values**: Provide sensible `default` values where possible to make the module easier to
+  use. If a variable is mandatory, omit the `default`.
+- **Sensitive Variables**: Mark sensitive variables (e.g., passwords) with `sensitive = true` to
+  prevent them from being displayed in `terraform plan` or `terraform apply` output.
 
 ```terraform
 variable "region" {
@@ -84,8 +92,10 @@ variable "db_password" {
 
 - **Descriptive Names**: Output names should clearly indicate what value they represent.
 - **Descriptions**: Every output must have a `description` explaining its purpose.
-- **Sensitive Outputs**: Mark sensitive outputs with `sensitive = true` to prevent them from being displayed in `terraform plan` or `terraform apply` output.
-- **Minimize Outputs**: Only expose outputs that are necessary for consuming modules or for external systems. Avoid exposing internal details.
+- **Sensitive Outputs**: Mark sensitive outputs with `sensitive = true` to prevent them from being
+  displayed in `terraform plan` or `terraform apply` output.
+- **Minimize Outputs**: Only expose outputs that are necessary for consuming modules or for external
+  systems. Avoid exposing internal details.
 
 ```terraform
 output "vpc_id" {
@@ -107,8 +117,10 @@ output "db_connection_string" {
 
 ## 4. Module Versioning
 
-- **Semantic Versioning**: Use [Semantic Versioning](https://semver.org/) (e.g., `v1.0.0`, `v2.1.3`) for your modules.
-- **Source Reference**: Always specify a version constraint when referencing a module to ensure predictable behavior.
+- **Semantic Versioning**: Use [Semantic Versioning](https://semver.org/) (e.g., `v1.0.0`, `v2.1.3`)
+  for your modules.
+- **Source Reference**: Always specify a version constraint when referencing a module to ensure
+  predictable behavior.
 - **Benefit**: Allows consumers to upgrade modules safely and prevents unexpected breaking changes.
 
 ```terraform
@@ -134,14 +146,17 @@ module "ec2" {
 ## 5. Module Sources
 
 - **Terraform Registry**: For public or widely shared modules, use the Terraform Registry.
-- **Git Repositories**: For private modules, use Git repositories (GitHub, GitLab, Bitbucket). Specify the path to the module within the repository and the desired version.
-- **Local Paths**: For modules under active development or very specific to a single project, local paths can be used. Avoid for shared modules.
+- **Git Repositories**: For private modules, use Git repositories (GitHub, GitLab, Bitbucket).
+  Specify the path to the module within the repository and the desired version.
+- **Local Paths**: For modules under active development or very specific to a single project, local
+  paths can be used. Avoid for shared modules.
 
 ## 6. Module Composition
 
 - **Principle**: Build complex infrastructure by composing smaller, single-purpose modules.
 - **Benefit**: Reduces complexity, improves testability, and increases reusability.
-- **Example**: A `web-app` module might compose a `vpc` module, an `ec2-instance` module, and a `rds-database` module.
+- **Example**: A `web-app` module might compose a `vpc` module, an `ec2-instance` module, and a
+  `rds-database` module.
 
 ```terraform
 # In modules/web-app/main.tf
