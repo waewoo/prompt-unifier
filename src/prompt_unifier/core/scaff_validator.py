@@ -76,6 +76,18 @@ ACTION_VERBS = [
     "verify",
     "specify",
     "establish",
+    "refactor",
+    "optimize",
+    "audit",
+    "migrate",
+    "update",
+    "upgrade",
+    "install",
+    "setup",
+    "execute",
+    "run",
+    "document",
+    "plan",
 ]
 
 
@@ -638,7 +650,8 @@ class SCARFFValidator:
         # Detect imperative bullet points and numbered lists with action verbs
         # Matches both: "- Create X" and "1. Create X"
         # Use simplified regex and set membership for complexity reduction
-        list_pattern = r"^\s*(?:[-*+]|\d+\.)\s*(\w+)\s+"
+        # Allow for optional markdown formatting chars like ** or * at the start of the word
+        list_pattern = r"^\s*(?:[-*+]|\d+\.)\s*(?:[*_]{1,3})?(\w+)(?:[*_]{1,3})?\s+"
         list_candidates = re.findall(list_pattern, content, re.MULTILINE)
         imperative_bullets = sum(1 for word in list_candidates if word.lower() in ACTION_VERBS)
 
