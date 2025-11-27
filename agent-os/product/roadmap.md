@@ -56,6 +56,8 @@
 
 22. [ ] Semantic Validation of Prompts — Extend validation beyond YAML format to include semantic checks: excessive prompt length warnings, estimated token count, detection of problematic patterns (e.g., conflicting instructions, deprecated syntax), and best practice suggestions. Provide actionable feedback with severity levels (error, warning, info). `M`
 
+23. [x] SCAFF Method Validation — Implement validation to ensure prompts follow the SCAFF methodology (Specific, Contextual, Actionable, Formatted, Focused). Add SCAFF compliance checker that analyzes prompt structure and content, detects missing SCAFF components, provides suggestions for improvement, and reports SCAFF compliance score. Support --scaff flag in validate command to enable SCAFF-specific validation. Integrate with semantic validation to provide comprehensive prompt quality assessment. `M`
+
 > Notes
 > - Order items by technical dependencies and product architecture
 > - Each item should represent an end-to-end (frontend + backend) functional and testable feature

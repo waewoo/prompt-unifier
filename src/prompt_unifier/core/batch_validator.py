@@ -7,6 +7,7 @@ prompt files in a directory and aggregating the results.
 import logging
 from pathlib import Path
 
+from prompt_unifier.core.scaff_validator import SCARFFValidator
 from prompt_unifier.core.validator import PromptValidator
 from prompt_unifier.models.validation import ValidationResult, ValidationSummary
 from prompt_unifier.utils.file_scanner import FileScanner
@@ -38,22 +39,25 @@ class BatchValidator:
         """Initialize the BatchValidator with component validators."""
         self.file_scanner = FileScanner()
         self.prompt_validator = PromptValidator()
+        self.scaff_validator = SCARFFValidator()
 
-    def validate_directory(self, directory: Path) -> ValidationSummary:
+    def validate_directory(self, directory: Path, scaff_enabled: bool = True) -> ValidationSummary:
         """Validate all .md files in a directory and return summary.
 
         This method performs the following steps:
         1. Scan directory recursively for .md files using FileScanner
         2. Validate each file independently using PromptValidator
-        3. Collect all ValidationResult objects
-        4. Compute summary statistics (total, passed, failed, error counts)
-        5. Return ValidationSummary with all results and statistics
+        3. Optionally run SCAFF validation if scaff_enabled is True
+        4. Collect all ValidationResult objects
+        5. Compute summary statistics (total, passed, failed, error counts)
+        6. Return ValidationSummary with all results and statistics
 
         Validation continues even if individual files fail, ensuring
         that all files are validated and all errors are reported.
 
         Args:
             directory: Path to the directory containing .md files to validate
+            scaff_enabled: Enable SCAFF methodology validation (default: True)
 
         Returns:
             ValidationSummary containing aggregated statistics and individual
@@ -81,7 +85,50 @@ class BatchValidator:
         results: list[ValidationResult] = []
         for file_path in md_files:
             logger.debug(f"Validating file: {file_path}")
+
+            # Format validation (required)
             result = self.prompt_validator.validate_file(file_path)
+
+            # SCAFF validation (optional, enabled by default)
+            if scaff_enabled and result.status == "passed":
+                # Only run SCAFF validation if format validation passed
+                # Read file content for SCAFF analysis
+                try:
+                    content = file_path.read_text(encoding="utf-8")
+
+                    # Extract content after separator (handles both formats)
+                    prompt_content = content
+                    if ">>>" in content:
+                        # Rules format: key: value >>> content
+                        _, prompt_content = content.split(">>>", 1)
+                        prompt_content = prompt_content.strip()
+                    elif content.startswith("---"):
+                        # Prompts format: ---\nkey: value\n---\ncontent
+                        parts = content.split("---", 2)
+                        if len(parts) >= 3:
+                            prompt_content = parts[2].strip()
+
+                    # Run SCAFF validation
+                    scaff_score = self.scaff_validator.validate_content(prompt_content)
+
+                    # Generate SCAFF issues (warnings) for failed components
+                    scaff_issues = self.scaff_validator.generate_issues(prompt_content)
+
+                    # Attach SCAFF score to result
+                    result.scaff_score = scaff_score
+
+                    # Merge SCAFF warnings into result.warnings
+                    result.warnings.extend(scaff_issues)
+
+                    logger.debug(
+                        f"SCAFF validation for {file_path}: "
+                        f"score={scaff_score.total_score}/100, "
+                        f"warnings={len(scaff_issues)}"
+                    )
+                except Exception as e:
+                    logger.warning(f"SCAFF validation failed for {file_path}: {e}")
+                    # Continue without SCAFF score if validation fails
+
             results.append(result)
 
         # Step 3: Compute summary statistics
@@ -94,6 +141,7 @@ class BatchValidator:
         total_warnings = sum(len(r.warnings) for r in results)
 
         # Success is True if no errors across all files
+        # Warnings (including SCAFF warnings) do not block success
         success = total_errors == 0
 
         logger.info(

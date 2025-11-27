@@ -8,7 +8,9 @@ from pathlib import Path
 
 from rich.console import Console
 from rich.markup import escape
+from rich.table import Table
 
+from prompt_unifier.models.scaff import SCARFFScore
 from prompt_unifier.models.validation import (
     ValidationIssue,
     ValidationResult,
@@ -80,6 +82,10 @@ class RichFormatter:
         for result in summary.results:
             self._display_file_result(result, verbose)
 
+            # Display SCAFF score if present
+            if result.scaff_score is not None:
+                self._display_scaff_score(result.scaff_score)
+
         # Display summary statistics
         self._display_summary_table(summary)
 
@@ -145,6 +151,7 @@ class RichFormatter:
             symbol = self.FAILED_SYMBOL
             prefix = "Error"
         else:
+            # All warnings use same formatting (including SCAFF warnings)
             color = self.WARNING_COLOR
             symbol = "⚠"
             prefix = "Warning"
@@ -180,6 +187,61 @@ class RichFormatter:
             if line.strip():  # Only display non-empty lines
                 self.console.print(f"       [dim]{line}[/dim]")
 
+    def _display_scaff_score(self, scaff_score: SCARFFScore) -> None:
+        """Display SCAFF methodology score with color coding.
+
+        Args:
+            scaff_score: The SCAFF score to display
+        """
+        # Determine color based on grade
+        grade = scaff_score.grade
+        if grade == "excellent":
+            score_color = self.SUCCESS_COLOR
+        elif grade == "good":
+            score_color = self.WARNING_COLOR
+        else:  # poor
+            score_color = self.ERROR_COLOR
+
+        # Display SCAFF score header
+        self.console.print(
+            f"  [{score_color}]SCAFF Score: {scaff_score.total_score}/100 "
+            f"({grade})[/{score_color}]"
+        )
+
+        # Display component breakdown table
+        self._display_scaff_component_table(scaff_score)
+
+        # Add separator line
+        self.console.print()
+
+    def _display_scaff_component_table(self, scaff_score: SCARFFScore) -> None:
+        """Display SCAFF component breakdown in a formatted table.
+
+        Args:
+            scaff_score: The SCAFF score containing component details
+        """
+        # Create Rich Table
+        table = Table(show_header=True, header_style="bold", box=None, padding=(0, 2))
+        table.add_column("Component", style="cyan")
+        table.add_column("Score", justify="right")
+        table.add_column("Status", justify="center")
+
+        # Add rows for each component
+        for component in scaff_score.components:
+            # Determine status symbol
+            status_symbol = self.PASSED_SYMBOL if component.passed else self.FAILED_SYMBOL
+            status_color = self.SUCCESS_COLOR if component.passed else self.ERROR_COLOR
+
+            table.add_row(
+                component.component_name,
+                f"{component.score}/{component.max_score}",
+                f"[{status_color}]{status_symbol}[/{status_color}]",
+            )
+
+        # Display table with indentation
+        self.console.print("  ", end="")
+        self.console.print(table)
+
     def _display_summary_table(self, summary: ValidationSummary) -> None:
         """Display a summary table with validation statistics.
 
@@ -201,6 +263,24 @@ class RichFormatter:
         self.console.print(
             f"  Warnings: [{self.WARNING_COLOR}]{summary.warning_count}[/{self.WARNING_COLOR}]"
         )
+
+        # Check if any result has SCAFF score to determine if SCAFF validation ran
+        scaff_warning_count = 0
+        for result in summary.results:
+            if result.scaff_score is not None:
+                # Count SCAFF-specific warnings
+                scaff_warning_count += sum(
+                    1 for warning in result.warnings if warning.code.startswith("SCAFF_")
+                )
+
+        # Display SCAFF warnings count if SCAFF validation ran
+        has_scaff_results = any(r.scaff_score is not None for r in summary.results)
+        if scaff_warning_count > 0 or has_scaff_results:
+            self.console.print(
+                f"  SCAFF Warnings: "
+                f"[{self.WARNING_COLOR}]{scaff_warning_count}[/{self.WARNING_COLOR}]"
+            )
+
         self.console.print()
 
     def _display_final_status(self, summary: ValidationSummary) -> None:

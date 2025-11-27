@@ -6,9 +6,12 @@ including error codes, severity levels, and validation issues.
 
 from enum import Enum
 from pathlib import Path
-from typing import Literal
+from typing import TYPE_CHECKING, Literal
 
 from pydantic import BaseModel, Field
+
+if TYPE_CHECKING:
+    from prompt_unifier.models.scaff import SCARFFScore
 
 
 class ValidationSeverity(str, Enum):
@@ -83,6 +86,21 @@ class WarningCode(str, Enum):
     MISSING_AUTHOR = "MISSING_AUTHOR"
     """Author field is not provided"""
 
+    SCAFF_NOT_SPECIFIC = "SCAFF_NOT_SPECIFIC"
+    """SCAFF: Prompt lacks specific requirements or measurable goals"""
+
+    SCAFF_LACKS_CONTEXT = "SCAFF_LACKS_CONTEXT"
+    """SCAFF: Prompt lacks contextual information or background"""
+
+    SCAFF_NOT_ACTIONABLE = "SCAFF_NOT_ACTIONABLE"
+    """SCAFF: Prompt lacks actionable verbs, tasks, or instructions"""
+
+    SCAFF_POORLY_FORMATTED = "SCAFF_POORLY_FORMATTED"
+    """SCAFF: Prompt lacks proper structure, sections, or formatting"""
+
+    SCAFF_UNFOCUSED = "SCAFF_UNFOCUSED"
+    """SCAFF: Prompt is too long or lacks focus on single topic"""
+
 
 class ValidationIssue(BaseModel):
     """Represents a single validation error or warning.
@@ -147,6 +165,7 @@ class ValidationResult(BaseModel):
         status: "passed" if no errors, "failed" if any errors present
         errors: List of validation errors (block deployment)
         warnings: List of validation warnings (do not block)
+        scaff_score: Optional SCAFF methodology score (None if not evaluated)
 
     Properties:
         is_valid: True if status is "passed" (no errors)
@@ -170,6 +189,9 @@ class ValidationResult(BaseModel):
     )
     warnings: list[ValidationIssue] = Field(
         default_factory=list, description="List of validation warnings"
+    )
+    scaff_score: "SCARFFScore | None" = Field(
+        default=None, description="Optional SCAFF methodology compliance score"
     )
 
     @property
@@ -198,6 +220,7 @@ class ValidationResult(BaseModel):
                             "suggestion": "Consider adding 'author' field",
                         }
                     ],
+                    "scaff_score": None,
                 }
             ]
         }

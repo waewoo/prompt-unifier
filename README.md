@@ -25,6 +25,8 @@ source of truth.
 - ✅ **Git-Based Versioning**: Sync prompts from one or multiple Git repositories.
 - ✅ **Centralized Management**: Use a single source of truth for all your prompts and rules.
 - ✅ **Validation**: Catch errors in your prompt files before deploying them.
+- ✅ **SCAFF Method Validation**: Analyze prompt quality using the SCAFF methodology (Specific,
+  Contextual, Actionable, Formatted, Focused) with scoring and actionable suggestions.
 - ✅ **Easy Deployment**: A single command to deploy prompts to supported handlers (like
   **Continue**).
 - ✅ **Structured Organization**: Recursively discovers files, preserving your subdirectory
@@ -226,7 +228,7 @@ Displays the synchronization status, including when each repository was last syn
 
 <details><summary><code>prompt-unifier validate</code> - Validate files</summary>
 <br>
-Checks prompt and rule files for correct YAML frontmatter, required fields, and valid syntax. You can validate the central storage or a local directory of files.
+Checks prompt and rule files for correct YAML frontmatter, required fields, and valid syntax. Also includes SCAFF methodology validation (Specific, Contextual, Actionable, Formatted, Focused) to ensure prompt quality. You can validate the central storage or a local directory of files.
 
 **Options:**
 
@@ -234,16 +236,36 @@ Checks prompt and rule files for correct YAML frontmatter, required fields, and 
 - <code>--json</code>: Output validation results in JSON format.
 - <code>--type TEXT</code>, <code>-t TEXT</code>: Specify content type to validate: 'all',
   'prompts', or 'rules' \[default: 'all'\].
+- <code>--scaff/--no-scaff</code>: Enable/disable SCAFF methodology validation \[default: enabled\].
+
+**SCAFF Validation:**
+
+By default, the validate command analyzes your prompts against the SCAFF methodology:
+
+- **Specific**: Clear requirements with measurable goals
+- **Contextual**: Background information and problem context
+- **Actionable**: Concrete action steps and instructions
+- **Formatted**: Proper Markdown structure and organization
+- **Focused**: Single topic with appropriate length (500-2000 words optimal)
+
+Each prompt receives a score (0-100) and actionable suggestions for improvement. SCAFF validation is
+non-blocking (warnings only) and can be disabled with `--no-scaff`.
 
 Use the global <code>-v</code> flag for verbose output (e.g., <code>prompt-unifier -v
 validate</code>).
 
 ```bash
-# Validate the central storage
+# Validate with SCAFF checks (default)
 prompt-unifier validate
 
-# Validate a local directory
+# Validate without SCAFF checks
+prompt-unifier validate --no-scaff
+
+# Validate a local directory with SCAFF
 prompt-unifier validate ./my-prompts/
+
+# Get JSON output with SCAFF scores
+prompt-unifier validate --json
 ```
 
 </details>

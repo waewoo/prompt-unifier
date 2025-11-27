@@ -72,20 +72,33 @@ class TestWarningCode:
     """Test WarningCode enum values."""
 
     def test_all_warning_codes_present(self) -> None:
-        """Test that all 3 warning codes are defined."""
+        """Test that all 8 warning codes are defined (3 existing + 5 SCAFF)."""
         expected_codes = {
             WarningCode.MISSING_OPTIONAL_FIELD,
             WarningCode.EMPTY_TAGS_LIST,
             WarningCode.MISSING_AUTHOR,
+            WarningCode.SCAFF_NOT_SPECIFIC,
+            WarningCode.SCAFF_LACKS_CONTEXT,
+            WarningCode.SCAFF_NOT_ACTIONABLE,
+            WarningCode.SCAFF_POORLY_FORMATTED,
+            WarningCode.SCAFF_UNFOCUSED,
         }
         assert set(WarningCode) == expected_codes
-        assert len(WarningCode) == 3
+        assert len(WarningCode) == 8
 
     def test_warning_code_values(self) -> None:
         """Test warning code string values."""
         assert WarningCode.MISSING_OPTIONAL_FIELD.value == "MISSING_OPTIONAL_FIELD"
         assert WarningCode.EMPTY_TAGS_LIST.value == "EMPTY_TAGS_LIST"
         assert WarningCode.MISSING_AUTHOR.value == "MISSING_AUTHOR"
+
+    def test_scaff_warning_code_values(self) -> None:
+        """Test SCAFF warning code string values."""
+        assert WarningCode.SCAFF_NOT_SPECIFIC.value == "SCAFF_NOT_SPECIFIC"
+        assert WarningCode.SCAFF_LACKS_CONTEXT.value == "SCAFF_LACKS_CONTEXT"
+        assert WarningCode.SCAFF_NOT_ACTIONABLE.value == "SCAFF_NOT_ACTIONABLE"
+        assert WarningCode.SCAFF_POORLY_FORMATTED.value == "SCAFF_POORLY_FORMATTED"
+        assert WarningCode.SCAFF_UNFOCUSED.value == "SCAFF_UNFOCUSED"
 
 
 class TestValidationIssue:

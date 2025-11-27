@@ -11,6 +11,7 @@ from typing import Any
 
 import typer
 from rich.console import Console
+from rich.panel import Panel
 
 from prompt_unifier.cli.helpers import (
     check_all_content_status,
@@ -60,6 +61,7 @@ DEFAULT_SYNC_STORAGE_PATH = None
 DEFAULT_VALIDATE_DIRECTORY = None
 DEFAULT_VALIDATE_JSON_OUTPUT = False
 DEFAULT_VALIDATE_CONTENT_TYPE = "all"
+DEFAULT_VALIDATE_SCAFF = True
 DEFAULT_LIST_TOOL = None
 DEFAULT_LIST_TAG = None
 DEFAULT_LIST_SORT = "name"
@@ -133,6 +135,12 @@ DEFAULT_VALIDATE_CONTENT_TYPE_OPTION = typer.Option(
     "-t",
     help="Content type to validate: all, prompts, or rules [default: all]",
 )
+DEFAULT_VALIDATE_SCAFF_OPTION = typer.Option(
+    True,
+    "--scaff/--no-scaff",
+    help="Enable/disable SCAFF methodology validation (default: enabled)",
+    is_flag=False,
+)
 DEFAULT_LIST_TOOL_OPTION = typer.Option(
     DEFAULT_LIST_TOOL,
     "--tool",
@@ -147,14 +155,22 @@ DEFAULT_LIST_SORT_OPTION = typer.Option(
 )
 
 
-def _validate_with_json_output(validator: Any, directories: list[Path]) -> None:
+def _validate_with_json_output(
+    validator: Any, directories: list[Path], scaff_enabled: bool
+) -> None:
     """Validate directories and output results as JSON."""
     json_formatter = JSONFormatter()
     all_success = True
 
     for dir_path in directories:
+        # Automatically disable SCAFF for rules directories as it's designed for prompts
+        current_scaff_enabled = scaff_enabled
+        if dir_path.name == "rules":
+            current_scaff_enabled = False
+            logger.debug(f"Disabling SCAFF validation for rules directory: {dir_path}")
+
         logger.debug(f"Validating directory: {dir_path}")
-        summary = validator.validate_directory(dir_path)
+        summary = validator.validate_directory(dir_path, scaff_enabled=current_scaff_enabled)
         logger.info(f"Validated {summary.total_files} files in {dir_path}")
         json_output_str = json_formatter.format_summary(summary, dir_path)
         typer.echo(json_output_str)
@@ -166,19 +182,99 @@ def _validate_with_json_output(validator: Any, directories: list[Path]) -> None:
         raise typer.Exit(code=1)
 
 
-def _validate_with_rich_output(validator: Any, directories: list[Path]) -> None:
+def _display_directory_results(
+    console: Console,
+    dir_path: Path,
+    is_rules: bool,
+    summary: Any,
+    table_formatter: RichTableFormatter,
+    rich_formatter: RichFormatter,
+    current_scaff_enabled: bool,
+) -> None:
+    """Display validation results for a single directory."""
+    # Display header with prominent title
+    section_title = "RULES" if is_rules else "PROMPTS"
+    header_style = "bold blue" if is_rules else "bold magenta"
+    border_style = "blue" if is_rules else "magenta"
+
+    console.print()
+    console.print(
+        Panel(
+            f"[dim]Directory: {dir_path}[/dim]",
+            title=f"[{header_style}] {section_title} [/{header_style}]",
+            border_style=border_style,
+            expand=False,
+            padding=(1, 2),
+        )
+    )
+    console.print()
+
+    # Display table
+    table = table_formatter.format_validation_table(summary, show_scaff=current_scaff_enabled)
+    console.print(table)
+    console.print()
+
+    # Display details for files with issues
+    has_issues = any(r.errors or r.warnings for r in summary.results)
+    if has_issues:
+        console.print("[bold]Issue Details:[/bold]")
+        console.print()
+        for result in summary.results:
+            if result.errors or result.warnings:
+                # Use RichFormatter's internal method to display details
+                # pylint: disable=protected-access
+                rich_formatter._display_file_result(result)
+
+    # Display summary statistics
+    console.print("━" * 80)
+    console.print("[bold]Summary:[/bold]")
+    console.print(f"  Total files: {summary.total_files}")
+    console.print(f"  Passed: [green]{summary.passed}[/green]")
+    console.print(f"  Failed: [red]{summary.failed}[/red]")
+    console.print(f"  Errors: [red]{summary.error_count}[/red]")
+    console.print(f"  Warnings: [yellow]{summary.warning_count}[/yellow]")
+    console.print()
+
+    if not summary.success:
+        console.print("[bold red]Validation FAILED ✗[/bold red]")
+    else:
+        console.print("[bold green]Validation PASSED ✓[/bold green]")
+
+    console.print()
+
+
+def _validate_with_rich_output(
+    validator: Any, directories: list[Path], scaff_enabled: bool
+) -> None:
     """Validate directories and output results with Rich formatting."""
     rich_formatter = RichFormatter()
+    table_formatter = RichTableFormatter()
     all_success = True
 
     for dir_path in directories:
+        # Determine if this is a rules directory
+        is_rules = dir_path.name == "rules"
+        current_scaff_enabled = scaff_enabled and not is_rules
+
+        if is_rules:
+            logger.debug(f"Disabling SCAFF validation for rules directory: {dir_path}")
+
         logger.debug(f"Validating directory: {dir_path}")
-        summary = validator.validate_directory(dir_path)
+        summary = validator.validate_directory(dir_path, scaff_enabled=current_scaff_enabled)
         logger.info(
             f"Validated {summary.total_files} files: "
             f"{summary.passed} passed, {summary.failed} failed"
         )
-        rich_formatter.format_summary(summary, directory=dir_path)
+
+        _display_directory_results(
+            console,
+            dir_path,
+            is_rules,
+            summary,
+            table_formatter,
+            rich_formatter,
+            current_scaff_enabled,
+        )
 
         if not summary.success:
             all_success = False
@@ -191,12 +287,17 @@ def validate(
     directory: Path | None = DEFAULT_VALIDATE_DIRECTORY_ARG,
     json_output: bool = DEFAULT_VALIDATE_JSON_OPTION,
     content_type: str = DEFAULT_VALIDATE_CONTENT_TYPE_OPTION,
+    scaff: bool = DEFAULT_VALIDATE_SCAFF_OPTION,
 ) -> None:
     """Validate prompt and rule files in a directory.
 
     Validates .md files against the format specification. Checks for
     required fields, valid YAML frontmatter, proper separator format,
     and UTF-8 encoding.
+
+    Additionally, runs SCAFF methodology validation by default to assess
+    prompt quality (Specific, Contextual, Actionable, Formatted, Focused).
+    Use --no-scaff to disable SCAFF validation.
 
     If no directory is provided, validates files in the synchronized storage
     location (requires 'init' to have been run).
@@ -206,8 +307,11 @@ def validate(
         1: Validation failed (errors found)
 
     Examples:
-        # Validate everything (prompts + rules)
+        # Validate everything (prompts + rules) with SCAFF
         prompt-unifier validate
+
+        # Validate without SCAFF methodology checks
+        prompt-unifier validate --no-scaff
 
         # Validate only prompts
         prompt-unifier validate --type prompts
@@ -238,9 +342,9 @@ def validate(
     validator = BatchValidator()
 
     if json_output:
-        _validate_with_json_output(validator, directories)
+        _validate_with_json_output(validator, directories, scaff_enabled=scaff)
     else:
-        _validate_with_rich_output(validator, directories)
+        _validate_with_rich_output(validator, directories, scaff_enabled=scaff)
 
     logger.info("Validation complete")
 

@@ -92,6 +92,9 @@ def validate(
     type: str = typer.Option(
         "all", "--type", "-t", help="Content type to validate: all, prompts, or rules"
     ),
+    scaff: bool = typer.Option(
+        True, "--scaff/--no-scaff", help="Enable/disable SCAFF methodology validation"
+    ),
 ) -> None:
     """Validate prompt and rule files in a directory.
 
@@ -102,9 +105,10 @@ def validate(
         directory: Directory containing prompt/rule files to validate (optional)
         json: Output in JSON format (use --json flag)
         type: Content type to validate: 'all' (default), 'prompts', or 'rules'
+        scaff: Enable/disable SCAFF methodology validation (default: enabled)
     """
     dir_path = Path(directory) if directory is not None else None
-    validate_command(dir_path, json_output=json, content_type=type)
+    validate_command(dir_path, json_output=json, content_type=type, scaff=scaff)
 
 
 @app.command(name="init", help="Initialize prompt-unifier in current directory")

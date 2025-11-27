@@ -366,6 +366,109 @@ poetry run prompt-unifier validate /tmp/test-invalid
 
 ✗ **Expected result:** Validation error with details (Code: 1)
 
+### Test 5.6: SCAFF validation (default enabled)
+
+```bash
+mkdir -p /tmp/test-scaff
+cat > /tmp/test-scaff/high-quality.md << 'EOF'
+---
+name: high-quality-prompt
+description: Well-structured prompt following SCAFF methodology
+version: 1.0.0
+tags: [example]
+---
+
+# High Quality Prompt
+
+## Context
+This prompt is designed for code review workflows in a team environment.
+The goal is to ensure consistent, thorough reviews that catch bugs early.
+
+## Requirements
+- Must review all changed files
+- Should check for security vulnerabilities
+- Must verify test coverage
+
+## Steps
+1. Review the code changes carefully
+2. Check for common issues and anti-patterns
+3. Verify tests cover the changes
+4. Leave constructive feedback
+
+## Expected Output
+Provide detailed review comments with:
+- Issues found (if any)
+- Suggestions for improvement
+- Approval status
+EOF
+
+poetry run prompt-unifier validate /tmp/test-scaff
+```
+
+✓ **Expected result:**
+
+- Validation succeeds (Code: 0)
+- SCAFF score displayed (should be 80+/100 - "excellent")
+- Component breakdown table shows all 5 SCAFF components
+- Green color coding for high score
+- No SCAFF warnings (all components pass)
+
+### Test 5.7: SCAFF validation with low quality prompt
+
+```bash
+cat > /tmp/test-scaff/low-quality.md << 'EOF'
+---
+name: low-quality
+description: Poorly structured
+---
+
+do something
+EOF
+
+poetry run prompt-unifier validate /tmp/test-scaff
+```
+
+✓ **Expected result:**
+
+- Validation succeeds (format is valid) (Code: 0)
+- SCAFF score displayed (should be \<60/100 - "poor")
+- Red color coding for low score
+- Multiple SCAFF warnings with actionable suggestions:
+  - SCAFF_NOT_SPECIFIC: Add specific requirements
+  - SCAFF_LACKS_CONTEXT: Include background information
+  - SCAFF_NOT_ACTIONABLE: Add concrete action steps
+  - SCAFF_POORLY_FORMATTED: Organize with clear headings
+  - SCAFF_UNFOCUSED: Content too short
+
+### Test 5.8: Disable SCAFF validation
+
+```bash
+poetry run prompt-unifier validate /tmp/test-scaff --no-scaff
+```
+
+✓ **Expected result:**
+
+- Validation succeeds (Code: 0)
+- No SCAFF score displayed
+- No SCAFF warnings shown
+- Only YAML frontmatter validation performed
+
+### Test 5.9: SCAFF validation in JSON output
+
+```bash
+poetry run prompt-unifier validate /tmp/test-scaff --json
+```
+
+✓ **Expected result:**
+
+- JSON output includes `scaff_score` field for each file
+- Score object contains:
+  - `total_score` (0-100)
+  - `percentage` (0.0-1.0)
+  - `grade` ("excellent", "good", or "poor")
+  - `components` array with 5 objects (Specific, Contextual, Actionable, Formatted, Focused)
+  - Each component has: `component_name`, `score`, `max_score`, `status`
+
 ______________________________________________________________________
 
 ## List Command
@@ -1039,7 +1142,11 @@ Status
 ├─ [·] Test 5.2 - Validate JSON
 ├─ [·] Test 5.3 - Invalid directory (error)
 ├─ [·] Test 5.4 - Validate rules
-└─ [·] Test 5.5 - Validation errors
+├─ [·] Test 5.5 - Validation errors
+├─ [·] Test 5.6 - SCAFF validation (enabled by default)
+├─ [·] Test 5.7 - SCAFF validation with low quality prompt
+├─ [·] Test 5.8 - Disable SCAFF validation (--no-scaff)
+└─ [·] Test 5.9 - SCAFF validation in JSON output
 
 List Command
 ├─ [·] Test 7.1 - List all content
