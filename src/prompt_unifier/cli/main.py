@@ -7,6 +7,7 @@ from pathlib import Path
 
 import typer
 
+from prompt_unifier import __version__
 from prompt_unifier.cli.commands import (
     deploy as deploy_command,
 )
@@ -26,9 +27,6 @@ from prompt_unifier.cli.commands import (
     validate as validate_command,
 )
 from prompt_unifier.utils import configure_logging
-
-# Version
-__version__ = "0.1.0"
 
 # Default options for CLI commands
 DEFAULT_REPOS_OPTION = typer.Option(
