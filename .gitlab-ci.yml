@@ -21,7 +21,9 @@ image: python:3.12
 stages:
   - quality
   - security
+  - build
   - release
+  - deploy
 
 # Global Cache Configuration
 cache:
@@ -49,9 +51,6 @@ lint:
     SKIP: "validate-gitlab-ci"
   script:
     - echo "Running static analysis via Makefile (pre-commit)..."
-    # Install pre-commit (part of dev dependencies, but ensure hook envs are ready)
-    # Note: 'make lint' runs 'poetry run pre-commit run --all-files'
-    # We rely on the cache to speed up the hook environment setup
     - make lint
   rules:
     - if: '$CI_COMMIT_TAG'
@@ -111,18 +110,13 @@ security-scans:
     - if: '$CI_PIPELINE_SOURCE == "merge_request_event"'
     - if: '$CI_COMMIT_BRANCH == "main"'
 
-# ============================================================================
-# SONAR SCAN JOBS
-# ============================================================================
-
 sonar-scan:
   stage: quality
   image: sonarsource/sonar-scanner-cli:latest
   before_script: []
   variables:
-    # Defined in GitLab CI/CD settings
-    SONAR_USER_HOME: "${CI_PROJECT_DIR}/.sonar"  # Needed for SonarScanner cache
-    GIT_DEPTH: "0"  # Tells SonarScanner to fetch full history for accurate analysis
+    SONAR_USER_HOME: "${CI_PROJECT_DIR}/.sonar"
+    GIT_DEPTH: "0"
   cache:
     key: "${CI_JOB_NAME}"
     paths:
@@ -139,25 +133,41 @@ sonar-scan:
       when: never
     - if: '$CI_PIPELINE_SOURCE == "merge_request_event"'
     - if: '$CI_COMMIT_BRANCH'
-  allow_failure: false # Will fail the pipeline if Quality Gate fails
+  allow_failure: false
+
+# ============================================================================
+# BUILD JOBS
+# ============================================================================
+
+build-package:
+  stage: build
+  script:
+    - make build
+  artifacts:
+    paths:
+      - dist/
+    expire_in: 1 week
+  rules:
+    - if: '$CI_COMMIT_TAG'
+    - if: '$CI_COMMIT_BRANCH == "main"'
+    - if: '$CI_PIPELINE_SOURCE == "merge_request_event"'
+
+build-docs:
+  stage: build
+  script:
+    - make docs-build
+  artifacts:
+    paths:
+      - site/
+    expire_in: 1 week
+  rules:
+    - if: '$CI_COMMIT_TAG'
+    - if: '$CI_COMMIT_BRANCH == "main"'
+    - if: '$CI_PIPELINE_SOURCE == "merge_request_event"'
 
 # ============================================================================
 # RELEASE JOBS
 # ============================================================================
-
-# Job 1: Version Bump (MANUAL)
-# ─────────────────────────────────────────────────────────────────────────
-# This job appears in every main pipeline but requires manual trigger.
-# Click "Play" when you're ready to create a release.
-#
-# Actions:
-# 1. Analyzes commits since last version (Conventional Commits)
-# 2. Calculates new version (patch/minor/major) automatically
-# 3. Updates pyproject.toml and __init__.py
-# 4. Generates/updates CHANGELOG.md
-# 5. Creates a commit + Git tag
-# 6. Pushes to GitLab
-# 7. Automatically triggers create-release via the tag
 
 auto-bump:
   stage: release
@@ -171,33 +181,14 @@ auto-bump:
     - git remote set-url origin "https://oauth2:${CI_PUSH_TOKEN}@${CI_SERVER_HOST}/${CI_PROJECT_PATH}.git"
   script:
     - git checkout -B "${CI_COMMIT_REF_NAME}"
-    - |
-      echo "🚀 Running commitizen bump..."
-      echo "This will:"
-      echo "  - Analyze commits since last version"
-      echo "  - Calculate new version (major/minor/patch)"
-      echo "  - Update pyproject.toml and __init__.py"
-      echo "  - Generate/update CHANGELOG.md"
-      echo "  - Create a commit and tag"
-      echo ""
-      poetry run cz bump --changelog --yes || echo "⚠️  No version bump needed (no conventional commits found)"
-
-      # Explicit push of branch AND tags
-      echo ""
-      echo "📤 Pushing changes and tags to GitLab..."
-      git push origin "${CI_COMMIT_REF_NAME}"
-      git push origin --tags
-      echo "✅ Done! The new tag will trigger the create-release job."
+    - poetry run cz bump --changelog --yes || echo "⚠️ No version bump needed"
+    - git push origin "${CI_COMMIT_REF_NAME}"
+    - git push origin --tags
   rules:
     - if: '$CI_COMMIT_BRANCH == "main" && $CI_COMMIT_MESSAGE !~ /^bump:/'
       when: manual
       allow_failure: false
-  needs: ["test"]
-
-# Job 2: GitLab Release Creation (AUTOMATIC on tag)
-# ─────────────────────────────────────────────────────────────────────────
-# This job is automatically triggered when a v*.*.* tag is pushed.
-# It creates a GitLab Release with packages and release notes.
+  needs: ["test", "build-package"]
 
 create-release:
   stage: release
@@ -208,17 +199,8 @@ create-release:
     - poetry install --no-interaction --no-ansi
   script:
     - make build
-    - |
-      VERSION="${CI_COMMIT_TAG#v}"
-      make release-notes VERSION="$VERSION"
-    - echo ""
-    - echo "📄 Release notes:"
-    - echo "─────────────────────────────────────"
-    - cat RELEASE_NOTES.md
-    - echo "─────────────────────────────────────"
-    - echo ""
-    - echo "✅ Packages built successfully:"
-    - ls -lh dist/
+    - VERSION="${CI_COMMIT_TAG#v}"
+    - make release-notes VERSION="$VERSION"
   release:
     tag_name: '$CI_COMMIT_TAG'
     name: 'Release $CI_COMMIT_TAG'
@@ -239,10 +221,14 @@ create-release:
   rules:
     - if: '$CI_COMMIT_TAG =~ /^v\d+\.\d+\.\d+$/'
       when: on_success
-  needs: []
+  needs: ["build-package"]
+
+# ============================================================================
+# DEPLOY JOBS
+# ============================================================================
 
 publish-pypi:
-  stage: release
+  stage: deploy
   before_script:
     - pip install --upgrade poetry
     - poetry install --no-interaction --no-ansi
@@ -252,8 +238,23 @@ publish-pypi:
   rules:
     - if: '$CI_COMMIT_TAG =~ /^v\d+\.\d+\.\d+$/'
       when: on_success
-  needs: []
+  needs: ["create-release"]
   artifacts:
     paths:
       - dist/
     expire_in: 1 week
+
+pages:
+  stage: deploy
+  image: python:3.11
+  before_script:
+    - pip install --quiet poetry
+    - poetry install --with docs --no-root
+  script:
+    - poetry run mkdocs build --site-dir public
+  artifacts:
+    paths:
+      - public
+  rules:
+    - if: '$CI_COMMIT_TAG =~ /^v\d+\.\d+\.\d+$/'
+      when: on_success

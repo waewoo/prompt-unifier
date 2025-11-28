@@ -17,7 +17,7 @@ license = "MIT"
 readme = "README.md"
 packages = [{ include = "prompt_unifier", from = "src" }]
 repository = "https://gitlab.com/waewoo/prompt-unifier"
-documentation = "https://gitlab.com/waewoo/prompt-unifier/-/blob/main/README.md"
+documentation = "https://waewoo.gitlab.io/prompt-unifier"
 keywords = ["cli", "ai", "prompts", "yaml", "templates", "llm"]
 classifiers = [
     "Development Status :: 4 - Beta",
@@ -29,8 +29,8 @@ classifiers = [
 
 [tool.poetry.urls]
 "Bug Tracker" = "https://gitlab.com/waewoo/prompt-unifier/-/issues"
-"Changelog" = "https://gitlab.com/waewoo/prompt-unifier/-/blob/main/CHANGELOG.md"
-"Contributing" = "https://gitlab.com/waewoo/prompt-unifier/-/blob/main/CONTRIBUTING.md"
+"Changelog" = "https://waewoo.gitlab.io/prompt-unifier/changelog/"
+"Contributing" = "https://waewoo.gitlab.io/prompt-unifier/contributing/"
 "ReleaseNotes" = "https://gitlab.com/waewoo/prompt-unifier/-/releases"
 
 [tool.poetry.scripts]
@@ -69,6 +69,12 @@ detect-secrets = "^1.5.0"
 bandit = "^1.8.6"
 pip-audit = "^2.9.0"
 commitizen = "^4.10.0"
+
+[tool.poetry.group.docs.dependencies]
+mkdocs-material = "^9.5.0"
+mkdocs-git-revision-date-localized-plugin = "^1.2.0"
+mkdocs-minify-plugin = "^0.8.0"
+mkdocs-include-markdown-plugin = "^6.0.0"
 
 [build-system]
 requires = ["poetry-core"]

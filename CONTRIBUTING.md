@@ -104,7 +104,8 @@ chore(release): bump version to 0.5.0
 ## Development and Testing
 
 For a detailed guide on setting up the environment, running tests, and understanding the project
-architecture, please refer to the [**DEVELOPMENT.md**](DEVELOPMENT.md) file.
+architecture, please refer to the
+[**DEVELOPMENT.md**](https://gitlab.com/waewoo/prompt-unifier/-/blob/main/DEVELOPMENT.md) file.
 
 ### Adding New Tool Handlers
 
@@ -116,5 +117,6 @@ comprehensive step-by-step guide that covers:
 - Writing tests with pytest
 - Integrating with the CLI deploy command
 
-See the [**Adding New Tool Handlers**](DEVELOPMENT.md#adding-new-tool-handlers) section in
-DEVELOPMENT.md for the full tutorial.
+See the
+[**Adding New Tool Handlers**](https://gitlab.com/waewoo/prompt-unifier/-/blob/main/DEVELOPMENT.md#adding-new-tool-handlers)
+section in DEVELOPMENT.md for the full tutorial.

@@ -15,7 +15,7 @@
 #
 # Usage: make <target>
 
-.PHONY: install update-deps test test-ci test-ci-shell test-ci-clean lint typecheck format check clean clean-ci run release changelog ci-lint help security security-sast security-secrets security-deps build release-notes
+.PHONY: install update-deps test test-ci test-ci-shell test-ci-clean lint typecheck format check clean clean-ci run release changelog ci-lint help security security-sast security-secrets security-deps build release-notes docs-serve docs-build install-docs-deps
 
 # Install dependencies via Poetry and setup pre-commit hooks
 install:
@@ -184,6 +184,27 @@ clean:
 	find . -type f -name "*.pyo" -delete 2>/dev/null || true
 	find . -type f -name "*.pyd" -delete 2>/dev/null || true
 
+# ============================================================================
+# DOCUMENTATION
+# ============================================================================
+
+# Install MkDocs and dependencies via Poetry
+.PHONY: install-docs-deps
+install-docs-deps:
+	poetry install --with docs
+
+# Serve documentation locally
+# Usage: make docs-serve PORT=8001
+PORT ?= 8000
+docs-serve: install-docs-deps
+	@echo "Serving documentation locally (http://localhost:$(PORT))..."
+	poetry run mkdocs serve -a localhost:$(PORT)
+
+# Build static documentation site
+docs-build: install-docs-deps
+	@echo "Building static documentation site..."
+	poetry run mkdocs build
+
 # Help target to display available commands
 help:
 	@echo "Available targets:"
@@ -198,3 +219,7 @@ help:
 	@echo "  make format           - Auto-format code"
 	@echo "  make changelog        - Generate changelog"
 	@echo "  make release VERSION_BUMP=<type> - Create and push a new release"
+	@echo ""
+	@echo "Documentation:"
+	@echo "  make docs-serve       - Serve documentation locally for preview (http://localhost:8000)"
+	@echo "  make docs-build       - Build static documentation site"

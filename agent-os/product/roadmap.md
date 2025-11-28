@@ -58,6 +58,8 @@
 
 23. [x] SCAFF Method Validation — Implement validation to ensure prompts follow the SCAFF methodology (Specific, Contextual, Actionable, Formatted, Focused). Add SCAFF compliance checker that analyzes prompt structure and content, detects missing SCAFF components, provides suggestions for improvement, and reports SCAFF compliance score. Support --scaff flag in validate command to enable SCAFF-specific validation. Integrate with semantic validation to provide comprehensive prompt quality assessment. `M`
 
+24. [x] MkDocs Documentation Site — Create a professional, static documentation site using MkDocs and Material for MkDocs, hosted on GitLab Pages. Includes comprehensive guides (Getting Started, Usage, Configuration), CLI reference, and automated deployment pipeline. `M`
+
 > Notes
 > - Order items by technical dependencies and product architecture
 > - Each item should represent an end-to-end (frontend + backend) functional and testable feature

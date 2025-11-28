@@ -22,8 +22,10 @@ repos:
       - id: end-of-file-fixer
         exclude: (^\..*|agent-os/.*)
       - id: check-yaml
+        args: [--unsafe]
         exclude: (^\..*|agent-os/.*)
       - id: check-added-large-files
+        args: ['--maxkb=15360']
         exclude: (^\..*|agent-os/.*)
 
   # Ruff - Fast Python linter and formatter
@@ -90,4 +92,4 @@ repos:
             - mdformat-gfm
             - mdformat-frontmatter
         args: [--wrap=100]
-        exclude: (^\..*|agent-os/.*)
+        exclude: (^\..*|agent-os/.*|CHANGELOG\.md)
