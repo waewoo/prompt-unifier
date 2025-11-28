@@ -22,6 +22,7 @@ stages:
   - quality
   - security
   - build
+  - docs
   - release
   - deploy
 
@@ -56,13 +57,27 @@ lint:
     - if: '$CI_COMMIT_TAG'
       when: never
     - if: '$CI_PIPELINE_SOURCE == "merge_request_event"'
-    - if: '$CI_COMMIT_BRANCH'
+      changes:
+        - src/**/*
+        - tests/**/*
+        - pyproject.toml
+        - poetry.lock
+        - Makefile
+        - .gitlab-ci.yml
+    - if: '$CI_COMMIT_BRANCH == "main"'
+      changes:
+        - src/**/*
+        - tests/**/*
+        - pyproject.toml
+        - poetry.lock
+        - Makefile
+        - .gitlab-ci.yml
 
 test:
   stage: quality
   script:
     - make test
-  coverage: '/TOTAL\s+\d+\s+\d+\s+(\d+%)/'
+  coverage: '/^TOTAL\s+\d+\s+\d+\s+(\d+%)$/'
   artifacts:
     when: always
     reports:
@@ -79,7 +94,19 @@ test:
     - if: '$CI_COMMIT_TAG'
       when: never
     - if: '$CI_PIPELINE_SOURCE == "merge_request_event"'
-    - if: '$CI_COMMIT_BRANCH'
+      changes:
+        - src/**/*
+        - tests/**/*
+        - pyproject.toml
+        - poetry.lock
+        - .gitlab-ci.yml
+    - if: '$CI_COMMIT_BRANCH == "main"'
+      changes:
+        - src/**/*
+        - tests/**/*
+        - pyproject.toml
+        - poetry.lock
+        - .gitlab-ci.yml
 
 # ============================================================================
 # SECURITY JOBS
@@ -108,7 +135,17 @@ security-scans:
     - if: '$CI_COMMIT_TAG'
       when: never
     - if: '$CI_PIPELINE_SOURCE == "merge_request_event"'
+      changes:
+        - src/**/*
+        - pyproject.toml
+        - poetry.lock
+        - .gitlab-ci.yml
     - if: '$CI_COMMIT_BRANCH == "main"'
+      changes:
+        - src/**/*
+        - pyproject.toml
+        - poetry.lock
+        - .gitlab-ci.yml
 
 sonar-scan:
   stage: quality
@@ -132,7 +169,15 @@ sonar-scan:
     - if: '$CI_COMMIT_TAG'
       when: never
     - if: '$CI_PIPELINE_SOURCE == "merge_request_event"'
-    - if: '$CI_COMMIT_BRANCH'
+      changes:
+        - src/**/*
+        - tests/**/*
+        - .gitlab-ci.yml
+    - if: '$CI_COMMIT_BRANCH == "main"'
+      changes:
+        - src/**/*
+        - tests/**/*
+        - .gitlab-ci.yml
   allow_failure: false
 
 # ============================================================================
@@ -150,7 +195,17 @@ build-package:
   rules:
     - if: '$CI_COMMIT_TAG'
     - if: '$CI_COMMIT_BRANCH == "main"'
+      changes:
+        - src/**/*
+        - pyproject.toml
+        - poetry.lock
+        - .gitlab-ci.yml
     - if: '$CI_PIPELINE_SOURCE == "merge_request_event"'
+      changes:
+        - src/**/*
+        - pyproject.toml
+        - poetry.lock
+        - .gitlab-ci.yml
 
 build-docs:
   stage: build
@@ -162,8 +217,20 @@ build-docs:
     expire_in: 1 week
   rules:
     - if: '$CI_COMMIT_TAG'
+      changes:
+        - docs/**/*
+        - mkdocs.yml
+        - .gitlab-ci.yml
     - if: '$CI_COMMIT_BRANCH == "main"'
+      changes:
+        - docs/**/*
+        - mkdocs.yml
+        - .gitlab-ci.yml
     - if: '$CI_PIPELINE_SOURCE == "merge_request_event"'
+      changes:
+        - docs/**/*
+        - mkdocs.yml
+        - .gitlab-ci.yml
 
 # ============================================================================
 # RELEASE JOBS
@@ -188,7 +255,11 @@ auto-bump:
     - if: '$CI_COMMIT_BRANCH == "main" && $CI_COMMIT_MESSAGE !~ /^bump:/'
       when: manual
       allow_failure: false
-  needs: ["test", "build-package"]
+  needs:
+    - job: test
+      optional: true
+    - job: build-package
+      optional: true
 
 create-release:
   stage: release
@@ -224,28 +295,11 @@ create-release:
   needs: ["build-package"]
 
 # ============================================================================
-# DEPLOY JOBS
+# DOCS JOBS
 # ============================================================================
 
-publish-pypi:
-  stage: deploy
-  before_script:
-    - pip install --upgrade poetry
-    - poetry install --no-interaction --no-ansi
-  script:
-    - make build
-    - poetry publish --username $PYPI_USER --password $PYPI_PASSWORD --no-interaction
-  rules:
-    - if: '$CI_COMMIT_TAG =~ /^v\d+\.\d+\.\d+$/'
-      when: on_success
-  needs: ["create-release"]
-  artifacts:
-    paths:
-      - dist/
-    expire_in: 1 week
-
 pages:
-  stage: deploy
+  stage: docs
   image: python:3.11
   before_script:
     - pip install --quiet poetry
@@ -256,5 +310,31 @@ pages:
     paths:
       - public
   rules:
+    - if: '$CI_COMMIT_BRANCH == "main"'
+      changes:
+        - docs/**/*
+        - mkdocs.yml
+        - .gitlab-ci.yml
+      # Deploy docs on main branch updates (dev docs)
+    - if: '$CI_COMMIT_TAG =~ /^v\d+\.\d+\.\d+$/'
+      changes:
+        - docs/**/*
+        - mkdocs.yml
+        - .gitlab-ci.yml
+      # Also deploy on release tags (stable docs)
+
+# ============================================================================
+# DEPLOY JOBS
+# ============================================================================
+
+publish-pypi:
+  stage: deploy
+  before_script:
+    - pip install --upgrade poetry
+    - poetry install --no-interaction --no-ansi
+  script:
+    - poetry publish --username $PYPI_USER --password $PYPI_PASSWORD --no-interaction
+  rules:
     - if: '$CI_COMMIT_TAG =~ /^v\d+\.\d+\.\d+$/'
       when: on_success
+  needs: ["build-package"]

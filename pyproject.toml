@@ -16,8 +16,9 @@ authors = ["Waewoo <waewoo@gmail.com>"]
 license = "MIT"
 readme = "README.md"
 packages = [{ include = "prompt_unifier", from = "src" }]
+homepage = "https://waewoo.gitlab.io/prompt-unifier"
 repository = "https://gitlab.com/waewoo/prompt-unifier"
-documentation = "https://waewoo.gitlab.io/prompt-unifier"
+documentation = "https://waewoo.gitlab.io/prompt-unifier/getting-started/"
 keywords = ["cli", "ai", "prompts", "yaml", "templates", "llm"]
 classifiers = [
     "Development Status :: 4 - Beta",
