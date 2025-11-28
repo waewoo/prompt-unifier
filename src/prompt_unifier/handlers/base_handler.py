@@ -6,10 +6,11 @@ from dataclasses import dataclass
 from hashlib import sha256
 from pathlib import Path
 
+import yaml
 from rich.console import Console
 from rich.table import Table
 
-from prompt_unifier.constants import BAK_GLOB_PATTERN
+from prompt_unifier.constants import BAK_GLOB_PATTERN, KILO_CODE_MEMORY_BANK_DIR
 from prompt_unifier.handlers.handler_utils import console
 from prompt_unifier.handlers.protocol import ToolHandler
 
@@ -30,6 +31,7 @@ class VerificationResult:
     status: str  # "passed", "failed", "warning"
     details: str
     deployment_status: str = "unknown"  # "new", "updated", "unchanged", "unknown"
+    actual_file_path: str | None = None  # New field for actual file system path
 
 
 class BaseToolHandler(ToolHandler, ABC):
@@ -59,6 +61,7 @@ class BaseToolHandler(ToolHandler, ABC):
         - self.rules_dir: Directory for rules (Path)
         - self.tool_dir_constant: Tool directory constant (str) - e.g., ".continue" or ".kilocode"
         """
+        self.logger = logging.getLogger(__name__)
         # These must be set by subclasses
         self.name: str
         self.base_path: Path
@@ -139,6 +142,14 @@ class BaseToolHandler(ToolHandler, ABC):
 
         for dir_path in all_dirs:
             try:
+                # KiloCode specific exclusion: Do not remove .kilocode/rules/memory-bank directory
+                if (
+                    self.name == "kilocode"
+                    and base_dir == self.rules_dir
+                    and dir_path == self.rules_dir / KILO_CODE_MEMORY_BANK_DIR
+                ):
+                    continue
+
                 # Check if directory is empty
                 if not any(dir_path.iterdir()):
                     dir_path.rmdir()
@@ -283,49 +294,120 @@ class BaseToolHandler(ToolHandler, ABC):
         self._remove_empty_directories(self.prompts_dir)
         self._remove_empty_directories(self.rules_dir)
 
-    def clean_orphaned_files(self, deployed_filenames: set[str]) -> int:
+    def _extract_title_from_md_file(self, file_path: Path) -> str | None:
+        """
+        Extracts the 'name' from the YAML frontmatter of a markdown file.
+        Returns None if frontmatter is missing or parsing fails.
+        """
+        try:
+            content = file_path.read_text(encoding="utf-8")
+            parts = content.split("---", 2)
+            if len(parts) < 3:
+                return None  # Missing frontmatter delimiters
+
+            frontmatter_str = parts[1].strip()
+            frontmatter = yaml.safe_load(frontmatter_str)
+
+            if isinstance(frontmatter, dict) and "name" in frontmatter:
+                return str(frontmatter["name"])
+        except (OSError, UnicodeDecodeError, yaml.YAMLError) as e:
+            logger.warning(f"Failed to extract title from {file_path}: {e}")
+        return None
+
+    def _remove_backup_files(
+        self, directory: Path, content_type: str, results: list[VerificationResult]
+    ) -> None:
+        """Remove .bak files and track them in results."""
+        for file_path in directory.glob(BAK_GLOB_PATTERN):
+            results.append(
+                VerificationResult(
+                    file_name=file_path.name,
+                    content_type=content_type,
+                    status="passed",
+                    details="Backup file removed successfully",
+                    deployment_status="deleted",
+                    actual_file_path=str(file_path),
+                )
+            )
+            file_path.unlink()
+
+    def _remove_orphaned_md_files(
+        self,
+        directory: Path,
+        content_type: str,
+        deployed_filenames: set[str],
+        use_recursive: bool,
+        results: list[VerificationResult],
+    ) -> None:
+        """Remove orphaned .md files and track them in results."""
+        glob_func = directory.rglob if use_recursive else directory.glob
+        for file_path in glob_func("*.md"):
+            if self._should_skip_file(file_path, content_type):
+                continue
+
+            rel_path = str(file_path.relative_to(directory))
+            if rel_path not in deployed_filenames:
+                self._remove_and_track_file(file_path, content_type, results)
+
+    def _should_skip_file(self, file_path: Path, content_type: str) -> bool:
+        """Check if file should be skipped during cleanup."""
+        if content_type == "rule" and self.name == "kilocode":
+            return (
+                KILO_CODE_MEMORY_BANK_DIR in file_path.parts
+                and file_path.parent == self.rules_dir / KILO_CODE_MEMORY_BANK_DIR
+            )
+        return False
+
+    def _remove_and_track_file(
+        self, file_path: Path, content_type: str, results: list[VerificationResult]
+    ) -> None:
+        """Remove a file and add it to results tracking."""
+        extracted_title = self._extract_title_from_md_file(file_path)
+        content_name = extracted_title if extracted_title else file_path.stem
+
+        file_path.unlink()
+        results.append(
+            VerificationResult(
+                file_name=content_name,
+                content_type=content_type,
+                status="passed",
+                details="File removed successfully",
+                deployment_status="deleted",
+                actual_file_path=str(file_path),
+            )
+        )
+
+    def clean_orphaned_files(self, deployed_filenames: set[str]) -> list[VerificationResult]:
         """
         Remove files in prompts/rules directories that are not in the deployed set.
         Also removes any .bak backup files recursively (including in subdirectories).
 
-        Note: Orphaned .md files are only removed from the root directory to preserve
-        files from previous deployments with different tag filters.
-
         Args:
-            deployed_filenames: Set of filenames that were just deployed.
+            deployed_filenames: Set of filenames (including relative paths) that were just deployed.
 
         Returns:
-            Number of files removed.
+            List of VerificationResult objects for removed files.
         """
-        removed_count = 0
+        removed_results: list[VerificationResult] = []
+        use_recursive = self.name == "kilocode"
 
-        # Remove .bak files recursively in prompts directory (including subdirectories)
-        for file_path in self.prompts_dir.glob(BAK_GLOB_PATTERN):
-            file_path.unlink()
-            console.print(f"  [dim]Removed backup file: {file_path.name}[/dim]")
-            removed_count += 1
+        # Clean prompts directory
+        self._remove_backup_files(self.prompts_dir, "prompt", removed_results)
+        self._remove_orphaned_md_files(
+            self.prompts_dir, "prompt", deployed_filenames, use_recursive, removed_results
+        )
 
-        # Remove orphaned .md files ONLY in root prompts directory (not subdirectories)
-        for file_path in self.prompts_dir.glob("*.md"):
-            if file_path.name not in deployed_filenames:
-                file_path.unlink()
-                console.print(f"  [yellow]Removed orphaned prompt: {file_path.name}[/yellow]")
-                removed_count += 1
+        # Clean rules directory
+        self._remove_backup_files(self.rules_dir, "rule", removed_results)
+        self._remove_orphaned_md_files(
+            self.rules_dir, "rule", deployed_filenames, use_recursive, removed_results
+        )
 
-        # Remove .bak files recursively in rules directory (including subdirectories)
-        for file_path in self.rules_dir.glob(BAK_GLOB_PATTERN):
-            file_path.unlink()
-            console.print(f"  [dim]Removed backup file: {file_path.name}[/dim]")
-            removed_count += 1
+        # Clean up empty directories
+        self._remove_empty_directories(self.prompts_dir)
+        self._remove_empty_directories(self.rules_dir)
 
-        # Remove orphaned .md files ONLY in root rules directory (not subdirectories)
-        for file_path in self.rules_dir.glob("*.md"):
-            if file_path.name not in deployed_filenames:
-                file_path.unlink()
-                console.print(f"  [yellow]Removed orphaned rule: {file_path.name}[/yellow]")
-                removed_count += 1
-
-        return removed_count
+        return removed_results
 
     def aggregate_verification_results(self, results: list[VerificationResult]) -> dict[str, int]:
         """
@@ -354,6 +436,59 @@ class BaseToolHandler(ToolHandler, ABC):
 
         return summary
 
+    def _format_status_info(
+        self, result: VerificationResult, detailed_issues: list[tuple[str, str, str]]
+    ) -> tuple[str, str, str]:
+        """Format status color, text and issues for a result."""
+        if result.status == "passed":
+            return SUCCESS_COLOR, "PASSED", "None"
+        elif result.status == "failed":
+            detailed_issues.append((result.file_name, "ERROR", result.details))
+            return ERROR_COLOR, "FAILED", f"[{ERROR_COLOR}]1 error[/{ERROR_COLOR}]"
+        else:  # warning
+            detailed_issues.append((result.file_name, "WARNING", result.details))
+            return WARNING_COLOR, "WARNING", f"[{WARNING_COLOR}]1 warning[/{WARNING_COLOR}]"
+
+    def _get_deployment_status_indicator(self, deployment_status: str | None) -> str:
+        """Get formatted deployment status indicator."""
+        status_map = {
+            "new": "[cyan](NEW)[/cyan]",
+            "updated": "[yellow](UPDATED)[/yellow]",
+            "unchanged": "[dim](UNCHANGED)[/dim]",
+            "deleted": "[red](DELETED)[/red]",
+        }
+        return status_map.get(deployment_status or "", "")
+
+    def _build_verification_table(
+        self, results: list[VerificationResult], detailed_issues: list[tuple[str, str, str]]
+    ) -> Table:
+        """Build Rich table with verification results."""
+        table = Table(show_header=True, header_style="bold magenta")
+        table.add_column("Name", style="cyan")
+        table.add_column("Type", style="blue")
+        table.add_column("Status")
+        table.add_column("Issues", style="dim")
+        table.add_column("Path", style="dim", overflow="fold")
+
+        for result in results:
+            status_color, base_status, issues_text = self._format_status_info(
+                result, detailed_issues
+            )
+            status_indicator = self._get_deployment_status_indicator(result.deployment_status)
+
+            status_text = (
+                f"[{status_color}]{base_status}[/{status_color}] {status_indicator}"
+                if status_indicator
+                else f"[{status_color}]{base_status}[/{status_color}]"
+            )
+
+            file_path = self._get_deployed_file_path(result)
+            table.add_row(
+                result.file_name, result.content_type, status_text, issues_text, str(file_path)
+            )
+
+        return table
+
     def display_verification_report(
         self,
         results: list[VerificationResult],
@@ -372,63 +507,9 @@ class BaseToolHandler(ToolHandler, ABC):
         output_console.print()
         output_console.print(f"[bold]Deployment: {self.name}[/bold]")
 
-        # Build Rich table with all columns like validate/status
-        table = Table(show_header=True, header_style="bold magenta")
-        table.add_column("Name", style="cyan")
-        table.add_column("Type", style="blue")
-        table.add_column("Status")
-        table.add_column("Issues", style="dim")
-        table.add_column("Path", style="dim", overflow="fold")
-
-        # Collect detailed errors/warnings for separate display
+        # Build and display table
         detailed_issues: list[tuple[str, str, str]] = []
-
-        for result in results:
-            # Determine status color and text
-            if result.status == "passed":
-                status_color = SUCCESS_COLOR
-                base_status = "PASSED"
-                issues_text = "None"
-            elif result.status == "failed":
-                status_color = ERROR_COLOR
-                base_status = "FAILED"
-                issues_text = f"[{ERROR_COLOR}]1 error[/{ERROR_COLOR}]"
-                detailed_issues.append((result.file_name, "ERROR", result.details))
-            else:  # warning
-                status_color = WARNING_COLOR
-                base_status = "WARNING"
-                issues_text = f"[{WARNING_COLOR}]1 warning[/{WARNING_COLOR}]"
-                detailed_issues.append((result.file_name, "WARNING", result.details))
-
-            # Add deployment status indicator
-            if result.deployment_status == "new":
-                status_indicator = "[cyan](NEW)[/cyan]"
-            elif result.deployment_status == "updated":
-                status_indicator = "[yellow](UPDATED)[/yellow]"
-            elif result.deployment_status == "unchanged":
-                status_indicator = "[dim](UNCHANGED)[/dim]"
-            elif result.deployment_status == "deleted":
-                status_indicator = "[red](DELETED)[/red]"
-            else:
-                status_indicator = ""
-
-            status_text = (
-                f"[{status_color}]{base_status}[/{status_color}] {status_indicator}"
-                if status_indicator
-                else f"[{status_color}]{base_status}[/{status_color}]"
-            )
-
-            # Get file path - try to get from handler's directories
-            file_path = self._get_deployed_file_path(result)
-
-            table.add_row(
-                result.file_name,
-                result.content_type,
-                status_text,
-                issues_text,
-                str(file_path),
-            )
-
+        table = self._build_verification_table(results, detailed_issues)
         output_console.print(table)
 
         # Display summary
@@ -462,7 +543,11 @@ class BaseToolHandler(ToolHandler, ABC):
         Returns:
             Path to the deployed file.
         """
-        # This is a base implementation - subclasses can override if needed
+        if result.actual_file_path:
+            return Path(result.actual_file_path)
+
+        # This is a fallback in case actual_file_path is not set
+        # (should not happen if all previous steps are correct)
         base_dir = self.prompts_dir if result.content_type == "prompt" else self.rules_dir
 
         # Try to find the file

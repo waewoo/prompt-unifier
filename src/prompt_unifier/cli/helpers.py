@@ -249,14 +249,19 @@ def _get_deployed_filename(
         Final filename or None.
     """
     source_filename = file_path.name if file_path else None
+    relative_path = _calculate_relative_path(file_path, content_type, prompts_dir, rules_dir)
 
     if isinstance(handler, KiloCodeToolHandler) and source_filename:
-        relative_path = _calculate_relative_path(file_path, content_type, prompts_dir, rules_dir)
         return handler.calculate_deployed_filename(
             source_filename, parsed_content.title, relative_path
         )
 
-    return source_filename
+    if source_filename:
+        if relative_path and str(relative_path) != ".":
+            return str(relative_path / source_filename)
+        return source_filename
+
+    return None
 
 
 def _verify_single_deployment(
@@ -264,7 +269,6 @@ def _verify_single_deployment(
     parsed_content: Any,
     content_type: str,
     final_filename: str | None,
-    relative_path: Path | None,
 ) -> VerificationResult | None:
     """Verify a single deployment if handler supports it.
 
@@ -272,8 +276,9 @@ def _verify_single_deployment(
         handler: The handler to verify with.
         parsed_content: The parsed content object.
         content_type: Type of content.
-        final_filename: The final deployed filename.
-        relative_path: Relative path from content directory.
+        final_filename: The final deployed filename (can include relative path).
+        relative_path: Relative path from content directory
+        (unused directly by ContinueToolHandler).
 
     Returns:
         VerificationResult or None if handler doesn't support verification.
@@ -281,11 +286,16 @@ def _verify_single_deployment(
     if not hasattr(handler, "verify_deployment_with_details"):
         return None
 
+    # For ContinueToolHandler, final_filename already includes the relative path
+    # For KiloCodeToolHandler, final_filename is just the name (as it flattens dirs)
+    # The handler's verify_deployment_with_details will interpret file_name correctly
+    # based on its own logic (e.g., using it as full relative path or just a name).
+    # No need to pass relative_path separately to the handler's method.
+    _file_name_for_verification = final_filename or parsed_content.title
     result: VerificationResult = handler.verify_deployment_with_details(
-        parsed_content.title,
-        content_type,
-        final_filename or parsed_content.title,
-        relative_path,
+        content_name=parsed_content.title,
+        content_type=content_type,
+        file_name=_file_name_for_verification,
     )
     return result
 
@@ -334,7 +344,6 @@ def deploy_content_to_handler(
                 parsed_content,
                 content_type,
                 final_filename,
-                _calculate_relative_path(file_path, content_type, prompts_dir, rules_dir),
             )
             if verification_result:
                 verification_results.append(verification_result)
@@ -949,7 +958,9 @@ def deploy_to_single_handler(
     # Clean orphaned files if requested
     cleaned_count = 0
     if clean and hasattr(handler, "clean_orphaned_files"):
-        cleaned_count = _clean_orphaned_files(handler, handler_name, deployed_filenames)
+        removed_results = _clean_orphaned_files(handler, handler_name, deployed_filenames)
+        cleaned_count = len(removed_results)
+        verification_results.extend(removed_results)  # Add removed files to results
 
     # Display verification report
     if verification_results and hasattr(handler, "display_verification_report"):
@@ -962,7 +973,7 @@ def _clean_orphaned_files(
     handler: Any,
     handler_name: str,
     deployed_filenames: set[str],
-) -> int:
+) -> list[VerificationResult]:
     """Clean orphaned files from handler.
 
     Args:
@@ -971,18 +982,19 @@ def _clean_orphaned_files(
         deployed_filenames: Set of deployed filenames.
 
     Returns:
-        Number of files cleaned.
+        List of VerificationResult objects for removed files.
     """
     console.print(f"Cleaning orphaned files in {handler_name}...")
     try:
-        removed: int = handler.clean_orphaned_files(deployed_filenames)
-        if removed > 0:
-            console.print(f"  [yellow]Cleaned {removed} orphaned file(s)[/yellow]")
-            logger.info(f"Cleaned {removed} orphaned files")
-        return removed
+        removed_results: list[VerificationResult] = handler.clean_orphaned_files(deployed_filenames)
+        removed_count = len(removed_results)
+        if removed_count > 0:
+            console.print(f"  [yellow]Cleaned {removed_count} orphaned file(s)[/yellow]")
+            logger.info(f"Cleaned {removed_count} orphaned files")
+        return removed_results
     except Exception as e:
         console.print(f"  [red]✗[/red] Failed to clean orphaned files: {e}")
-        return 0
+        return []
 
 
 def _display_handler_completion(handler_name: str, deployed_count: int) -> None:

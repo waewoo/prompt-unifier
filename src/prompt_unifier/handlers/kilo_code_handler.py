@@ -499,4 +499,5 @@ class KiloCodeToolHandler(BaseToolHandler):
             status="passed",
             details="File verified successfully",
             deployment_status=deployment_status,
+            actual_file_path=str(target_file_path),
         )

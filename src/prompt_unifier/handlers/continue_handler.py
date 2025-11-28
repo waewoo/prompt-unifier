@@ -190,12 +190,9 @@ class ContinueToolHandler(BaseToolHandler):
     def _get_target_file_path(
         self,
         content_type: str,
-        file_name: str,
-        relative_path: Path | None,
+        file_path_in_handler_dir: str,
     ) -> tuple[Path | None, str | None]:
         """Get target file path and validate content type."""
-        actual_file_name = file_name if file_name.endswith(".md") else f"{file_name}.md"
-
         if content_type == "prompt":
             base_dir = self.prompts_dir
         elif content_type == "rule":
@@ -203,10 +200,7 @@ class ContinueToolHandler(BaseToolHandler):
         else:
             return None, f"Unsupported content type: {content_type}"
 
-        if relative_path and str(relative_path) != ".":
-            target_file_path = base_dir / relative_path / actual_file_name
-        else:
-            target_file_path = base_dir / actual_file_name
+        target_file_path = base_dir / file_path_in_handler_dir
 
         return target_file_path, None
 
@@ -257,7 +251,6 @@ class ContinueToolHandler(BaseToolHandler):
         content_name: str,
         content_type: str,
         file_name: str,
-        relative_path: Path | None = None,
     ) -> VerificationResult:
         """
         Verifies if a specific content item has been deployed correctly and returns
@@ -267,14 +260,13 @@ class ContinueToolHandler(BaseToolHandler):
             content_name: The name/title of the content item (used for display).
             content_type: Type of content ("prompt" or "rule").
             file_name: The actual filename of the deployed file (used for lookup).
-            relative_path: Relative subdirectory path where the file was deployed.
 
         Returns:
             VerificationResult with status and details.
         """
         logger.debug(f"Verifying deployment: '{content_name}' ({content_type}) at '{file_name}'")
 
-        target_file_path, error = self._get_target_file_path(content_type, file_name, relative_path)
+        target_file_path, error = self._get_target_file_path(content_type, file_name)
         if error or target_file_path is None:
             return VerificationResult(
                 file_name=content_name,
@@ -309,13 +301,15 @@ class ContinueToolHandler(BaseToolHandler):
         # Retrieve deployment status from tracking dictionary
         deployment_status = self._deployment_statuses.get(content_name, "unknown")
 
-        return VerificationResult(
+        result = VerificationResult(
             file_name=content_name,
             content_type=content_type,
             status="passed",
             details="File verified successfully",
             deployment_status=deployment_status,
+            actual_file_path=str(target_file_path),
         )
+        return result
 
     def _determine_target_filename(self, content_name: str, source_filename: str | None) -> str:
         """Determine the target filename for deployment status check.
@@ -332,18 +326,11 @@ class ContinueToolHandler(BaseToolHandler):
         return f"{content_name}.md"
 
     def _determine_target_file_path(
-        self, content_type: str, filename: str, relative_path: Path | None
+        self,
+        content_type: str,
+        file_path_in_handler_dir: str,
     ) -> Path | None:
-        """Determine the target file path for deployment status check.
-
-        Args:
-            content_type: Type of content ("prompt" or "rule").
-            filename: The filename to use.
-            relative_path: Relative subdirectory path where the file was deployed.
-
-        Returns:
-            The target file path, or None if content_type is invalid.
-        """
+        """Determine the target file path for deployment status check."""
         if content_type == "prompt":
             base_dir = self.prompts_dir
         elif content_type == "rule":
@@ -351,9 +338,7 @@ class ContinueToolHandler(BaseToolHandler):
         else:
             return None
 
-        if relative_path and str(relative_path) != ".":
-            return base_dir / relative_path / filename
-        return base_dir / filename
+        return base_dir / file_path_in_handler_dir
 
     def get_deployment_status(
         self,
@@ -376,8 +361,16 @@ class ContinueToolHandler(BaseToolHandler):
         Returns:
             Status string: "synced", "outdated", "missing", or "error".
         """
-        filename = self._determine_target_filename(content_name, source_filename)
-        target_file = self._determine_target_file_path(content_type, filename, relative_path)
+        actual_filename = self._determine_target_filename(content_name, source_filename)
+
+        # Combine relative_path and actual_filename to form file_path_in_handler_dir
+        if relative_path and str(relative_path) != ".":
+            combined_path = relative_path / actual_filename
+            file_path_in_handler_dir = str(combined_path)
+        else:
+            file_path_in_handler_dir = actual_filename
+
+        target_file = self._determine_target_file_path(content_type, file_path_in_handler_dir)
 
         if target_file is None:
             return "error"

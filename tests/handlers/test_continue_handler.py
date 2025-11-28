@@ -722,7 +722,7 @@ class TestCleanOrphanedFiles:
         deployed = {f"{mock_prompt.title}.md"}
         removed = continue_handler.clean_orphaned_files(deployed)
 
-        assert removed == 1
+        assert len(removed) == 1
         assert not orphaned_file.exists()
 
     def test_clean_orphaned_rules(
@@ -740,7 +740,7 @@ class TestCleanOrphanedFiles:
         deployed = {f"{mock_rule.title}.md"}
         removed = continue_handler.clean_orphaned_files(deployed)
 
-        assert removed == 1
+        assert len(removed) == 1
         assert not orphaned_file.exists()
 
     def test_clean_preserves_deployed_files(
@@ -755,7 +755,7 @@ class TestCleanOrphanedFiles:
         deployed = {f"{mock_prompt.title}.md"}
         removed = continue_handler.clean_orphaned_files(deployed)
 
-        assert removed == 0
+        assert len(removed) == 0
         assert deployed_file.exists()
 
     def test_clean_multiple_orphaned_files(self, continue_handler: ContinueToolHandler):
@@ -772,7 +772,7 @@ class TestCleanOrphanedFiles:
         # Clean with empty deployed set
         removed = continue_handler.clean_orphaned_files(set())
 
-        assert removed == 3
+        assert len(removed) == 3
         assert not orphaned_prompt1.exists()
         assert not orphaned_prompt2.exists()
         assert not orphaned_rule.exists()
@@ -788,7 +788,7 @@ class TestCleanOrphanedFiles:
         deployed = {f"{mock_prompt.title}.md"}
         removed = continue_handler.clean_orphaned_files(deployed)
 
-        assert removed == 0
+        assert len(removed) == 0
 
     def test_clean_with_source_filename_preservation(
         self, continue_handler: ContinueToolHandler, mock_prompt: PromptFrontmatter
@@ -806,7 +806,7 @@ class TestCleanOrphanedFiles:
         deployed = {source_filename}
         removed = continue_handler.clean_orphaned_files(deployed)
 
-        assert removed == 1
+        assert len(removed) == 1
         assert (continue_handler.prompts_dir / source_filename).exists()
         assert not orphaned.exists()
 
@@ -828,7 +828,7 @@ class TestCleanOrphanedFiles:
         removed = continue_handler.clean_orphaned_files(deployed)
 
         # Should remove both .bak files
-        assert removed == 2
+        assert len(removed) == 2
         assert not backup_prompt.exists()
         assert not backup_rule.exists()
         # Deployed file should still exist
@@ -866,7 +866,7 @@ class TestCleanOrphanedFiles:
         removed = continue_handler.clean_orphaned_files(deployed)
 
         # Should remove: 2 .bak files in subdirs + 1 orphaned .md in root = 3 files
-        assert removed == 3
+        assert len(removed) == 3
         assert subdir_prompts.exists()  # Directory remains
         assert subdir_rules.exists()  # Directory remains
         # .md files in subdirectories are PRESERVED (for tag filter compatibility)
@@ -895,10 +895,84 @@ class TestCleanOrphanedFiles:
         removed = continue_handler.clean_orphaned_files(deployed)
 
         # Non-.md and non-.bak files should be ignored
-        assert removed == 0
+        assert len(removed) == 0
         assert (continue_handler.prompts_dir / "README.txt").exists()
         assert (continue_handler.prompts_dir / "config.json").exists()
         assert (continue_handler.rules_dir / "notes.txt").exists()
+
+    def test_clean_extracts_title_from_frontmatter(self, continue_handler: ContinueToolHandler):
+        """Test that clean extracts title from YAML frontmatter when deleting files."""
+        # Create orphaned file with YAML frontmatter
+        orphaned = continue_handler.prompts_dir / "orphan.md"
+        orphaned.write_text("---\nname: Custom Title\n---\nContent")
+
+        # Clean orphaned files
+        removed = continue_handler.clean_orphaned_files(set())
+
+        # Should extract and use the custom title
+        assert len(removed) == 1
+        assert removed[0].file_name == "Custom Title"
+
+    def test_clean_handles_file_without_frontmatter(self, continue_handler: ContinueToolHandler):
+        """Test that clean handles files without YAML frontmatter gracefully."""
+        # Create orphaned file without frontmatter
+        orphaned = continue_handler.prompts_dir / "orphan.md"
+        orphaned.write_text("Just plain content without frontmatter")
+
+        # Clean orphaned files
+        removed = continue_handler.clean_orphaned_files(set())
+
+        # Should use filename stem as fallback
+        assert len(removed) == 1
+        assert removed[0].file_name == "orphan"
+
+    def test_clean_handles_invalid_yaml_in_frontmatter(self, continue_handler: ContinueToolHandler):
+        """Test that clean handles invalid YAML in frontmatter gracefully."""
+        # Create orphaned file with invalid YAML
+        orphaned = continue_handler.prompts_dir / "orphan.md"
+        orphaned.write_text("---\n{invalid: yaml: structure\n---\nContent")
+
+        # Clean orphaned files (should not crash)
+        removed = continue_handler.clean_orphaned_files(set())
+
+        # Should use filename stem as fallback
+        assert len(removed) == 1
+        assert removed[0].file_name == "orphan"
+
+    def test_clean_handles_frontmatter_without_name_field(
+        self, continue_handler: ContinueToolHandler
+    ):
+        """Test that clean handles YAML frontmatter without 'name' field."""
+        # Create orphaned file with valid YAML but no 'name' field
+        orphaned = continue_handler.prompts_dir / "orphan.md"
+        orphaned.write_text("---\ntitle: Different Field\ndescription: Test\n---\nContent")
+
+        # Clean orphaned files
+        removed = continue_handler.clean_orphaned_files(set())
+
+        # Should use filename stem as fallback when 'name' field is missing
+        assert len(removed) == 1
+        assert removed[0].file_name == "orphan"
+
+    def test_clean_handles_orphaned_rules_with_frontmatter(
+        self, continue_handler: ContinueToolHandler, mock_rule: RuleFrontmatter
+    ):
+        """Test that clean extracts title from rule frontmatter."""
+        # Deploy a rule to keep
+        continue_handler.deploy(mock_rule, "rule", "Body")
+
+        # Create orphaned rule with frontmatter
+        orphaned = continue_handler.rules_dir / "orphan.md"
+        orphaned.write_text("---\nname: Orphaned Rule Title\n---\nContent")
+
+        # Clean orphaned files
+        deployed = {f"{mock_rule.title}.md"}
+        removed = continue_handler.clean_orphaned_files(deployed)
+
+        # Should extract and use the custom title from orphaned rule
+        assert len(removed) == 1
+        assert removed[0].file_name == "Orphaned Rule Title"
+        assert removed[0].content_type == "rule"
 
 
 class TestRuleContentProcessingEdgeCases:
@@ -951,6 +1025,76 @@ class TestRuleContentProcessingEdgeCases:
         assert "author: Test Author" in processed
         assert "language: python" in processed
         assert "name: authored-rule" in processed
+
+
+class TestGetDeploymentStatusWithRelativePath:
+    """Test get_deployment_status with relative_path parameter."""
+
+    def test_get_deployment_status_with_relative_path(
+        self, continue_handler: ContinueToolHandler, mock_prompt: PromptFrontmatter
+    ):
+        """Test that get_deployment_status works with relative_path."""
+        from pathlib import Path
+
+        # Deploy a prompt with relative_path
+        relative_path = Path("commands")
+        continue_handler.deploy(mock_prompt, "prompt", "Test body", "test.md", relative_path)
+
+        # Get processed content for comparison
+        processed_content = continue_handler._process_prompt_content(mock_prompt, "Test body")
+
+        # Check deployment status with relative_path
+        status = continue_handler.get_deployment_status(
+            mock_prompt.title,
+            "prompt",
+            processed_content,
+            "test.md",
+            relative_path,
+        )
+
+        assert status == "synced"
+
+    def test_get_deployment_status_with_root_deployment(
+        self, continue_handler: ContinueToolHandler, mock_prompt: PromptFrontmatter
+    ):
+        """Test that get_deployment_status works for root-level deployment."""
+        # Deploy a prompt without relative_path (root level)
+        continue_handler.deploy(mock_prompt, "prompt", "Test body", "test.md")
+
+        # Get processed content for comparison
+        processed_content = continue_handler._process_prompt_content(mock_prompt, "Test body")
+
+        # Check deployment status without relative_path
+        status = continue_handler.get_deployment_status(
+            mock_prompt.title,
+            "prompt",
+            processed_content,
+            "test.md",
+            None,
+        )
+
+        assert status == "synced"
+
+    def test_get_deployment_status_with_invalid_content_type(
+        self, continue_handler: ContinueToolHandler, mock_prompt: PromptFrontmatter
+    ):
+        """Test that get_deployment_status returns error for invalid content type."""
+        # Deploy a prompt first
+        continue_handler.deploy(mock_prompt, "prompt", "Test body", "test.md")
+
+        # Get processed content
+        processed_content = continue_handler._process_prompt_content(mock_prompt, "Test body")
+
+        # Try to check status with invalid content_type
+        status = continue_handler.get_deployment_status(
+            mock_prompt.title,
+            "invalid_type",  # Invalid content type
+            processed_content,
+            "test.md",
+            None,
+        )
+
+        assert status == "error"
 
 
 class TestDeploymentErrorHandling:

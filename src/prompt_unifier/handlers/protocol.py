@@ -60,7 +60,7 @@ class ToolHandler(Protocol):
         """
         ...
 
-    def clean_orphaned_files(self, deployed_filenames: set[str]) -> int:
+    def clean_orphaned_files(self, deployed_filenames: set[str]) -> list[Any]:
         """
         Remove files in handler directories that are not in the deployed set.
 

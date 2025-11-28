@@ -220,13 +220,13 @@ class TestKiloCodeToolHandler:
         orphaned_rule = kilo_code_handler.rules_dir / "orphan.md"
         backup_file = kilo_code_handler.prompts_dir / "backup.md.bak"
 
-        orphaned_prompt.touch()
-        orphaned_rule.touch()
+        orphaned_prompt.write_text("---\nname: Orphan Prompt\n---\nContent")
+        orphaned_rule.write_text("---\nname: Orphan Rule\n---\nContent")
         backup_file.touch()
 
-        removed_count = kilo_code_handler.clean_orphaned_files(set())
+        removed = kilo_code_handler.clean_orphaned_files(set())
 
-        assert removed_count == 3
+        assert len(removed) == 3
         assert not orphaned_prompt.exists()
         assert not orphaned_rule.exists()
         assert not backup_file.exists()
@@ -451,20 +451,20 @@ class TestKiloCodeToolHandler:
         assert original_file.read_text() == "backup content"
 
     def test_clean_orphaned_files_with_subdirectories(self, kilo_code_handler: KiloCodeToolHandler):
-        """Test that orphaned files in subdirectories are preserved."""
+        """Test that orphaned files in subdirectories are removed for KiloCode."""
         # Create a subdirectory with a file
         subdir = kilo_code_handler.prompts_dir / "subdir"
         subdir.mkdir()
         subdir_file = subdir / "file.md"
-        subdir_file.write_text("content")
+        subdir_file.write_text("---\nname: Test\n---\nContent")
 
         # Clean orphaned files
         removed = kilo_code_handler.clean_orphaned_files(set())
 
-        # Subdirectory file should be preserved
-        assert subdir_file.exists()
-        # No files should be removed from subdirectories
-        assert removed == 0
+        # Subdirectory file should be removed for KiloCode (recursive cleaning)
+        assert not subdir_file.exists()
+        # One file should be removed
+        assert len(removed) == 1
 
     def test_init_creates_directories_when_missing(self, tmp_path: Path):
         """Test that __init__ creates directories when they don't exist."""
@@ -560,7 +560,7 @@ class TestKiloCodeToolHandler:
         """Test cleaning orphaned files in rules directory."""
         # Create orphaned file in rules
         orphan = kilo_code_handler.rules_dir / "orphan.md"
-        orphan.write_text("orphan")
+        orphan.write_text("---\nname: Orphan Rule\n---\nContent")
 
         # Create backup file in rules
         backup = kilo_code_handler.rules_dir / "backup.md.bak"
@@ -571,7 +571,7 @@ class TestKiloCodeToolHandler:
         # Both should be removed
         assert not orphan.exists()
         assert not backup.exists()
-        assert removed == 2
+        assert len(removed) == 2
 
     def test_display_verification_report_with_custom_console(
         self, kilo_code_handler: KiloCodeToolHandler
