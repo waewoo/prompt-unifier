@@ -10,9 +10,9 @@
 [![Python Version](https://img.shields.io/badge/python-3.11%2B-blue)](https://www.python.org/)
 [![License](https://img.shields.io/badge/license-MIT-green)](license.md)
 
-[🚀 Getting Started](getting-started.md){ .md-button .md-button--primary }
-[📂 Browse Prompts](https://gitlab.com/waewoo/prompt-unifier-data){ .md-button .md-button--secondary
-}
+<a href="getting-started.md" class="md-button md-button--primary">🚀 Getting Started</a>
+<a href="https://gitlab.com/waewoo/prompt-unifier-data" class="md-button md-button--secondary">📂
+Browse Prompts</a>
 
 </div>
 
@@ -123,13 +123,13 @@ Need to convince your team? Use these slides to present the Prompt Unifier visio
 
 - ## :flag_us: **English Slides**
 
-  [Download PDF](assets/pdf/prompt-unifier-presentation-en.pdf){ .md-button .md-button--primary
-  .md-button--full }
+  <a href="assets/pdf/prompt-unifier-presentation-en.pdf" class="md-button md-button--primary md-button--full">Download
+  PDF</a>
 
 - ## :flag_fr: **Slides Français**
 
-  [Télécharger PDF](assets/pdf/prompt-unifier-presentation-fr.pdf){ .md-button .md-button--primary
-  .md-button--full }
+  <a href="assets/pdf/prompt-unifier-presentation-fr.pdf" class="md-button md-button--primary md-button--full">Télécharger
+  PDF</a>
 
 </div>
 
