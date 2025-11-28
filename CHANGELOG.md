@@ -4,6 +4,21 @@ All notable changes to this project will be documented in this file.
 
 This project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## v2.0.0 (2025-11-28)
+
+### BREAKING CHANGE
+
+- Verification result structure now includes deployment_status field that consumers should handle appropriately.
+
+### Feat
+
+- **validation**: add title extraction and display for validation prompts/rules
+
+### Refactor
+
+- **handlers**: enhance cleanup to return detailed verification results
+- **handlers**: enhance deployment reporting with status tracking and improved verification display
+
 ## v1.4.0 (2025-11-27)
 
 ### Feat
