@@ -91,7 +91,7 @@ class TestVerifyDeploymentReturnsResult:
         result = handler.verify_deployment_with_details(mock_prompt.title, "prompt", "test.md")
 
         assert result.status == "passed"
-        assert result.file_name == "test.md"
+        assert result.file_name == mock_prompt.title  # file_name now contains the title
         assert result.content_type == "prompt"
 
     def test_verify_deployment_returns_failed_result_for_missing_file(
@@ -150,9 +150,11 @@ class TestVerificationReportRichTable:
         output = console.file.getvalue()
 
         # Verify table columns are present
-        assert "File" in output or "file" in output.lower()
+        assert "Name" in output or "name" in output.lower()
         assert "Type" in output or "type" in output.lower()
         assert "Status" in output or "status" in output.lower()
+        assert "Issues" in output or "issues" in output.lower()
+        assert "Path" in output or "path" in output.lower()
 
     def test_display_verification_report_shows_handler_name_header(
         self, handler: ContinueToolHandler

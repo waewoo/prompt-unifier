@@ -116,8 +116,8 @@ class TestEndToEndDeployVerifyWorkflow:
             # Should deploy successfully
             assert result.exit_code == 0
 
-            # Should show verification results
-            assert "Verification" in result.output or "verified" in result.output.lower()
+            # Should show deployment results
+            assert "Deployment:" in result.output or "deployment" in result.output.lower()
 
             # Should deploy all 4 files (2 prompts + 2 rules)
             assert "4 items deployed" in result.output or "deployed" in result.output.lower()

@@ -28,6 +28,9 @@ class ContinueToolHandler(BaseToolHandler):
         self.prompts_dir = self.base_path / CONTINUE_DIR / "prompts"
         self.rules_dir = self.base_path / CONTINUE_DIR / "rules"
 
+        # Track deployment statuses for verification
+        self._deployment_statuses: dict[str, str] = {}
+
         # Auto-create directories with informative output
         if not self.prompts_dir.exists():
             self.prompts_dir.mkdir(parents=True, exist_ok=True)
@@ -143,11 +146,13 @@ class ContinueToolHandler(BaseToolHandler):
             # Deploy to root directory
             target_file_path = base_dir / filename
 
+        # Determine deployment status before deploying
+        deployment_status = self._determine_deployment_status(target_file_path, processed_content)
+        self._deployment_statuses[content.title] = deployment_status
+
         self._backup_file(target_file_path)
         target_file_path.write_text(processed_content, encoding="utf-8")
-        console.print(
-            f"[green]Deployed {content.title} ({content_type}) to {target_file_path}[/green]"
-        )
+        logger.debug(f"Deployed {content.title} ({content_type}) to {target_file_path}")
 
     def verify_deployment(self, content_name: str, content_type: str) -> bool:
         """
@@ -208,13 +213,13 @@ class ContinueToolHandler(BaseToolHandler):
     def _verify_prompt_frontmatter(
         self,
         deployed_content: str,
-        file_name: str,
+        content_name: str,
     ) -> VerificationResult | None:
         """Verify prompt frontmatter has invokable field. Returns error result or None if OK."""
         parts = deployed_content.split("---", 2)
         if len(parts) < 3:
             return VerificationResult(
-                file_name=file_name,
+                file_name=content_name,
                 content_type="prompt",
                 status="failed",
                 details="Invalid format: missing frontmatter delimiters",
@@ -225,21 +230,21 @@ class ContinueToolHandler(BaseToolHandler):
             frontmatter = yaml.safe_load(frontmatter_str)
             if not isinstance(frontmatter, dict):
                 return VerificationResult(
-                    file_name=file_name,
+                    file_name=content_name,
                     content_type="prompt",
                     status="failed",
                     details="Invalid frontmatter: not a dictionary",
                 )
             if not frontmatter.get("invokable"):
                 return VerificationResult(
-                    file_name=file_name,
+                    file_name=content_name,
                     content_type="prompt",
                     status="failed",
                     details="Missing or false 'invokable' field in frontmatter",
                 )
         except yaml.YAMLError as e:
             return VerificationResult(
-                file_name=file_name,
+                file_name=content_name,
                 content_type="prompt",
                 status="failed",
                 details=f"Invalid YAML frontmatter: {e}",
@@ -272,7 +277,7 @@ class ContinueToolHandler(BaseToolHandler):
         target_file_path, error = self._get_target_file_path(content_type, file_name, relative_path)
         if error or target_file_path is None:
             return VerificationResult(
-                file_name=file_name,
+                file_name=content_name,
                 content_type=content_type,
                 status="failed",
                 details=error or "Invalid path",
@@ -280,7 +285,7 @@ class ContinueToolHandler(BaseToolHandler):
 
         if not target_file_path.exists():
             return VerificationResult(
-                file_name=file_name,
+                file_name=content_name,
                 content_type=content_type,
                 status="failed",
                 details=f"File does not exist: {target_file_path}",
@@ -290,22 +295,26 @@ class ContinueToolHandler(BaseToolHandler):
             deployed_content = target_file_path.read_text(encoding="utf-8")
         except (OSError, UnicodeDecodeError) as e:
             return VerificationResult(
-                file_name=file_name,
+                file_name=content_name,
                 content_type=content_type,
                 status="failed",
                 details=f"Cannot read file: {e}",
             )
 
         if content_type == "prompt":
-            error_result = self._verify_prompt_frontmatter(deployed_content, file_name)
+            error_result = self._verify_prompt_frontmatter(deployed_content, content_name)
             if error_result:
                 return error_result
 
+        # Retrieve deployment status from tracking dictionary
+        deployment_status = self._deployment_statuses.get(content_name, "unknown")
+
         return VerificationResult(
-            file_name=file_name,
+            file_name=content_name,
             content_type=content_type,
             status="passed",
             details="File verified successfully",
+            deployment_status=deployment_status,
         )
 
     def _determine_target_filename(self, content_name: str, source_filename: str | None) -> str:

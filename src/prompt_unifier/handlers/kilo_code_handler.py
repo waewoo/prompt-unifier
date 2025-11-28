@@ -37,6 +37,9 @@ class KiloCodeToolHandler(BaseToolHandler):
         self.prompts_dir = self.base_path / KILO_CODE_DIR / "workflows"
         self.rules_dir = self.base_path / KILO_CODE_DIR / "rules"
 
+        # Track deployment statuses for verification
+        self._deployment_statuses: dict[str, str] = {}
+
         # Auto-create directories with informative output
         if not self.prompts_dir.exists():
             self.prompts_dir.mkdir(parents=True, exist_ok=True)
@@ -255,12 +258,14 @@ class KiloCodeToolHandler(BaseToolHandler):
         )
         target_file_path = base_dir / final_filename
 
+        # Determine deployment status before deploying
+        deployment_status = self._determine_deployment_status(target_file_path, markdown_content)
+        self._deployment_statuses[content.title] = deployment_status
+
         # Backup and write
         self._backup_file(target_file_path)
         target_file_path.write_text(markdown_content, encoding="utf-8")
-        console.print(
-            f"[green]Deployed {content.title} ({content_type}) to {target_file_path}[/green]"
-        )
+        logger.debug(f"Deployed {content.title} ({content_type}) to {target_file_path}")
 
     def _validate_content_and_get_base_dir(self, content: Any, content_type: str) -> Path:
         """Validate content type and return base directory.
@@ -444,7 +449,7 @@ class KiloCodeToolHandler(BaseToolHandler):
 
         if target_file_path is None:
             return VerificationResult(
-                file_name=file_name,
+                file_name=content_name,
                 content_type=content_type,
                 status="failed",
                 details=f"Unsupported content type: {content_type}",
@@ -452,7 +457,7 @@ class KiloCodeToolHandler(BaseToolHandler):
 
         if not target_file_path.exists():
             return VerificationResult(
-                file_name=file_name,
+                file_name=content_name,
                 content_type=content_type,
                 status="failed",
                 details=f"File does not exist: {target_file_path}",
@@ -462,7 +467,7 @@ class KiloCodeToolHandler(BaseToolHandler):
             deployed_content = target_file_path.read_text(encoding="utf-8")
         except (OSError, UnicodeDecodeError) as e:
             return VerificationResult(
-                file_name=file_name,
+                file_name=content_name,
                 content_type=content_type,
                 status="failed",
                 details=f"Cannot read file: {e}",
@@ -471,7 +476,7 @@ class KiloCodeToolHandler(BaseToolHandler):
         # Validate pure Markdown format
         if deployed_content.startswith("---"):
             return VerificationResult(
-                file_name=file_name,
+                file_name=content_name,
                 content_type=content_type,
                 status="failed",
                 details="File contains YAML frontmatter delimiters (should be pure Markdown)",
@@ -479,15 +484,19 @@ class KiloCodeToolHandler(BaseToolHandler):
 
         if not deployed_content.startswith("# "):
             return VerificationResult(
-                file_name=file_name,
+                file_name=content_name,
                 content_type=content_type,
                 status="failed",
                 details="File does not start with H1 title (# Title)",
             )
 
+        # Retrieve deployment status from tracking dictionary
+        deployment_status = self._deployment_statuses.get(content_name, "unknown")
+
         return VerificationResult(
-            file_name=file_name,
+            file_name=content_name,
             content_type=content_type,
             status="passed",
             details="File verified successfully",
+            deployment_status=deployment_status,
         )

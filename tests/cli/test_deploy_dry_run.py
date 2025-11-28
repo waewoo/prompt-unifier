@@ -158,8 +158,8 @@ class TestDeployVerificationIntegration:
             result = runner.invoke(app, ["deploy"])
             # Should complete deployment
             assert result.exit_code == 0
-            # Should show verification report
-            assert "Verification" in result.output or "verified" in result.output.lower()
+            # Should show deployment report
+            assert "Deployment:" in result.output or "deployment" in result.output.lower()
 
     def test_existing_clean_flag_behavior_unchanged(self, setup_deploy_environment):
         """Test that existing --clean flag behavior is unchanged."""

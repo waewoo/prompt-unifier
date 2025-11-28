@@ -903,26 +903,30 @@ def _setup_deployment_handlers(
 
     registry: ToolHandlerRegistry = ToolHandlerRegistry()
 
-    # Register Continue handler
-    continue_handler = setup_continue_handler(base_path, config)
-    registry.register(continue_handler)
+    # Determine which handlers to register based on target_handlers
+    register_continue = not target_handlers or "continue" in target_handlers
+    register_kilocode = not target_handlers or "kilocode" in target_handlers
 
-    # Register Kilo Code handler
-    kilo_base_path = resolve_handler_base_path("kilocode", base_path, config)
-    kilo_handler = KiloCodeToolHandler(base_path=kilo_base_path)
-    try:
-        kilo_handler.validate_tool_installation()
-        registry.register(kilo_handler)
-    except OSError as e:
-        logger.warning(f"Kilo Code handler validation failed: {e}")
-        # Don't fail - just don't register this handler
+    # Register Continue handler if needed
+    if register_continue:
+        continue_handler = setup_continue_handler(base_path, config)
+        registry.register(continue_handler)
+
+    # Register Kilo Code handler if needed
+    if register_kilocode:
+        kilo_base_path = resolve_handler_base_path("kilocode", base_path, config)
+        kilo_handler = KiloCodeToolHandler(base_path=kilo_base_path)
+        try:
+            kilo_handler.validate_tool_installation()
+            registry.register(kilo_handler)
+        except OSError as e:
+            logger.warning(f"Kilo Code handler validation failed: {e}")
+            # Don't fail - just don't register this handler
 
     all_handlers = registry.get_all_handlers()
-    if target_handlers:
-        all_handlers = [h for h in all_handlers if h.get_name() in target_handlers]
-        if not all_handlers:
-            typer.echo(f"Error: No matching handlers found for {target_handlers}.", err=True)
-            raise typer.Exit(code=1)
+    if target_handlers and not all_handlers:
+        typer.echo(f"Error: No matching handlers found for {target_handlers}.", err=True)
+        raise typer.Exit(code=1)
 
     return all_handlers
 

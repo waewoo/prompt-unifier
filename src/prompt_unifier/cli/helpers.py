@@ -326,7 +326,6 @@ def deploy_content_to_handler(
             if final_filename:
                 deployed_filenames.add(final_filename)
 
-            console.print(f"  [green]✓[/green] Deployed {parsed_content.title} ({content_type})")
             logger.debug(f"Deployed: {parsed_content.title} ({content_type})")
 
             # Verify deployment if handler supports it
@@ -341,8 +340,14 @@ def deploy_content_to_handler(
                 verification_results.append(verification_result)
 
         except Exception as e:
-            console.print(
-                f"  [red]✗[/red] Failed to deploy {parsed_content.title} ({content_type}): {e}"
+            # Create a failed verification result for the summary table
+            verification_results.append(
+                VerificationResult(
+                    file_name=parsed_content.title,
+                    content_type=content_type,
+                    status="failed",
+                    details=str(e),
+                )
             )
             logger.error(f"Failed to deploy {parsed_content.title}: {e}")
             _attempt_rollback(handler)
@@ -934,7 +939,6 @@ def deploy_to_single_handler(
         Tuple of (deployed_count, cleaned_count).
     """
     handler_name = handler.get_name()
-    console.print(f"Deploying to {handler_name}...")
     logger.info(f"Deploying to handler: {handler_name}")
 
     # Deploy content using helper
@@ -946,9 +950,6 @@ def deploy_to_single_handler(
     cleaned_count = 0
     if clean and hasattr(handler, "clean_orphaned_files"):
         cleaned_count = _clean_orphaned_files(handler, handler_name, deployed_filenames)
-
-    # Display completion message
-    _display_handler_completion(handler_name, handler_deployed)
 
     # Display verification report
     if verification_results and hasattr(handler, "display_verification_report"):

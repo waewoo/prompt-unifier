@@ -1,5 +1,6 @@
 """Base handler class with shared functionality for tool handlers."""
 
+import logging
 from abc import ABC
 from dataclasses import dataclass
 from hashlib import sha256
@@ -11,6 +12,8 @@ from rich.table import Table
 from prompt_unifier.constants import BAK_GLOB_PATTERN
 from prompt_unifier.handlers.handler_utils import console
 from prompt_unifier.handlers.protocol import ToolHandler
+
+logger = logging.getLogger(__name__)
 
 # Color constants for verification reports
 ERROR_COLOR = "red"
@@ -26,6 +29,7 @@ class VerificationResult:
     content_type: str
     status: str  # "passed", "failed", "warning"
     details: str
+    deployment_status: str = "unknown"  # "new", "updated", "unchanged", "unknown"
 
 
 class BaseToolHandler(ToolHandler, ABC):
@@ -91,7 +95,30 @@ class BaseToolHandler(ToolHandler, ABC):
         if file_path.exists():
             backup_path = file_path.with_suffix(file_path.suffix + ".bak")
             file_path.rename(backup_path)
-            console.print(f"[yellow]Backed up {file_path.name} to {backup_path.name}[/yellow]")
+            logger.debug(f"Backed up {file_path.name} to {backup_path.name}")
+
+    def _determine_deployment_status(self, target_file_path: Path, new_content: str) -> str:
+        """
+        Determine if the deployment is new, updated, or unchanged.
+
+        Args:
+            target_file_path: Path where the file will be deployed.
+            new_content: The new content to be deployed.
+
+        Returns:
+            Status string: "new", "updated", or "unchanged".
+        """
+        if not target_file_path.exists():
+            return "new"
+
+        try:
+            existing_content = target_file_path.read_text(encoding="utf-8")
+            if existing_content == new_content:
+                return "unchanged"
+            return "updated"
+        except (OSError, UnicodeDecodeError):
+            # If we can't read the file, consider it as being updated
+            return "updated"
 
     def _remove_empty_directories(self, base_dir: Path) -> None:
         """
@@ -341,35 +368,65 @@ class BaseToolHandler(ToolHandler, ABC):
         """
         output_console = globals()["console"] if console is None else console
 
-        # Display header with handler name
+        # Display header
         output_console.print()
-        output_console.print(f"[bold]Verification Report: {self.name}[/bold]")
-        output_console.print("-" * 60)
+        output_console.print(f"[bold]Deployment: {self.name}[/bold]")
 
-        # Build Rich table
-        table = Table(show_header=True, header_style="bold")
-        table.add_column("File", style="dim")
-        table.add_column("Type")
+        # Build Rich table with all columns like validate/status
+        table = Table(show_header=True, header_style="bold magenta")
+        table.add_column("Name", style="cyan")
+        table.add_column("Type", style="blue")
         table.add_column("Status")
-        table.add_column("Details", style="dim")
+        table.add_column("Issues", style="dim")
+        table.add_column("Path", style="dim", overflow="fold")
+
+        # Collect detailed errors/warnings for separate display
+        detailed_issues: list[tuple[str, str, str]] = []
 
         for result in results:
-            # Determine status color
+            # Determine status color and text
             if result.status == "passed":
                 status_color = SUCCESS_COLOR
-                status_text = f"[{status_color}]PASSED[/{status_color}]"
+                base_status = "PASSED"
+                issues_text = "None"
             elif result.status == "failed":
                 status_color = ERROR_COLOR
-                status_text = f"[{status_color}]FAILED[/{status_color}]"
+                base_status = "FAILED"
+                issues_text = f"[{ERROR_COLOR}]1 error[/{ERROR_COLOR}]"
+                detailed_issues.append((result.file_name, "ERROR", result.details))
             else:  # warning
                 status_color = WARNING_COLOR
-                status_text = f"[{status_color}]WARNING[/{status_color}]"
+                base_status = "WARNING"
+                issues_text = f"[{WARNING_COLOR}]1 warning[/{WARNING_COLOR}]"
+                detailed_issues.append((result.file_name, "WARNING", result.details))
+
+            # Add deployment status indicator
+            if result.deployment_status == "new":
+                status_indicator = "[cyan](NEW)[/cyan]"
+            elif result.deployment_status == "updated":
+                status_indicator = "[yellow](UPDATED)[/yellow]"
+            elif result.deployment_status == "unchanged":
+                status_indicator = "[dim](UNCHANGED)[/dim]"
+            elif result.deployment_status == "deleted":
+                status_indicator = "[red](DELETED)[/red]"
+            else:
+                status_indicator = ""
+
+            status_text = (
+                f"[{status_color}]{base_status}[/{status_color}] {status_indicator}"
+                if status_indicator
+                else f"[{status_color}]{base_status}[/{status_color}]"
+            )
+
+            # Get file path - try to get from handler's directories
+            file_path = self._get_deployed_file_path(result)
 
             table.add_row(
                 result.file_name,
                 result.content_type,
                 status_text,
-                result.details,
+                issues_text,
+                str(file_path),
             )
 
         output_console.print(table)
@@ -377,23 +434,48 @@ class BaseToolHandler(ToolHandler, ABC):
         # Display summary
         summary = self.aggregate_verification_results(results)
         output_console.print()
-        output_console.print("[bold]Summary:[/bold]")
-        output_console.print(f"  Total: {summary['total']}")
-        output_console.print(f"  Passed: [{SUCCESS_COLOR}]{summary['passed']}[/{SUCCESS_COLOR}]")
-        output_console.print(f"  Failed: [{ERROR_COLOR}]{summary['failed']}[/{ERROR_COLOR}]")
         output_console.print(
-            f"  Warnings: [{WARNING_COLOR}]{summary['warnings']}[/{WARNING_COLOR}]"
+            f"[bold]Summary:[/bold] {summary['passed']} passed, "
+            f"{summary['failed']} failed, {summary['warnings']} warnings"
         )
 
-        # Show warning message if there are failures
-        if summary["failed"] > 0:
+        # Display detailed issues only if there are any
+        if detailed_issues:
             output_console.print()
-            output_console.print(
-                f"[{WARNING_COLOR}]Warning: {summary['failed']} verification(s) failed. "
-                f"Review the details above.[/{WARNING_COLOR}]"
-            )
+            output_console.print("[bold]Issues:[/bold]")
+            for name, issue_type, details in detailed_issues:
+                if issue_type == "ERROR":
+                    output_console.print(f"  [{ERROR_COLOR}]✗ {name}:[/{ERROR_COLOR}] {details}")
+                else:
+                    output_console.print(
+                        f"  [{WARNING_COLOR}]⚠ {name}:[/{WARNING_COLOR}] {details}"
+                    )
 
         output_console.print()
+
+    def _get_deployed_file_path(self, result: VerificationResult) -> Path:
+        """Get the full path of a deployed file based on verification result.
+
+        Args:
+            result: The verification result containing file name and type.
+
+        Returns:
+            Path to the deployed file.
+        """
+        # This is a base implementation - subclasses can override if needed
+        base_dir = self.prompts_dir if result.content_type == "prompt" else self.rules_dir
+
+        # Try to find the file
+        file_name = (
+            result.file_name if result.file_name.endswith(".md") else f"{result.file_name}.md"
+        )
+
+        # Search in base directory and subdirectories
+        for path in base_dir.rglob(file_name):
+            return path
+
+        # Fallback to simple concatenation
+        return base_dir / file_name
 
     def _compare_content_hashes(self, source_content: str, target_file: Path) -> str:
         """Compare content hashes between source and deployed file.
