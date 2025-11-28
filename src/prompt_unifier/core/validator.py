@@ -115,6 +115,11 @@ class PromptValidator:
             [issue for issue in yaml_issues if issue.severity == ValidationSeverity.WARNING]
         )
 
+        # Extract title if available
+        title = None
+        if yaml_dict is not None:
+            title = yaml_dict.get("title") or yaml_dict.get("name")
+
         # Step 4: Schema validation with Pydantic
         # Only proceed if we have a valid YAML dict
         if yaml_dict is not None:
@@ -143,6 +148,7 @@ class PromptValidator:
             status=status,
             errors=all_errors,
             warnings=all_warnings,
+            title=title,
         )
 
     def _check_prohibited_fields(self, yaml_dict: dict[str, Any]) -> list[ValidationIssue]:

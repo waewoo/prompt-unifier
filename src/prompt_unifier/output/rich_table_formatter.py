@@ -107,7 +107,7 @@ class RichTableFormatter:
             A Rich Table object.
         """
         table = Table(show_header=True, header_style=HEADER_STYLE)
-        table.add_column("File", style="cyan")
+        table.add_column("Name", style="cyan")
         table.add_column("Status")
 
         if show_scaff:
@@ -127,7 +127,10 @@ class RichTableFormatter:
             status_style = "green" if result.status == "passed" else "bold red"
             status_text = f"[{status_style}]{result.status.upper()}[/{status_style}]"
 
-            row_items = [result.file.name, status_text]
+            # Use title if available, otherwise fall back to file name
+            display_name = result.title if result.title else result.file.name
+
+            row_items = [display_name, status_text]
 
             if show_scaff:
                 row_items.extend(self._format_scaff_columns(result))

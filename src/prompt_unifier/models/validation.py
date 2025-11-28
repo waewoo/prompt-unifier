@@ -166,6 +166,7 @@ class ValidationResult(BaseModel):
         errors: List of validation errors (block deployment)
         warnings: List of validation warnings (do not block)
         scaff_score: Optional SCAFF methodology score (None if not evaluated)
+        title: Optional title of the prompt/rule (None if not parseable)
 
     Properties:
         is_valid: True if status is "passed" (no errors)
@@ -193,6 +194,7 @@ class ValidationResult(BaseModel):
     scaff_score: "SCARFFScore | None" = Field(
         default=None, description="Optional SCAFF methodology compliance score"
     )
+    title: str | None = Field(default=None, description="Optional title of the prompt/rule")
 
     @property
     def is_valid(self) -> bool:
