@@ -76,6 +76,9 @@ nav:
   - Configuration: configuration.md
   - CLI Reference: reference/cli-commands.md
   - Contributing: contributing.md
+  - Development:
+      - Guide: development/index.md
+      - Makefile Reference: development/makefile.md
   - Changelog: changelog.md
   - License: license.md
 

@@ -62,8 +62,7 @@ dmypy.json
 # Ruff cache
 .ruff_cache/
 
-# Poetry
-poetry.lock
+# Poetry (keep poetry.lock in git for reproducible builds)
 
 # Environment variables
 .env
@@ -74,3 +73,7 @@ bandit-report.json
 safety-report.json
 pip-audit-report.json
 .secrets.baseline.tmp
+
+#mkdoc
+site/
+public/

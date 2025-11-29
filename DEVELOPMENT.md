@@ -40,35 +40,70 @@ cd prompt-unifier
 ### 2. Install Dependencies
 
 This project uses [Poetry](https://python-poetry.org/) for dependency management. The `Makefile`
-provides a convenient way to install everything.
+provides a convenient way to install everything, including pre-commit hooks.
 
 ```bash
-# This runs `poetry install`
-make install
-```
-
-### 3. Install Pre-commit Hooks
-
-Pre-commit hooks automatically run linters and formatters before each commit to enforce code
-quality.
-
-```bash
-poetry run pre-commit install
+# This runs `poetry install` AND installs pre-commit hooks automatically
+make env-install
 ```
 
 ______________________________________________________________________
 
 ## Core Workflow
 
-All common tasks are managed through the `Makefile`.
+All common tasks are managed through the **Makefile**, which serves as the single entry point for
+development and CI/CD operations. The Makefile is organized into functional groups:
 
-### Main Commands
+### Environment Setup
 
-- `make check`: Run all quality checks (lint, types, tests). **Run this before every commit.**
-- `make format`: Auto-format code with Ruff.
-- `make lint`: Check for code style issues with Ruff.
-- `make typecheck`: Run static type analysis with mypy.
-- `make test`: Run the full test suite and generate a coverage report.
+- `make env-install`: Install dependencies and git hooks (first-time setup)
+- `make env-update`: Update all dependencies (refreshing lock file)
+- `make env-clean`: Cleanup temporary files and caches
+
+### Application Development
+
+- `make app-run ARGS="--version"`: Run the CLI with arguments
+- `make app-lint`: Run static analysis (lint, format, types via pre-commit)
+- `make app-test`: Run unit tests with coverage
+- `make app-check-all`: Run FULL validation (lint + test + CI check) **Run this before every
+  commit.**
+
+### CI/CD Simulation
+
+The Makefile includes targets to run the GitLab CI/CD pipeline locally using `gitlab-ci-local`:
+
+- `make ci-pipeline`: Run FULL GitLab pipeline locally in Docker (recommended for accuracy)
+- `make ci-job JOB=<name>`: Run specific GitLab CI job locally (e.g., `make ci-job JOB=app-lint`)
+- `make ci-validate`: Validate `.gitlab-ci.yml` syntax
+- `make ci-list`: List all available CI jobs
+- `make ci-clean`: Clean CI volumes and cache
+
+**CI Image Management:**
+
+- `make ci-image-build`: Build custom CI base Docker image (defined in `Dockerfile.ci`)
+- `make ci-image-push`: Push CI base image to registry
+- `make ci-image-login`: Login to GitLab container registry
+
+### Security Scanning
+
+- `make sec-all`: Run ALL security scans (code + secrets + deps)
+- `make sec-code`: SAST scan with Bandit
+- `make sec-secrets`: Secret detection with detect-secrets
+- `make sec-deps`: Dependency vulnerability check with pip-audit
+
+### Package & Release
+
+- `make pkg-build`: Build wheel/sdist packages
+- `make pkg-changelog`: Generate changelog from conventional commits
+- `make pkg-publish VERSION_BUMP=<patch|minor|major>`: Create release and push tags
+
+### Documentation
+
+- `make docs-install`: Install documentation dependencies
+- `make docs-live PORT=8000`: Serve docs locally with live reload (default port: 8000)
+- `make docs-build`: Build static documentation site
+
+Run `make help` to see all available targets with descriptions.
 
 ______________________________________________________________________
 
@@ -80,7 +115,7 @@ We use `pytest` for testing.
 
 ```bash
 # Run all tests and generate a coverage report
-make test
+make app-test
 
 # Run tests in a specific file
 poetry run pytest tests/cli/test_commands.py
@@ -94,8 +129,8 @@ poetry run pytest -v
 
 ### Test Coverage
 
-A minimum of **95% test coverage** is required. After running `make test`, you can view a detailed
-HTML report by opening `htmlcov/index.html` in your browser.
+A minimum of **95% test coverage** is required. After running `make app-test`, you can view a
+detailed HTML report by opening `htmlcov/index.html` in your browser.
 
 ```bash
 # For macOS users
@@ -118,69 +153,175 @@ Code quality is enforced automatically by pre-commit hooks and the CI pipeline.
 You can run these checks manually at any time:
 
 ```bash
-make lint
-make typecheck
-make format
+make app-lint  # Runs pre-commit (includes ruff, mypy, etc.)
 ```
 
 ______________________________________________________________________
 
 ## CI/CD Pipeline
 
-The project uses GitLab CI for continuous integration. The pipeline is defined in `.gitlab-ci.yml`.
+The project uses a **Makefile-driven GitLab CI/CD architecture** following BP2I best practices. The
+pipeline is defined in `.gitlab-ci.yml` and delegates all logic to Makefile targets.
 
-### Local CI Testing
+### Architecture Overview
 
-You can run the CI pipeline locally using `gitlab-ci-local`, which is helpful for debugging pipeline
-issues without making commits.
+```
+.gitlab-ci.yml (orchestration) → Makefile (logic) → Poetry/Tools
+```
 
-**Prerequisites:**
+**Key Benefits:**
 
-- Node.js and npm
-- `npm install -g gitlab-ci-local`
-
-**Makefile Commands:**
-
-- `make test-ci`: Run the full test suite in a Docker environment mirroring the CI setup.
-- `make test-ci-job JOB=<name>`: Run a specific job from the pipeline (e.g.,
-  `make test-ci-job JOB=lint`).
-- `make test-ci-list`: List all available jobs in the pipeline.
+- Single entry point for local and CI environments
+- Consistent behavior between local dev and CI
+- Easy to debug and test locally before pushing
 
 ### Pipeline Stages
 
-The pipeline typically includes these stages:
+The GitLab CI pipeline is organized into 6 stages:
 
-1. **lint**: Checks code style.
-1. **typecheck**: Runs static type analysis.
-1. **test**: Executes the pytest suite and checks coverage.
-1. **security**: Runs security scans for vulnerabilities and secrets.
+1. **setup**: Install dependencies (`setup-deps` job)
+
+   - Creates cache and artifacts for downstream jobs
+   - Uses `make env-install`
+
+1. **quality**: Code quality checks (runs in parallel)
+
+   - `app-lint`: Linting, formatting, type checking via `make app-lint`
+   - `app-test`: Unit tests with coverage via `make app-test`
+   - `app-sonar`: SonarQube code analysis (optional)
+
+1. **security**: Security scanning (runs in parallel with quality)
+
+   - `sec-all`: SAST, secrets, dependencies via `make sec-all`
+
+1. **build**: Package and documentation (runs in parallel after setup)
+
+   - `pkg-build`: Build Python wheel/sdist via `make pkg-build`
+   - `docs-build`: Build MkDocs site via `make docs-build`
+
+1. **release**: Version bumping and PyPI upload (manual/automated)
+
+   - `pkg-ci-bump`: Auto-bump version with commitizen
+   - `pkg-gitlab-release`: Create GitLab release on tags
+   - `pkg-upload`: Upload to PyPI on tags
+
+1. **docs**: Deploy documentation to GitLab Pages
+
+### Custom CI Image
+
+The pipeline uses a custom Docker image (`Dockerfile.ci`) with pre-installed tools:
+
+- Python 3.12
+- Poetry 2.2.1
+- Pre-commit, Bandit, detect-secrets, pip-audit, pytest
+
+Build and push the image:
+
+```bash
+make ci-image-build
+make ci-image-push
+```
+
+### Local CI Testing
+
+You can run the **exact** GitLab CI pipeline locally using `gitlab-ci-local`:
+
+**Prerequisites:**
+
+- Docker installed and running
+- Node.js and npm: `npm install -g gitlab-ci-local`
+
+**Makefile Commands:**
+
+```bash
+# Run FULL pipeline locally (recommended for pre-push validation)
+make ci-pipeline
+
+# Run specific job (e.g., just linting)
+make ci-job JOB=app-lint
+
+# List all available jobs
+make ci-list
+
+# Validate .gitlab-ci.yml syntax
+make ci-validate
+
+# Clean CI volumes and cache
+make ci-clean
+```
+
+**Cache Strategy:**
+
+- **Cache**: Poetry venv persists across pipelines (keyed by `poetry.lock`)
+- **Artifacts**: `.venv/` shared within current pipeline run (1 hour expiry)
+- **Fallback**: Jobs have `before_script` to install deps if cache misses
+
+### DAG Optimization
+
+The pipeline uses GitLab's `needs` keyword for parallel execution:
+
+```
+setup-deps
+    ├── app-lint ────┐
+    ├── app-test ────┤
+    ├── sec-all ─────┼──→ pkg-ci-bump → pkg-gitlab-release → pkg-upload
+    ├── pkg-build ───┤
+    └── docs-build ──┘
+```
+
+Quality, security, and build stages run **in parallel** immediately after dependencies are ready.
 
 ______________________________________________________________________
 
 ## Release Process
 
-Releases are managed using `commitizen` and are automated via the `Makefile`.
+Releases are managed using `commitizen` and are automated via the `Makefile` and GitLab CI.
 
-To create a new release:
+### Manual Local Release
+
+To create a new release from your local machine:
 
 1. Ensure you are on the `main` branch and all changes are committed.
-1. Run the `make release` command with the type of version bump.
+1. Run the `make pkg-publish` command with the type of version bump.
 
 ```bash
 # Create a patch release (e.g., 0.4.0 -> 0.4.1)
-make release VERSION_BUMP=patch
+make pkg-publish VERSION_BUMP=patch
 
 # Create a minor release (e.g., 0.4.1 -> 0.5.0)
-make release VERSION_BUMP=minor
+make pkg-publish VERSION_BUMP=minor
+
+# Create a major release (e.g., 0.5.0 -> 1.0.0)
+make pkg-publish VERSION_BUMP=major
 ```
 
-This command will:
+This will:
 
-1. Run all quality checks (`make check`).
-1. Bump the version number in `pyproject.toml` and `src/prompt_unifier/__init__.py`.
-1. Commit the version bump.
-1. Create a new Git tag.
-1. Push the commit and tag to the `main` branch.
+1. Bump the version in `pyproject.toml`
+1. Create a git commit
+1. Create a git tag (e.g., `v0.4.1`)
+1. Push to GitLab (commit + tag)
+
+### Automated CI Release
+
+The GitLab CI pipeline includes automated release jobs:
+
+1. **Version Bump** (`pkg-ci-bump`):
+
+   - Manual job on `main` branch
+   - Uses commitizen to analyze commits and auto-bump version
+   - Creates tag and pushes to GitLab
+
+1. **GitLab Release** (`pkg-gitlab-release`):
+
+   - Triggered automatically on version tags (e.g., `v2.1.0`)
+   - Creates GitLab release with changelog
+
+1. **PyPI Upload** (`pkg-upload`):
+
+   - Triggered automatically on version tags
+   - Publishes package to PyPI
+   - Requires `PYPI_USER` and `PYPI_PASSWORD` CI variables
 
 ______________________________________________________________________
 

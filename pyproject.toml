@@ -166,12 +166,14 @@ addopts = """
 """
 
 [tool.coverage.run]
-source = ["prompt_unifier"]
+source = ["src/prompt_unifier"]
 branch = true
+relative_files = true
 
 [tool.coverage.paths]
 source = [
-  "src/prompt_unifier",                                # Local path
+  "src/prompt_unifier",                                # Local path (relative)
+  "/root/travail/prompt-unifier/src/prompt_unifier",  # Local path (absolute)
   ".venv/lib/python*/site-packages/prompt_unifier",    # Venv path
   "/builds/waewoo/prompt-unifier/src/prompt_unifier"   # GitLab CI path
 ]

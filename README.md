@@ -370,14 +370,54 @@ If you want to contribute to the development of `prompt-unifier`:
 
 ### Running Checks
 
-This project uses a `Makefile` for common development tasks:
+This project uses a **Makefile-driven architecture** that serves as the single entry point for all
+development and CI/CD operations. Commands are organized into functional groups:
 
-- `make install`: Install dependencies.
-- `make test`: Run the test suite.
-- `make lint`: Check for linting issues with Ruff.
-- `make format`: Format code with Ruff.
-- `make typecheck`: Run static type analysis with mypy.
-- `make check`: Run all checks (lint, types, tests).
+#### Environment Setup
+
+- `make env-install`: Install dependencies and git hooks (first-time setup)
+- `make env-update`: Update all dependencies (refreshing lock file)
+- `make env-clean`: Cleanup temporary files and caches
+
+#### Application Development
+
+- `make app-run ARGS="--version"`: Run the CLI with arguments
+- `make app-lint`: Run static analysis (lint, format, types via pre-commit)
+- `make app-test`: Run unit tests with coverage
+- `make app-check-all`: Run FULL validation (lint + test + CI check)
+
+#### CI/CD Simulation
+
+- `make ci-pipeline`: Run FULL GitLab pipeline locally in Docker
+- `make ci-job JOB=<name>`: Run specific GitLab CI job locally
+- `make ci-validate`: Validate `.gitlab-ci.yml` syntax
+- `make ci-list`: List all available CI jobs
+- `make ci-image-build`: Build custom CI base Docker image
+- `make ci-image-push`: Push CI base image to registry
+
+#### Security Scanning
+
+- `make sec-all`: Run ALL security scans (code + secrets + deps)
+- `make sec-code`: SAST scan with Bandit
+- `make sec-secrets`: Secret detection
+- `make sec-deps`: Dependency vulnerability check with pip-audit
+
+#### Package & Release
+
+- `make pkg-build`: Build wheel/sdist packages
+- `make pkg-changelog`: Generate changelog
+- `make pkg-notes VERSION=x.y.z`: Generate release notes
+- `make pkg-publish VERSION_BUMP=<patch|minor|major>`: Create release and push tags
+- `make pkg-ci-bump`: Auto-bump version (CI only)
+- `make pkg-upload`: Upload to PyPI (CI only)
+
+#### Documentation
+
+- `make docs-install`: Install documentation dependencies
+- `make docs-live PORT=8000`: Serve docs locally with live reload
+- `make docs-build`: Build static documentation site
+
+Run `make help` to see all available targets with descriptions.
 
 ## Contributing
 

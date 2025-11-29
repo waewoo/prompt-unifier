@@ -45,9 +45,10 @@ Please report unacceptable behavior.
 1. **Install Dependencies**: Set up your local environment.
 
    ```bash
-   make install
-   poetry run pre-commit install
+   make env-install
    ```
+
+   This command installs all dependencies via Poetry AND installs pre-commit hooks automatically.
 
 1. **Create a Branch**: Create a new branch for your changes with a descriptive name.
 
@@ -62,7 +63,21 @@ Please report unacceptable behavior.
 1. **Run Quality Checks**: Before committing, ensure all checks pass.
 
    ```bash
-   make check
+   make app-check-all
+   ```
+
+   This runs linting, type checking, tests, and validates the CI configuration.
+
+   You can also run the full CI pipeline locally (requires Docker):
+
+   ```bash
+   make ci-pipeline
+   ```
+
+   For a full list of available commands, run:
+
+   ```bash
+   make help
    ```
 
 1. **Commit Your Changes**: Follow the [Commit Message Guidelines](#commit-message-guidelines).
@@ -74,10 +89,10 @@ Please report unacceptable behavior.
 
 - **Formatting**: We use [Ruff](https://github.com/astral-sh/ruff) to format our code. Your code
   will be automatically formatted on commit if you have the pre-commit hooks installed. You can also
-  run it manually with `make format`.
-- **Linting**: We use Ruff to check for style issues. Run `make lint` to check your code.
+  run it manually with `make app-lint`.
+- **Linting**: We use Ruff to check for style issues. Run `make app-lint` to check your code.
 - **Type Hinting**: All functions must have type hints. We use [mypy](http://mypy-lang.org/) in
-  `strict` mode to enforce this. Run `make typecheck` to verify.
+  `strict` mode to enforce this. Run `make app-lint` to verify (includes mypy via pre-commit).
 - **Line Length**: Maximum line length is 100 characters.
 
 ## Commit Message Guidelines
