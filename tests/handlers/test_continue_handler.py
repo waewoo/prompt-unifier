@@ -514,7 +514,7 @@ More content here."""
 
     def test_init_with_custom_base_path(self, tmp_path: Path):
         """Test initialization with custom base path."""
-        custom_base = Path("/tmp/custom_home")
+        custom_base = tmp_path / "custom_home"
         handler = ContinueToolHandler(base_path=custom_base)
 
         # Verify paths are correct

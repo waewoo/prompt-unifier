@@ -27,7 +27,7 @@ class TestConfigManagerToolHandlers:
             repo_url="https://example.com/repo.git",
             last_sync_timestamp="2023-01-01T12:00:00Z",
             last_sync_commit="abc1234",
-            storage_path="/tmp/storage",
+            storage_path=str(config_path.parent / "storage"),
             target_handlers=["continue", "cursor"],
         )
         config_manager.save_config(config_path, initial_config)
@@ -42,11 +42,11 @@ class TestConfigManagerToolHandlers:
         """Test loading config when target_handlers field is missing (should default to
         None)."""
         # Manually create a config file without target_handlers
-        config_content = """
+        config_content = f"""
 repo_url: https://example.com/repo.git
 last_sync_timestamp: "2023-01-01T12:00:00Z"
 last_sync_commit: abc1234
-storage_path: /tmp/storage
+storage_path: {config_path.parent / "storage"}
 """
         config_path.write_text(config_content)
 
@@ -60,7 +60,7 @@ storage_path: /tmp/storage
             repo_url="https://example.com/repo.git",
             last_sync_timestamp="2023-01-01T12:00:00Z",
             last_sync_commit="abc1234",
-            storage_path="/tmp/storage",
+            storage_path=str(config_path.parent / "storage"),
             target_handlers=["continue"],
         )
         config_manager.save_config(config_path, initial_config)
@@ -83,7 +83,7 @@ storage_path: /tmp/storage
             repo_url="https://example.com/repo.git",
             last_sync_timestamp="2023-01-01T12:00:00Z",
             last_sync_commit="abc1234",
-            storage_path="/tmp/storage",
+            storage_path=str(config_path.parent / "storage"),
             target_handlers=[],
         )
         config_manager.save_config(config_path, initial_config)

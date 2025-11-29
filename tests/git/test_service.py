@@ -177,7 +177,7 @@ class TestGitService:
                 # Verify fetch was called
                 mock_origin.fetch.assert_called_once()
 
-    def test_invalid_repository_url_raises_clear_error(self) -> None:
+    def test_invalid_repository_url_raises_clear_error(self, tmp_path: Path) -> None:
         """Test handling of invalid repository URL with clear error message."""
         service = GitService()
         invalid_url = "not-a-valid-url"
@@ -189,7 +189,7 @@ class TestGitService:
             )
 
             with patch("tempfile.TemporaryDirectory") as mock_tempdir:
-                mock_tempdir.return_value.__enter__.return_value = "/tmp/test"
+                mock_tempdir.return_value.__enter__.return_value = str(tmp_path / "test")
 
                 with pytest.raises(ValueError) as exc_info:
                     service.clone_to_temp(invalid_url)
@@ -222,7 +222,7 @@ class TestGitService:
                 # Verify the returned path matches what mkdtemp returned
                 assert repo_path == temp_path
 
-    def test_authentication_error_handling_with_helpful_message(self) -> None:
+    def test_authentication_error_handling_with_helpful_message(self, tmp_path: Path) -> None:
         """Test authentication error handling provides helpful message to user."""
         service = GitService()
         repo_url = "https://github.com/private/repo.git"
@@ -236,7 +236,7 @@ class TestGitService:
             )
 
             with patch("tempfile.TemporaryDirectory") as mock_tempdir:
-                mock_tempdir.return_value.__enter__.return_value = "/tmp/test"
+                mock_tempdir.return_value.__enter__.return_value = str(tmp_path / "test")
 
                 with pytest.raises(ValueError) as exc_info:
                     service.clone_to_temp(repo_url)
@@ -398,7 +398,7 @@ class TestGitServiceAdditionalCoverage:
                 # Vérifier que shutil.rmtree a été appelé
                 mock_rmtree.assert_called_once()
 
-    def test_clone_to_temp_with_retry_success(self):
+    def test_clone_to_temp_with_retry_success(self, tmp_path: Path):
         """Test clone_to_temp avec retry qui finit par réussir."""
         service = GitService()
 
@@ -418,9 +418,9 @@ class TestGitServiceAdditionalCoverage:
             mock_clone.side_effect = clone_side_effect
 
             with patch("time.sleep"):
-                with patch("tempfile.mkdtemp", return_value="/tmp/test"):
+                with patch("tempfile.mkdtemp", return_value=str(tmp_path / "test")):
                     result_path, result_repo = service.clone_to_temp("https://example.com/repo.git")
-                    assert result_path == Path("/tmp/test")
+                    assert result_path == tmp_path / "test"
                     assert result_repo == mock_repo
                     assert call_count == 3
 
@@ -436,7 +436,7 @@ class TestGitServiceAdditionalCoverage:
         result = service.get_latest_commit(mock_repo)
         assert result == "1234567"  # 7 premiers caractères
 
-    def test_extract_prompts_dir_missing_directory(self):
+    def test_extract_prompts_dir_missing_directory(self, tmp_path: Path):
         """Test extract_prompts_dir quand le répertoire prompts n'existe pas."""
         service = GitService()
 
@@ -444,9 +444,9 @@ class TestGitServiceAdditionalCoverage:
             with pytest.raises(
                 ValueError, match="Repository does not contain a prompts/ directory"
             ):
-                service.extract_prompts_dir(Path("/tmp/repo"), Path("/tmp/target"))
+                service.extract_prompts_dir(tmp_path / "repo", tmp_path / "target")
 
-    def test_extract_prompts_dir_not_a_directory(self):
+    def test_extract_prompts_dir_not_a_directory(self, tmp_path: Path):
         """Test extract_prompts_dir quand prompts n'est pas un répertoire."""
         service = GitService()
 
@@ -455,9 +455,9 @@ class TestGitServiceAdditionalCoverage:
                 with pytest.raises(
                     ValueError, match="Repository does not contain a prompts/ directory"
                 ):
-                    service.extract_prompts_dir(Path("/tmp/repo"), Path("/tmp/target"))
+                    service.extract_prompts_dir(tmp_path / "repo", tmp_path / "target")
 
-    def test_extract_prompts_dir_with_rules(self):
+    def test_extract_prompts_dir_with_rules(self, tmp_path: Path):
         """Test extract_prompts_dir avec un répertoire rules existant."""
         service = GitService()
 
@@ -471,18 +471,18 @@ class TestGitServiceAdditionalCoverage:
 
                     mock_exists.return_value = True
 
-                    service.extract_prompts_dir(Path("/tmp/repo"), Path("/tmp/target"))
+                    service.extract_prompts_dir(tmp_path / "repo", tmp_path / "target")
 
                     # Vérifier que copytree a été appelé 2 fois (prompts et rules)
                     assert mock_copytree.call_count == 2
 
-    def test_check_remote_updates_with_fetch_error(self):
+    def test_check_remote_updates_with_fetch_error(self, tmp_path: Path):
         """Test check_remote_updates avec une erreur de fetch."""
         service = GitService()
 
         with patch.object(service, "clone_to_temp") as mock_clone:
             mock_repo = Mock()
-            mock_clone.return_value = (Path("/tmp/repo"), mock_repo)
+            mock_clone.return_value = (tmp_path / "repo", mock_repo)
 
             mock_remote = Mock()
             mock_repo.remote.return_value = mock_remote
@@ -497,13 +497,13 @@ class TestGitServiceAdditionalCoverage:
                 with pytest.raises(ConnectionError, match="Git fetch failed"):
                     service.check_remote_updates("https://example.com/repo.git", "abc123")
 
-    def test_check_remote_updates_cannot_determine_branch(self):
+    def test_check_remote_updates_cannot_determine_branch(self, tmp_path: Path):
         """Test check_remote_updates quand on ne peut pas déterminer la branche par défaut."""
         service = GitService()
 
         with patch.object(service, "clone_to_temp") as mock_clone:
             mock_repo = Mock()
-            mock_clone.return_value = (Path("/tmp/repo"), mock_repo)
+            mock_clone.return_value = (tmp_path / "repo", mock_repo)
 
             mock_remote = Mock()
             mock_repo.remote.return_value = mock_remote
@@ -524,13 +524,13 @@ class TestGitServiceAdditionalCoverage:
                 assert isinstance(has_updates, bool)
                 assert isinstance(commits_behind, int)
 
-    def test_check_remote_updates_commit_range_error(self):
+    def test_check_remote_updates_commit_range_error(self, tmp_path: Path):
         """Test check_remote_updates avec une erreur de gamme de commits."""
         service = GitService()
 
         with patch.object(service, "clone_to_temp") as mock_clone:
             mock_repo = Mock()
-            mock_clone.return_value = (Path("/tmp/repo"), mock_repo)
+            mock_clone.return_value = (tmp_path / "repo", mock_repo)
 
             mock_remote = Mock()
             mock_repo.remote.return_value = mock_remote

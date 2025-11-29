@@ -110,7 +110,7 @@ class TestEncodingValidator:
         assert issues[0].code == ErrorCode.INVALID_ENCODING.value
         assert issues[0].severity == ValidationSeverity.ERROR
 
-    def test_permission_error_handling(self):
+    def test_permission_error_handling(self, tmp_path: Path):
         """Test permission error handling."""
         validator = EncodingValidator()
 
@@ -120,7 +120,7 @@ class TestEncodingValidator:
         ):
             mock_read.side_effect = PermissionError("Permission denied")
 
-            test_file = Path("/tmp/test.md")
+            test_file = tmp_path / "test.md"
             content, issues = validator.validate_encoding(test_file)
 
             assert content is None
@@ -129,7 +129,7 @@ class TestEncodingValidator:
             assert issues[0].code == ErrorCode.INVALID_ENCODING.value
             assert "Permission denied" in issues[0].message
 
-    def test_os_error_variants(self):
+    def test_os_error_variants(self, tmp_path: Path):
         """Test different OSError variants."""
         validator = EncodingValidator()
 
@@ -144,7 +144,7 @@ class TestEncodingValidator:
             with patch("pathlib.Path.read_bytes") as mock_read:
                 mock_read.side_effect = error
 
-                test_file = Path("/tmp/test.md")
+                test_file = tmp_path / "test.md"
                 content, issues = validator.validate_encoding(test_file)
 
                 assert content is None
@@ -158,7 +158,7 @@ class TestEncodingValidator:
                     or "does not exist" in issues[0].message
                 )
 
-    def test_unicode_decode_error_variants(self):
+    def test_unicode_decode_error_variants(self, tmp_path: Path):
         """Test different UnicodeDecodeError variants."""
         validator = EncodingValidator()
 
@@ -175,7 +175,7 @@ class TestEncodingValidator:
         ]
 
         for i, invalid_bytes in enumerate(test_cases):
-            test_file = Path(f"/tmp/invalid_{i}.md")
+            test_file = tmp_path / f"invalid_{i}.md"
             test_file.write_bytes(invalid_bytes)
 
             content, issues = validator.validate_encoding(test_file)
@@ -190,13 +190,13 @@ class TestEncodingValidator:
             if test_file.exists():
                 test_file.unlink()
 
-    def test_file_not_found_with_complex_path(self):
+    def test_file_not_found_with_complex_path(self, tmp_path: Path):
         """Test FileNotFoundError with complex paths."""
         validator = EncodingValidator()
 
         # Complex paths that don't exist
         complex_paths = [
-            Path("/tmp/nonexistent/deeply/nested/file.md"),
+            tmp_path / "nonexistent/deeply/nested/file.md",
             Path("./relative/nonexistent/file.md"),
             Path("~/nonexistent/file.md").expanduser(),
         ]
@@ -213,7 +213,7 @@ class TestEncodingValidator:
                 or "does not exist" in issues[0].message.lower()
             )
 
-    def test_encoding_with_special_file_names(self):
+    def test_encoding_with_special_file_names(self, tmp_path: Path):
         """Test encoding with special file names."""
         validator = EncodingValidator()
 
@@ -229,7 +229,7 @@ class TestEncodingValidator:
         ]
 
         for name in special_names:
-            test_file = Path(f"/tmp/{name}")
+            test_file = tmp_path / name
             test_file.write_text("Valid UTF-8 content", encoding="utf-8")
 
             content, issues = validator.validate_encoding(test_file)
@@ -242,14 +242,14 @@ class TestEncodingValidator:
             if test_file.exists():
                 test_file.unlink()
 
-    def test_encoding_with_very_long_content(self):
+    def test_encoding_with_very_long_content(self, tmp_path: Path):
         """Test encoding with very long content."""
         validator = EncodingValidator()
 
         # Create very long content
         long_content = "Test line\n" * 10000  # 10000 lines
 
-        test_file = Path("/tmp/long_content.md")
+        test_file = tmp_path / "long_content.md"
         test_file.write_text(long_content, encoding="utf-8")
 
         content, issues = validator.validate_encoding(test_file)
@@ -263,14 +263,14 @@ class TestEncodingValidator:
         if test_file.exists():
             test_file.unlink()
 
-    def test_encoding_with_mixed_line_endings(self):
+    def test_encoding_with_mixed_line_endings(self, tmp_path: Path):
         """Test encoding with different line ending types."""
         validator = EncodingValidator()
 
         # Create content with different line ending types
         mixed_content = "Line 1\nLine 2\r\nLine 3\rLine 4\n"
 
-        test_file = Path("/tmp/mixed_lines.md")
+        test_file = tmp_path / "mixed_lines.md"
         test_file.write_text(mixed_content, encoding="utf-8")
 
         content, issues = validator.validate_encoding(test_file)
@@ -286,7 +286,7 @@ class TestEncodingValidator:
         if test_file.exists():
             test_file.unlink()
 
-    def test_encoding_with_unicode_bom_variants(self):
+    def test_encoding_with_unicode_bom_variants(self, tmp_path: Path):
         """Test different BOM (Byte Order Mark) variants."""
         validator = EncodingValidator()
 
@@ -302,7 +302,7 @@ class TestEncodingValidator:
         content = "Test content with BOM"
 
         for bom_bytes, description in bom_types:
-            test_file = Path(f"/tmp/bom_{description.replace(' ', '_').lower()}.md")
+            test_file = tmp_path / f"bom_{description.replace(' ', '_').lower()}.md"
             test_file.write_bytes(bom_bytes + content.encode("utf-8"))
 
             file_content, issues = validator.validate_encoding(test_file)
@@ -322,7 +322,7 @@ class TestEncodingValidator:
             if test_file.exists():
                 test_file.unlink()
 
-    def test_encoding_with_control_characters(self):
+    def test_encoding_with_control_characters(self, tmp_path: Path):
         """Test encoding with control characters."""
         validator = EncodingValidator()
 
@@ -360,7 +360,7 @@ class TestEncodingValidator:
         ]
 
         for char in control_chars:
-            test_file = Path(f"/tmp/control_{ord(char):02x}.md")
+            test_file = tmp_path / f"control_{ord(char):02x}.md"
             content_with_control = f"Before{char}After"
             test_file.write_text(content_with_control, encoding="utf-8")
 
@@ -375,7 +375,7 @@ class TestEncodingValidator:
             if test_file.exists():
                 test_file.unlink()
 
-    def test_encoding_with_surrogate_pairs(self):
+    def test_encoding_with_surrogate_pairs(self, tmp_path: Path):
         """Test encoding with Unicode surrogate pairs."""
         validator = EncodingValidator()
 
@@ -393,7 +393,7 @@ class TestEncodingValidator:
         ]
 
         for char in surrogate_chars:
-            test_file = Path(f"/tmp/surrogate_{ord(char):x}.md")
+            test_file = tmp_path / f"surrogate_{ord(char):x}.md"
             content_with_emoji = f"Text with emoji: {char}"
             test_file.write_text(content_with_emoji, encoding="utf-8")
 
@@ -407,7 +407,7 @@ class TestEncodingValidator:
             if test_file.exists():
                 test_file.unlink()
 
-    def test_encoding_with_invalid_utf8_sequences(self):
+    def test_encoding_with_invalid_utf8_sequences(self, tmp_path: Path):
         """Test with specific invalid UTF-8 sequences."""
         validator = EncodingValidator()
 
@@ -426,7 +426,7 @@ class TestEncodingValidator:
         ]
 
         for i, invalid_seq in enumerate(invalid_sequences):
-            test_file = Path(f"/tmp/invalid_utf8_{i}.md")
+            test_file = tmp_path / f"invalid_utf8_{i}.md"
             test_file.write_bytes(invalid_seq)
 
             content, issues = validator.validate_encoding(test_file)
@@ -441,12 +441,12 @@ class TestEncodingValidator:
             if test_file.exists():
                 test_file.unlink()
 
-    def test_encoding_with_mixed_encodings(self):
+    def test_encoding_with_mixed_encodings(self, tmp_path: Path):
         """Test with files containing mixed encodings."""
         validator = EncodingValidator()
 
         # Create a file with valid UTF-8 followed by invalid sequences
-        test_file = Path("/tmp/mixed_encoding.md")
+        test_file = tmp_path / "mixed_encoding.md"
 
         # Valid UTF-8
         valid_utf8 = "This is valid UTF-8 text.\n"
@@ -470,11 +470,11 @@ class TestEncodingValidator:
         if test_file.exists():
             test_file.unlink()
 
-    def test_encoding_with_empty_file_after_bom(self):
+    def test_encoding_with_empty_file_after_bom(self, tmp_path: Path):
         """Test with BOM followed by nothing."""
         validator = EncodingValidator()
 
-        test_file = Path("/tmp/bom_empty.md")
+        test_file = tmp_path / "bom_empty.md"
         # UTF-8 BOM alone
         test_file.write_bytes(b"\xef\xbb\xbf")
 
@@ -490,14 +490,14 @@ class TestEncodingValidator:
         if test_file.exists():
             test_file.unlink()
 
-    def test_encoding_validator_reuse(self):
+    def test_encoding_validator_reuse(self, tmp_path: Path):
         """Test that validator can be reused multiple times."""
         validator = EncodingValidator()
 
         # Create multiple test files
         test_files = []
         for i in range(5):
-            test_file = Path(f"/tmp/reuse_test_{i}.md")
+            test_file = tmp_path / f"reuse_test_{i}.md"
             if i % 2 == 0:
                 # Valid files
                 test_file.write_text(f"Valid content {i}", encoding="utf-8")
@@ -526,16 +526,16 @@ class TestEncodingValidator:
     @pytest.mark.skipif(
         platform.system() == "Windows", reason="Symlinks require elevated privileges on Windows"
     )
-    def test_encoding_with_symlink(self):
+    def test_encoding_with_symlink(self, tmp_path: Path):
         """Test encoding with symbolic links."""
         validator = EncodingValidator()
 
         # Create a target file
-        target_file = Path("/tmp/symlink_target.md")
+        target_file = tmp_path / "symlink_target.md"
         target_file.write_text("Target file content", encoding="utf-8")
 
         # Create a symbolic link
-        symlink_file = Path("/tmp/symlink.md")
+        symlink_file = tmp_path / "symlink.md"
         if symlink_file.exists() or symlink_file.is_symlink():
             symlink_file.unlink()
         symlink_file.symlink_to(target_file)
@@ -553,12 +553,12 @@ class TestEncodingValidator:
         if target_file.exists():
             target_file.unlink()
 
-    def test_encoding_with_binary_file(self):
+    def test_encoding_with_binary_file(self, tmp_path: Path):
         """Test encoding with binary file."""
         validator = EncodingValidator()
 
         # Create a binary file
-        test_file = Path("/tmp/binary_file.md")
+        test_file = tmp_path / "binary_file.md"
         binary_data = bytes(range(256))  # All bytes from 0 to 255
         test_file.write_bytes(binary_data)
 
