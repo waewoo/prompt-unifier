@@ -92,4 +92,4 @@ repos:
             - mdformat-gfm
             - mdformat-frontmatter
         args: [--wrap=100]
-        exclude: (^\..*|agent-os/.*|CHANGELOG\.md)
+        exclude: (^\..*|agent-os/.*|CHANGELOG\.md|docs/reference/cli-commands\.md)

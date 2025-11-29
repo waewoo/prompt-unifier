@@ -998,6 +998,22 @@ i18n = ["babel (>=2.9.0)"]
 min-versions = ["babel (==2.9.0)", "click (==7.0)", "colorama (==0.4) ; platform_system == \"Windows\"", "ghp-import (==1.0)", "importlib-metadata (==4.4) ; python_version < \"3.10\"", "jinja2 (==2.11.1)", "markdown (==3.3.6)", "markupsafe (==2.0.1)", "mergedeep (==1.3.4)", "mkdocs-get-deps (==0.2.0)", "packaging (==20.5)", "pathspec (==0.11.1)", "pyyaml (==5.1)", "pyyaml-env-tag (==0.1)", "watchdog (==2.0)"]
 
 [[package]]
+name = "mkdocs-click"
+version = "0.9.0"
+description = "An MkDocs extension to generate documentation for Click command line applications"
+optional = false
+python-versions = ">=3.9"
+groups = ["docs"]
+files = [
+    {file = "mkdocs_click-0.9.0-py3-none-any.whl", hash = "sha256:5208e828f4f68f63c847c1ef7be48edee9964090390afc8f5b3d4cbe5ea9bbed"},
+    {file = "mkdocs_click-0.9.0.tar.gz", hash = "sha256:6050917628d4740517541422b607404d044117bc31b770c4f9e9e1939a50c908"},
+]
+
+[package.dependencies]
+click = ">=8.1"
+markdown = ">=3.3"
+
+[[package]]
 name = "mkdocs-get-deps"
 version = "0.2.0"
 description = "MkDocs extension that lists all dependencies according to a mkdocs.yml file"
@@ -2357,4 +2373,4 @@ dev = ["pytest", "setuptools"]
 [metadata]
 lock-version = "2.1"
 python-versions = ">=3.11,<4.0"
-content-hash = "a99645bee21bf322fe967302282c2c87b8c0b6928246c80a5a1ce564adf0a7b9"
+content-hash = "add35d36d4f920b2c4a2b07f6faf66f7c5fe58d64a325901953443d0308fd83a"

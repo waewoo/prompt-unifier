@@ -237,5 +237,9 @@ def main() -> None:
     app()
 
 
+# Expose the Click command object for mkdocs-click documentation generation
+typer_click_object = typer.main.get_command(app)
+
+
 if __name__ == "__main__":
     main()

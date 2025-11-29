@@ -5,18 +5,19 @@
 ### Install dependencies
 
 ```bash
-poetry install --with docs
+make docs-install
 # Dependencies now include:
 # - mkdocs-material
 # - mkdocs-git-revision-date-localized-plugin
 # - mkdocs-minify-plugin
 # - mkdocs-include-markdown-plugin
+# - mkdocs-click
 ```
 
 ### Preview locally
 
 ```bash
-poetry run mkdocs serve
+make docs-live
 ```
 
 Open [http://localhost:8000](http://localhost:8000) in your browser.
@@ -24,7 +25,7 @@ Open [http://localhost:8000](http://localhost:8000) in your browser.
 ### Build static site
 
 ```bash
-poetry run mkdocs build
+make docs-build
 ```
 
 ## Deployment

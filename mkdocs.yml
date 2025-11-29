@@ -42,9 +42,12 @@ plugins:
       enable_git_follow: false
   - minify:
       minify_html: true
-  - include-markdown
+  - include-markdown:
+      opening_token: "{!"
+      closing_token: "!}"
 
 markdown_extensions:
+  - mkdocs-click
   - pymdownx.highlight:
       anchor_linenums: true
   - pymdownx.superfences:
@@ -71,6 +74,10 @@ nav:
   - Usage:
       - Basic Usage: usage/basic.md
       - Advanced Usage: usage/advanced.md
+      - Supported Tools:
+          - Overview: usage/tools/index.md
+          - Continue: usage/tools/continue.md
+          - Kilo Code: usage/tools/kilo-code.md
       - Creating Prompts (SCAFF): usage/creating-prompts.md
       - Examples: usage/examples.md
   - Configuration: configuration.md
@@ -79,6 +86,7 @@ nav:
   - Development:
       - Guide: development/index.md
       - Makefile Reference: development/makefile.md
+      - Documentation Guide: development/documentation-guide.md
   - Changelog: changelog.md
   - License: license.md
 

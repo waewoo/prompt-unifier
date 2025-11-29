@@ -165,8 +165,10 @@ pipeline is defined in `.gitlab-ci.yml` and delegates all logic to Makefile targ
 
 ### Architecture Overview
 
-```
-.gitlab-ci.yml (orchestration) → Makefile (logic) → Poetry/Tools
+```mermaid
+graph LR
+    A["gitlab-ci.yml (orchestration)"] --> B["Makefile (logic)"]
+    B --> C["Poetry/Tools"]
 ```
 
 **Key Benefits:**
@@ -260,16 +262,93 @@ make ci-clean
 
 The pipeline uses GitLab's `needs` keyword for parallel execution:
 
-```
-setup-deps
-    ├── app-lint ────┐
-    ├── app-test ────┤
-    ├── sec-all ─────┼──→ pkg-ci-bump → pkg-gitlab-release → pkg-upload
-    ├── pkg-build ───┤
-    └── docs-build ──┘
+```mermaid
+graph TD
+    setup_deps[setup-deps] --> app_lint[app-lint]
+    setup_deps --> app_test[app-test]
+    setup_deps --> sec_all[sec-all]
+    setup_deps --> pkg_build[pkg-build]
+    setup_deps --> docs_build[docs-build]
+
+    app_lint --> pkg_ci_bump
+    app_test --> pkg_ci_bump
+    sec_all --> pkg_ci_bump
+    pkg_build --> pkg_ci_bump
+    docs_build --> pkg_ci_bump
+
+    pkg_ci_bump[pkg-ci-bump] --> pkg_gitlab_release[pkg-gitlab-release]
+    pkg_gitlab_release --> pkg_upload[pkg-upload]
 ```
 
 Quality, security, and build stages run **in parallel** immediately after dependencies are ready.
+
+### Pipeline Workflows & Triggers
+
+To optimize resources and ensure stability, the pipeline behaves differently depending on the
+context (branch, event, tag).
+
+#### 1. Feature Branch (Push without MR)
+
+*You are coding on `feat/my-feature` but haven't opened a Merge Request yet.*
+
+- **Launched:** 🚫 Nothing.
+- **Why?** We save CI minutes while you are drafting. The pipeline only triggers when you are ready
+  to merge.
+
+#### 2. Merge Request (Code Review)
+
+*You open a MR from `feat/my-feature` to `main`.*
+
+- **Goal:** Validate quality and security before merging.
+- **Jobs Launched:**
+  - ✅ `setup-deps`: Prepare environment
+  - ✅ `app-lint`: Style & static analysis
+  - ✅ `app-test`: Unit tests
+  - ✅ `app-sonar`: SonarQube analysis
+  - ✅ `sec-all`: Security scans
+  - ⚠️ `docs-build`: **Conditional** (Runs only if `docs/` or `mkdocs.yml` changed)
+- **Skipped:** `pkg-build`, `release`, `pages` (No deployment from dev branches).
+
+#### 3. Main Branch (After Merge)
+
+*Your MR is merged into `main`.*
+
+- **Goal:** Verify integration, build candidate artifact, update dev docs.
+- **Jobs Launched:**
+  - ✅ `setup-deps`
+  - ✅ `app-lint`, `app-test`, `sec-all` (Double-check on stable branch)
+  - ✅ `pkg-build` (Verify packaging)
+  - ⚠️ `docs-build` (Conditional)
+  - ✅ `pages` (Deploy documentation to public URL)
+- **Manual Action:**
+  - ⏸️ `pkg-ci-bump`: Ready to be clicked if you want to create a new version/release.
+
+#### 4. Tag (Release, e.g., `v1.0.0`)
+
+*You triggered `pkg-ci-bump` or pushed a tag manually.*
+
+- **Goal:** Delivery. No re-testing (code is identical to `main`).
+- **Jobs Launched:**
+  - ✅ `setup-deps`
+  - ✅ `pkg-build` (Build official package with version number)
+  - ✅ `docs-build` (Rebuild docs with official version)
+  - ✅ `pkg-gitlab-release` (Create GitLab Release)
+  - ✅ `pkg-upload` (Publish to PyPI)
+  - ✅ `pages` (Update public site)
+- **Skipped:** Quality & Security checks (already passed on `main`).
+
+#### Summary Table
+
+| Job / Stage             | Feature (No MR) |  Merge Request  |  Main (Merge)   | Tag (Release) |
+| :---------------------- | :-------------: | :-------------: | :-------------: | :-----------: |
+| **Setup**               |       ⬜        |       ✅        |       ✅        |      ✅       |
+| **Quality** (Lint/Test) |       ⬜        |       ✅        |       ✅        |      ❌       |
+| **Security**            |       ⬜        |       ✅        |       ✅        |      ❌       |
+| **Build Package**       |       ⬜        |       ❌        |       ✅        |      ✅       |
+| **Build Doc**           |       ⬜        | ⚠️ (If changed) | ⚠️ (If changed) |  ✅ (Always)  |
+| **Bump Version**        |       ⬜        |       ❌        |   ⏸️ (Manual)   |      ❌       |
+| **Upload / Release**    |       ⬜        |       ❌        |       ❌        |      ✅       |
+| **Deploy Pages**        |       ⬜        |       ❌        |       ✅        |      ✅       |
 
 ______________________________________________________________________
 
@@ -348,29 +427,24 @@ prompt-unifier/
 └── README.md             # User-facing documentation
 ```
 
-______________________________________________________________________
-
 ## Architecture
 
 The data flows from your Git repositories to a central storage location on your machine, and then is
 deployed to the AI tools in your project.
 
-```text
-┌──────────────────────────┐      ┌───────────────────────────┐      ┌───────────────────────────┐
-│                          │      │                           │      │                           │
-│   Git Repository 1       ├─┐    │                           │      │    AI Assistant           │
-│  (Global Prompts)        │ │    │                           │      │    (e.g., Continue)       │
-│                          │ │    │                           │      │                           │
-└──────────────────────────┘ │    │                           │      └───────────────────────────┘
-                             │    │                           │                 ▲
-                             ├────►   Centralized Storage     ├─────────────────┘
-                             │    │ (~/.prompt-unifier/storage)│      (deploy)
-┌──────────────────────────┐ │    │                           │
-│                          │ │    │                           │
-│   Git Repository 2       ├─┘    │                           │
-│   (Team Prompts)         │(sync)│                           │
-│                          │      │                           │
-└──────────────────────────┘      └───────────────────────────┘
+```mermaid
+graph LR
+    subgraph Git Repositories
+        repo1["Git Repository 1<br>(Global Prompts)"]
+        repo2["Git Repository 2<br>(Team Prompts)"]
+    end
+
+    repo1 --> sync[Sync]
+    repo2 --> sync
+
+    sync[Sync] --> storage["Centralized Storage<br>(~/.prompt-unifier/storage)"]
+
+    storage -- deploy --> ai_assistant["AI Assistant<br>(e.g., Continue)"]
 ```
 
 ______________________________________________________________________
