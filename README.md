@@ -232,11 +232,11 @@ Checks prompt and rule files for correct YAML frontmatter, required fields, and 
 
 **Options:**
 
-- <code>\[DIRECTORY\]</code>: Optional. Directory to validate (defaults to synchronized storage).
+- <code>[DIRECTORY]</code>: Optional. Directory to validate (defaults to synchronized storage).
 - <code>--json</code>: Output validation results in JSON format.
 - <code>--type TEXT</code>, <code>-t TEXT</code>: Specify content type to validate: 'all',
-  'prompts', or 'rules' \[default: 'all'\].
-- <code>--scaff/--no-scaff</code>: Enable/disable SCAFF methodology validation \[default: enabled\].
+  'prompts', or 'rules' [default: 'all'].
+- <code>--scaff/--no-scaff</code>: Enable/disable SCAFF methodology validation [default: enabled].
 
 **SCAFF Validation:**
 

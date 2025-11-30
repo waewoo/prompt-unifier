@@ -6,6 +6,7 @@ from unittest.mock import patch
 import pytest
 from pydantic import ValidationError
 
+import prompt_unifier.models.scaff  # noqa: F401
 from prompt_unifier.core.content_parser import ContentFileParser, parse_content_file
 from prompt_unifier.models import PromptFrontmatter, RuleFile
 from prompt_unifier.models.prompt import PromptFile
@@ -295,7 +296,7 @@ class TestContentParserAdditionalCoverage:
 
         # Créer un fichier sans séparateur YAML valide
         test_file = tmp_path / "no_separator.md"
-        test_file.write_text("Contenu sans frontmatter valide")
+        test_file.write_text("Contenu sans frontmatter valide", encoding="utf-8")
 
         with pytest.raises(ValueError, match="separator validation failed"):
             parser.parse_file(test_file)
@@ -306,12 +307,15 @@ class TestContentParserAdditionalCoverage:
 
         # Créer un fichier avec du YAML invalide
         test_file = tmp_path / "invalid_yaml.md"
-        test_file.write_text("""---
+        test_file.write_text(
+            """---
 nom: test
   description: test
 invalid yaml
 ---
-content""")
+content""",
+            encoding="utf-8",
+        )
 
         with pytest.raises(ValueError, match="invalid yaml"):
             parser.parse_file(test_file)
@@ -323,11 +327,14 @@ content""")
         # Créer un fichier dans un répertoire qui n'est ni prompts ni rules
         test_file = tmp_path / "unknown" / "test.md"
         test_file.parent.mkdir()
-        test_file.write_text("""---
+        test_file.write_text(
+            """---
 title: test
 description: test
 ---
-content""")
+content""",
+            encoding="utf-8",
+        )
 
         # Forcer le type de contenu à être inconnu
         with patch.object(parser, "_determine_content_type", return_value="unknown"):
@@ -341,12 +348,15 @@ content""")
         # Créer un fichier avec un champ 'type'
         test_file = tmp_path / "prompts" / "test.md"
         test_file.parent.mkdir()
-        test_file.write_text("""---
+        test_file.write_text(
+            """---
 title: test
 description: test
 type: prompt
 ---
-content""")
+content""",
+            encoding="utf-8",
+        )
 
         result = parser.parse_file(test_file)
         assert isinstance(result, PromptFile)
@@ -361,12 +371,15 @@ content""")
         # Créer un fichier avec des données qui causeront une erreur de validation
         test_file = tmp_path / "prompts" / "invalid.md"
         test_file.parent.mkdir()
-        test_file.write_text("""---
+        test_file.write_text(
+            """---
 title: test
 description: test
 version: not-a-semver
 ---
-content""")
+content""",
+            encoding="utf-8",
+        )
 
         # validate_file ne lève pas d'exception, il retourne un ValidationResult
         # avec status="failed"
@@ -381,7 +394,7 @@ content""")
 
         # Créer un fichier sans séparateur valide
         test_file = tmp_path / "invalid.md"
-        test_file.write_text("invalid content without proper separators")
+        test_file.write_text("invalid content without proper separators", encoding="utf-8")
 
         # validate_file ne lève pas d'exception, il retourne un ValidationResult
         # avec status="failed"
@@ -424,11 +437,14 @@ content""")
         """Test la fonction utilitaire parse_content_file."""
         test_file = tmp_path / "prompts" / "test.md"
         test_file.parent.mkdir()
-        test_file.write_text("""---
+        test_file.write_text(
+            """---
 title: test
 description: test
 ---
-content""")
+content""",
+            encoding="utf-8",
+        )
 
         result = parse_content_file(test_file)
         assert isinstance(result, PromptFile)
@@ -438,7 +454,7 @@ content""")
     def test_parse_content_file_error(self, tmp_path: Path):
         """Test parse_content_file avec une erreur."""
         test_file = tmp_path / "invalid.md"
-        test_file.write_text("invalid content")
+        test_file.write_text("invalid content", encoding="utf-8")
 
         with pytest.raises(ValueError, match="separator validation failed"):
             parse_content_file(test_file)
@@ -449,11 +465,14 @@ content""")
 
         test_file = tmp_path / "prompts" / "test.md"
         test_file.parent.mkdir()
-        test_file.write_text("""+++
+        test_file.write_text(
+            """+++
 title: test
 description: test
 +++
-content""")
+content""",
+            encoding="utf-8",
+        )
 
         result = parser.parse_file(test_file)
         assert isinstance(result, PromptFile)
@@ -465,7 +484,8 @@ content""")
 
         test_file = tmp_path / "prompts" / "complex.md"
         test_file.parent.mkdir()
-        test_file.write_text("""---
+        test_file.write_text(
+            """---
 title: Complex Prompt
 description: A complex prompt with multiple fields
 category: testing
@@ -477,7 +497,9 @@ language: en
 This is the content body
 with multiple lines
 and special characters: àáâãäåæçèéêë 🚀 🎉
-""")
+""",
+            encoding="utf-8",
+        )
 
         result = parser.parse_file(test_file)
         assert isinstance(result, PromptFile)
@@ -497,11 +519,14 @@ and special characters: àáâãäåæçèéêë 🚀 🎉
 
         test_file = tmp_path / "prompts" / "minimal.md"
         test_file.parent.mkdir()
-        test_file.write_text("""---
+        test_file.write_text(
+            """---
 title: Minimal
 description: A minimal prompt
 ---
-Minimal content""")
+Minimal content""",
+            encoding="utf-8",
+        )
 
         result = parser.parse_file(test_file)
         assert isinstance(result, PromptFile)
@@ -515,11 +540,14 @@ Minimal content""")
 
         test_file = tmp_path / "prompts" / "empty_body.md"
         test_file.parent.mkdir()
-        test_file.write_text("""---
+        test_file.write_text(
+            """---
 title: Empty Body
 description: A prompt with empty body
 ---
-Some minimal content""")
+Some minimal content""",
+            encoding="utf-8",
+        )
 
         result = parser.parse_file(test_file)
         assert isinstance(result, PromptFile)
@@ -533,7 +561,8 @@ Some minimal content""")
 
         test_file = tmp_path / "prompts" / "multiline.md"
         test_file.parent.mkdir()
-        test_file.write_text("""---
+        test_file.write_text(
+            """---
 title: Multiline
 description: A multiline prompt
 ---
@@ -541,7 +570,9 @@ First line
 
 Second line
 
-Third line""")
+Third line""",
+            encoding="utf-8",
+        )
 
         result = parser.parse_file(test_file)
         assert isinstance(result, PromptFile)
@@ -557,7 +588,8 @@ Third line""")
 
         test_file = tmp_path / "prompts" / "special_chars.md"
         test_file.parent.mkdir()
-        test_file.write_text("""---
+        test_file.write_text(
+            """---
 title: Special Characters
 description: Prompt with unicode characters
 ---
@@ -567,7 +599,9 @@ And some code:
 def hello():
     print("Hello, world!")
 ```
-""")
+""",
+            encoding="utf-8",
+        )
 
         result = parser.parse_file(test_file)
         assert isinstance(result, PromptFile)
@@ -583,12 +617,15 @@ def hello():
 
         test_file = tmp_path / "prompts" / "quotes.md"
         test_file.parent.mkdir()
-        test_file.write_text("""---
+        test_file.write_text(
+            """---
 title: "Prompt with quotes"
 description: 'Description with "quotes"'
 tags: ["tag with spaces", 'single quoted']
 ---
-Content""")
+Content""",
+            encoding="utf-8",
+        )
 
         result = parser.parse_file(test_file)
         assert isinstance(result, PromptFile)
@@ -603,11 +640,14 @@ Content""")
         # Test avec un chemin très imbriqué
         test_file = tmp_path / "very" / "deeply" / "nested" / "path" / "prompts" / "test.md"
         test_file.parent.mkdir(parents=True)
-        test_file.write_text("""---
+        test_file.write_text(
+            """---
 title: Nested Path
 description: A deeply nested prompt
 ---
-Content""")
+Content""",
+            encoding="utf-8",
+        )
 
         result = parser.parse_file(test_file)
         assert isinstance(result, PromptFile)
@@ -620,13 +660,16 @@ Content""")
 
         test_file = tmp_path / "rules" / "python_rule.md"
         test_file.parent.mkdir(parents=True)
-        test_file.write_text("""---
+        test_file.write_text(
+            """---
 title: Python Rule
 description: Rule for Python files
 category: coding-standards
 applies_to: ["*.py", "*.pyx"]
 ---
-This rule applies to Python files""")
+This rule applies to Python files""",
+            encoding="utf-8",
+        )
 
         result = parser.parse_file(test_file)
         assert isinstance(result, RuleFile)
@@ -639,11 +682,14 @@ This rule applies to Python files""")
 
         test_file = tmp_path / "prompts" / "valid.md"
         test_file.parent.mkdir(parents=True)
-        test_file.write_text("""---
+        test_file.write_text(
+            """---
 title: Valid Prompt
 description: A valid prompt for testing
 ---
-This is valid content.""")
+This is valid content.""",
+            encoding="utf-8",
+        )
 
         result = parser.validate_file(test_file)
         assert result.status == "passed"

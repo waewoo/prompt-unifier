@@ -30,7 +30,9 @@ def mock_storage_dir(tmp_path: Path):
     (prompts_dir / "prompt2.md").write_text("---\nname: Prompt 2\ntags: [tag2]\n---\nContent")
 
     # Create a rule
-    (rules_dir / "rule1.md").write_text("---\nname: Rule 1\ncategory: style\n---\nContent")
+    (rules_dir / "rule1.md").write_text(
+        "---\nname: Rule 1\ncategory: coding-standards\n---\nContent"
+    )
 
     return tmp_path
 

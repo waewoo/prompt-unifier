@@ -65,7 +65,7 @@ def test_header_displays_directory_path(
     output = console_capture.getvalue()
 
     # Assert
-    assert "Validating prompts in: /test/prompts" in output
+    assert f"Validating prompts in: {directory}" in output
     assert "━" in output  # Check for separator line
 
 

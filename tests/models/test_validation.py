@@ -10,6 +10,7 @@ This module contains tests for:
 
 from pathlib import Path
 
+import prompt_unifier.models.scaff  # noqa: F401 - Trigger model rebuild
 from prompt_unifier.models.validation import (
     ErrorCode,
     ValidationIssue,
@@ -275,7 +276,7 @@ class TestValidationResult:
             warnings=[],
         )
         data = result.model_dump()
-        assert str(data["file"]) == "/prompts/test.md"
+        assert str(data["file"]) == str(Path("/prompts/test.md"))
         assert data["status"] == "failed"
         assert len(data["errors"]) == 1
         assert data["errors"][0]["code"] == "NO_SEPARATOR"

@@ -642,7 +642,7 @@ poetry run prompt-unifier deploy --name "non-existent" --handlers continue
 poetry run prompt-unifier deploy --name "code-review" --handlers invalid
 ```
 
-✗ **Expected result:** Error "No matching handlers found for \['invalid'\]" (Code: 1)
+✗ **Expected result:** Error "No matching handlers found for ['invalid']" (Code: 1)
 
 ### Test 11.11 (was 9.7): Backup verification
 

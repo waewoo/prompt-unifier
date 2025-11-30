@@ -39,7 +39,7 @@ class TestExpandEnvVars:
         """Test that $USER expands to the current user name."""
         monkeypatch.setenv("USER", "testuser")
         path = "/home/$USER/projects"
-        expected = "/home/testuser/projects"
+        expected = str(Path("/home/testuser/projects"))
         result = expand_env_vars(path)
         assert result == expected
 
@@ -47,13 +47,13 @@ class TestExpandEnvVars:
         """Test that multiple environment variables expand in a single path."""
         monkeypatch.setenv("USER", "testuser")
         path = "$HOME/projects/$USER/data"
-        expected = f"{Path.home()}/projects/testuser/data"
+        expected = str(Path.home() / "projects" / "testuser" / "data")
         result = expand_env_vars(path)
         assert result == expected
 
     def test_returns_unchanged_path_without_variables(self) -> None:
         """Test that paths without environment variables are returned unchanged."""
-        path = "/usr/local/bin/continue"
+        path = str(Path("/usr/local/bin/continue"))
         result = expand_env_vars(path)
         assert result == path
 
@@ -67,7 +67,7 @@ class TestExpandEnvVars:
         """Test that both $VAR and ${VAR} syntax work in the same path."""
         monkeypatch.setenv("USER", "testuser")
         path = "$HOME/projects/${USER}/data"
-        expected = f"{Path.home()}/projects/testuser/data"
+        expected = str(Path.home() / "projects" / "testuser" / "data")
         result = expand_env_vars(path)
         assert result == expected
 
@@ -92,7 +92,7 @@ class TestExpandEnvVars:
         monkeypatch.setenv("APPDATA", "/mock/appdata")
         path = "%APPDATA%/MyApp/config"
         result = expand_env_vars(path)
-        assert "/mock/appdata" in result
+        assert str(Path("/mock/appdata")) in result
         assert "MyApp" in result
 
     def test_raises_error_for_missing_percent_variable(self) -> None:

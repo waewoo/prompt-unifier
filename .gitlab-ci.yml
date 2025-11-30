@@ -39,7 +39,7 @@ workflow:
 variables:
   FF_USE_FASTZIP: "true"
   ARTIFACT_COMPRESSION_LEVEL: "fast"
-  
+
   # Uses your custom "Golden Image" for performance (Tools pre-installed)
   CI_IMAGE: "registry.gitlab.com/waewoo/prompt-unifier/ci-base:latest"
 
@@ -75,9 +75,9 @@ stages:
 # ==============================================================================
 
 .base-rules:
-  # Note: The "Anti-Loop" logic is now handled globally in 'workflow:', 
+  # Note: The "Anti-Loop" logic is now handled globally in 'workflow:',
   # so we don't need it here anymore! simpler and safer.
-  
+
   # 1. Standard Allow Rules
   - if: '$CI_COMMIT_TAG' # Needs to be allowed here for jobs to match
   - if: '$CI_COMMIT_BRANCH == "main"'
@@ -170,7 +170,7 @@ app-lint:
     - make app-lint
   rules: *rules-quality
 
-app-test:
+app-test-linux:
   stage: quality
   needs: ["setup-deps"]
   <<: *cache-pull
@@ -189,6 +189,45 @@ app-test:
     expire_in: 1 day
   rules: *rules-quality
 
+app-test-windows:
+  stage: quality
+  tags:
+    - pc-windows
+  image: null
+  needs: []
+  variables:
+    PYTHONUNBUFFERED: "1"
+    PIP_CACHE_DIR: "$CI_PROJECT_DIR/.cache/pip"
+    POETRY_VIRTUALENVS_IN_PROJECT: "true"
+  cache:
+    key: "windows-poetry-cache"
+    paths:
+      - .cache/pip
+      - .venv/
+    policy: pull-push
+  before_script:
+    - python -m pip install poetry
+    - python -m poetry --version
+  script:
+    - make env-install
+    - make app-test
+  artifacts:
+    when: always
+    reports:
+      junit: report.xml
+    paths:
+      - coverage.xml
+      - report.xml
+    expire_in: 1 day
+  rules:
+    - if: '$SKIP_QUALITY'
+      when: never
+    - if: '$CI_COMMIT_TAG'
+      when: never
+    - if: '$CI_PIPELINE_SOURCE == "merge_request_event" || $CI_COMMIT_BRANCH == "main"'
+      when: manual
+      allow_failure: true
+
 app-sonar:
   stage: quality
   image: sonarsource/sonar-scanner-cli:latest
@@ -196,8 +235,8 @@ app-sonar:
       GIT_DEPTH: "0"
   needs:
     - job: setup-deps
-    - job: app-test
-      optional: true # Continues even if tests were skipped via SKIP_QUALITY
+    - job: app-test-linux
+      optional: true
   cache:
     key: "sonar-cache"
     paths: [.sonar/cache]
@@ -230,7 +269,7 @@ pkg-build:
   needs:
     - job: setup-deps
       optional: false
-    - job: app-test
+    - job: app-test-linux
       optional: true
     - job: app-sonar
       optional: true
@@ -255,7 +294,7 @@ docs-build:
       optional: false
     - job: app-lint
       optional: true
-    - job: app-test
+    - job: app-test-linux
       optional: true
   <<: *cache-pull
   before_script:
@@ -331,7 +370,7 @@ pkg-gitlab-release:
 # 4. PUBLISH PACKAGE (Tag)
 pkg-publish-package:
   stage: release
-  needs: 
+  needs:
     - job: setup-deps
     - job: pkg-gitlab-release
     - job: pkg-build

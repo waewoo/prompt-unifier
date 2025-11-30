@@ -180,6 +180,11 @@ class TestVerboseFlagAffectsLogging:
         root_logger = logging.getLogger()
         assert root_logger.level <= logging.INFO
 
+        # Close handlers to release file lock
+        for handler in root_logger.handlers[:]:
+            handler.close()
+            root_logger.removeHandler(handler)
+
     def test_double_verbose_flag_enables_debug_logging(self, runner, temp_log_file):
         """Test that -vv flags enable DEBUG level logging."""
         # Reset logging state
@@ -193,3 +198,8 @@ class TestVerboseFlagAffectsLogging:
         # Check that logging was configured to DEBUG level
         root_logger = logging.getLogger()
         assert root_logger.level == logging.DEBUG
+
+        # Close handlers to release file lock
+        for handler in root_logger.handlers[:]:
+            handler.close()
+            root_logger.removeHandler(handler)

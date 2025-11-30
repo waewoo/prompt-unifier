@@ -97,6 +97,8 @@ class BaseToolHandler(ToolHandler, ABC):
         """
         if file_path.exists():
             backup_path = file_path.with_suffix(file_path.suffix + ".bak")
+            if backup_path.exists():
+                backup_path.unlink()
             file_path.rename(backup_path)
             logger.debug(f"Backed up {file_path.name} to {backup_path.name}")
 

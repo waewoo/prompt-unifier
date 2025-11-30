@@ -121,7 +121,7 @@ class TestKiloCodeToolHandler:
         rule = RuleFrontmatter(
             title="Complex Rule",
             description="Rule with metadata",
-            category="style",
+            category="coding-standards",
             tags=["python", "formatting"],
             version="1.1.0",
             author="tester",
@@ -146,7 +146,7 @@ class TestKiloCodeToolHandler:
         markdown = kilo_code_handler._convert_to_pure_markdown(yaml_content)
 
         assert markdown.startswith(f"# {rule.title}")
-        assert "**Category:** style" in markdown
+        assert "**Category:** coding-standards" in markdown
         assert "**Tags:** python, formatting" in markdown
         assert "**Version:** 1.1" in markdown
         assert "**Author:** tester" in markdown

@@ -1,95 +1,120 @@
-# Pre-commit Hooks Configuration
-#
-# This configuration runs quality checks before each commit:
-# - Ruff linting and formatting
-# - mypy type checking
-#
-# Note: pytest is NOT included in pre-commit hooks for performance reasons.
-# Tests are run in CI/CD pipeline instead.
-#
-# Install hooks: poetry run pre-commit install
-# Run manually: poetry run pre-commit run --all-files
+# ============================================================================
+# Pre-commit Configuration
+# ============================================================================
 
 fail_fast: true
 
 repos:
-  # Standard file hygiene hooks
-  - repo: https://github.com/pre-commit/pre-commit-hooks
-    rev: v4.5.0
-    hooks:
-      - id: trailing-whitespace
-        exclude: (^\..*|agent-os/.*)
-      - id: end-of-file-fixer
-        exclude: (^\..*|agent-os/.*)
-      - id: check-yaml
-        args: [--unsafe]
-        exclude: (^\..*|agent-os/.*)
-      - id: check-added-large-files
-        args: ['--maxkb=15360']
-        exclude: (^\..*|agent-os/.*)
-
-  # Ruff - Fast Python linter and formatter
-  - repo: https://github.com/astral-sh/ruff-pre-commit
-    rev: v0.3.0
-    hooks:
-      # Ruff linter
-      - id: ruff
-        args: [--fix]
-      # Ruff formatter
-      - id: ruff-format
-
-  # mypy - Static type checker
-  - repo: https://github.com/pre-commit/mirrors-mypy
-    rev: v1.8.0
-    hooks:
-      - id: mypy
-        additional_dependencies:
-          - pydantic>=2.5.0
-          - types-pyyaml
-          - rich>=13.0.0
-          - typer>=0.9.0
-          - gitpython>=3.1.40
-        args: [--strict]
-        files: ^src/
-
-  # Secrets detection - Prevent committing secrets
-  - repo: https://github.com/Yelp/detect-secrets
-    rev: v1.5.0
-    hooks:
-      - id: detect-secrets
-        name: Detect secrets
-        args: ['--baseline', '.secrets.baseline']
-        exclude: |
-          (?x)^(
-              tests/fixtures/.*|
-              \.secrets\.baseline|
-              poetry\.lock
-          )$
-
-  # Bandit - Security linting for Python (local hook using Poetry environment)
   - repo: local
     hooks:
-      - id: bandit
-        name: Bandit security linter
-        entry: poetry run bandit
+      # ====================================================================
+      # File Hygiene - Using pre-commit-hooks installed via Poetry
+      # ====================================================================
+      - id: trailing-whitespace
+        name: Quality - Trim trailing whitespace
+        entry: poetry run trailing-whitespace-fixer
+        language: system
+        types: [text]
+        exclude: (^\.|/\.|agent-os/)
+
+      - id: end-of-file-fixer
+        name: Quality - Fix end of files
+        entry: poetry run end-of-file-fixer
+        language: system
+        types: [text]
+        exclude: (^\.|/\.|agent-os/)
+
+      - id: check-json
+        name: Quality - Check JSON syntax
+        entry: poetry run check-json
+        language: system
+        types: [json]
+
+      - id: check-added-large-files
+        name: Quality - Check for large files
+        entry: poetry run check-added-large-files
+        language: system
+        args: ["--maxkb=15360"]
+        exclude: (^\.|/\.|agent-os/)
+
+      # ====================================================================
+      # Markdown formatting
+      # ====================================================================
+      - id: mdformat
+        name: Quality - Markdown formatter
+        entry: poetry run mdformat
+        language: system
+        types: [markdown]
+        args: [--wrap=100]
+        exclude: (^\.|/\.|agent-os/|CHANGELOG\.md|docs/reference/cli-commands\.md)
+
+      # ====================================================================
+      # Python Code Quality - Ruff
+      # ====================================================================
+      - id: ruff-check
+        name: Quality - Ruff linter
+        entry: poetry run ruff check
         language: system
         types: [python]
-        args: ['-c', 'pyproject.toml', '-r', 'src/']
+        args: [--fix, --no-cache]
+        pass_filenames: true
+
+      - id: ruff-format
+        name: Quality - Ruff formatter
+        entry: poetry run ruff format
+        language: system
+        types: [python]
+        args: [--no-cache]
+        pass_filenames: true
+
+      # ====================================================================
+      # Type Checking - mypy
+      # ====================================================================
+      - id: mypy
+        name: Quality - mypy type checker
+        entry: poetry run mypy
+        language: system
+        types: [python]
+        files: ^src/
         pass_filenames: false
+        args: [src/]
+
+      # ====================================================================
+      # CI/CD Validation
+      # ====================================================================
       - id: validate-gitlab-ci
-        name: Validate GitLab CI config
-        entry: gitlab-ci-local --preview > /dev/null
+        name: Quality - Validate GitLab CI config
+        entry: npx gitlab-ci-local --preview
         language: system
         files: \.gitlab-ci\.yml$
         pass_filenames: false
 
-  # mdformat - Consistent Markdown formatting
-  - repo: https://github.com/executablebooks/mdformat
-    rev: 0.7.17
-    hooks:
-      - id: mdformat
-        additional_dependencies:
-            - mdformat-gfm
-            - mdformat-frontmatter
-        args: [--wrap=100]
-        exclude: (^\..*|agent-os/.*|CHANGELOG\.md|docs/reference/cli-commands\.md)
+      # ====================================================================
+      # Security - Bandit & Secrets
+      # ====================================================================
+      - id: bandit
+        name: Security - Bandit security linter
+        entry: poetry run bandit
+        language: system
+        types: [python]
+        args: ["-c", "pyproject.toml", "-r", "src/"]
+        pass_filenames: false
+
+      - id: detect-secrets
+        name: Security - Detect secrets
+        entry: poetry run python -c "import sys, subprocess; sys.exit(0) if sys.platform == 'win32' else sys.exit(subprocess.run(['poetry', 'run', 'detect-secrets-hook', '--baseline', '.secrets.baseline'] + sys.argv[1:]).returncode)"
+        language: system
+        exclude: |
+          (?x)^(
+          tests/fixtures/.*|
+          \.secrets\.baseline|
+          poetry\.lock
+          )$
+        pass_filenames: true
+
+      - id: pip-audit
+        name: Security - Dependency Vulnerabilities
+        entry: bash -c 'cd "$0" && poetry run pip-audit' .
+        language: system
+        pass_filenames: false
+        always_run: true

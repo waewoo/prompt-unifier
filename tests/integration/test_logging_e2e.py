@@ -312,5 +312,10 @@ class TestVerbosityLevelProgression:
                     root_logger.level == expected_level
                 ), f"Expected {expected_level} for {flags}, got {root_logger.level}"
             finally:
+                # Close handlers to release file lock
+                for handler in root_logger.handlers[:]:
+                    handler.close()
+                    root_logger.removeHandler(handler)
+
                 if os.path.exists(log_path):
                     os.unlink(log_path)

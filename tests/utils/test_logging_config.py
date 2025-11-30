@@ -72,6 +72,11 @@ class TestConfigureLogging:
             # Verify the file path
             assert file_handlers[0].baseFilename == log_path
         finally:
+            # Close handlers before unlink to avoid Windows permission errors
+            root_logger = logging.getLogger()
+            for handler in root_logger.handlers[:]:
+                handler.close()
+                root_logger.removeHandler(handler)
             Path(log_path).unlink(missing_ok=True)
 
     def test_file_handler_error_for_invalid_path(self) -> None:
@@ -114,6 +119,11 @@ class TestConfigureLogging:
             # Verify total handler count is 2
             assert len(root_logger.handlers) == 2
         finally:
+            # Close handlers before unlink to avoid Windows permission errors
+            root_logger = logging.getLogger()
+            for handler in root_logger.handlers[:]:
+                handler.close()
+                root_logger.removeHandler(handler)
             Path(log_path).unlink(missing_ok=True)
 
     def test_clears_existing_handlers_before_configuration(self) -> None:

@@ -215,7 +215,7 @@ def _collect_repo_files(temp_path: Path) -> list[str]:
         if source_dir.exists():
             for file_path in source_dir.rglob("*"):
                 if file_path.is_file():
-                    rel_path = str(file_path.relative_to(temp_path))
+                    rel_path = file_path.relative_to(temp_path).as_posix()
                     all_files.append(rel_path)
     return all_files
 

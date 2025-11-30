@@ -139,7 +139,6 @@ DEFAULT_VALIDATE_SCAFF_OPTION = typer.Option(
     True,
     "--scaff/--no-scaff",
     help="Enable/disable SCAFF methodology validation (default: enabled)",
-    is_flag=False,
 )
 DEFAULT_LIST_TOOL_OPTION = typer.Option(
     DEFAULT_LIST_TOOL,

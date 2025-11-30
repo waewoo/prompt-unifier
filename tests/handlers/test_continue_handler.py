@@ -190,21 +190,23 @@ class TestContinueToolHandler:
     ):
         # Deploy a prompt without invokable: true (simulate external creation)
         target_file = continue_handler.prompts_dir / f"{mock_prompt.title}.md"
-        target_file.write_text(f"---\ntitle: {mock_prompt.title}\n---\nThis is the content body.")
+        target_file.write_text(
+            f"---\ntitle: {mock_prompt.title}\n---\nThis is the content body.", encoding="utf-8"
+        )
         assert continue_handler.verify_deployment(mock_prompt.title, "prompt") is False
 
     def test_deploy_prompt_with_existing_file_creates_backup(
         self, continue_handler: ContinueToolHandler, mock_prompt: PromptFrontmatter
     ):
         target_file = continue_handler.prompts_dir / f"{mock_prompt.title}.md"
-        target_file.write_text("initial content")
+        target_file.write_text("initial content", encoding="utf-8")
         backup_file = target_file.with_suffix(".md.bak")
 
         continue_handler.deploy(mock_prompt, "prompt", "This is the content body.")
 
         assert target_file.exists()
         assert backup_file.exists()
-        assert backup_file.read_text() == "initial content"
+        assert backup_file.read_text(encoding="utf-8") == "initial content"
 
     def test_verify_deployment_invalid_content_type(self, tmp_path: Path):
         """Test verify_deployment with invalid content type."""
@@ -224,7 +226,7 @@ class TestContinueToolHandler:
 
         # Create a rule file without valid YAML format
         rule_file = handler.rules_dir / "test_rule.md"
-        rule_file.write_text("Invalid content without frontmatter")
+        rule_file.write_text("Invalid content without frontmatter", encoding="utf-8")
 
         result = handler.verify_deployment("test_rule", "rule")
         assert result is True  # Rules don't have strict validation like prompts
@@ -235,12 +237,15 @@ class TestContinueToolHandler:
 
         # Create a prompt file with invalid YAML
         prompt_file = handler.prompts_dir / "test_prompt.md"
-        prompt_file.write_text("""---
+        prompt_file.write_text(
+            """---
 nom: test
   description: test
 invalid yaml
 ---
-content""")
+content""",
+            encoding="utf-8",
+        )
 
         result = handler.verify_deployment("test_prompt", "prompt")
         assert result is False  # Invalid YAML should fail
@@ -251,11 +256,14 @@ content""")
 
         # Create a prompt file without invokable field
         prompt_file = handler.prompts_dir / "test_prompt.md"
-        prompt_file.write_text("""---
+        prompt_file.write_text(
+            """---
 name: test_prompt
 description: A test prompt
 ---
-content""")
+content""",
+            encoding="utf-8",
+        )
 
         result = handler.verify_deployment("test_prompt", "prompt")
         assert result is False  # Missing invokable field
@@ -266,12 +274,15 @@ content""")
 
         # Create a prompt file with invokable: false
         prompt_file = handler.prompts_dir / "test_prompt.md"
-        prompt_file.write_text("""---
+        prompt_file.write_text(
+            """---
 name: test_prompt
 description: A test prompt
 invokable: false
 ---
-content""")
+content""",
+            encoding="utf-8",
+        )
 
         result = handler.verify_deployment("test_prompt", "prompt")
         assert result is False  # invokable should be true
@@ -286,18 +297,18 @@ content""")
         rule_file1 = handler.rules_dir / "rule1.md"
 
         # Create original files
-        prompt_file1.write_text("original prompt 1")
-        prompt_file2.write_text("original prompt 2")
-        rule_file1.write_text("original rule 1")
+        prompt_file1.write_text("original prompt 1", encoding="utf-8")
+        prompt_file2.write_text("original prompt 2", encoding="utf-8")
+        rule_file1.write_text("original rule 1", encoding="utf-8")
 
         # Create backups
         prompt_backup1 = prompt_file1.with_suffix(".md.bak")
         prompt_backup2 = prompt_file2.with_suffix(".md.bak")
         rule_backup1 = rule_file1.with_suffix(".md.bak")
 
-        prompt_backup1.write_text("backup prompt 1")
-        prompt_backup2.write_text("backup prompt 2")
-        rule_backup1.write_text("backup rule 1")
+        prompt_backup1.write_text("backup prompt 1", encoding="utf-8")
+        prompt_backup2.write_text("backup prompt 2", encoding="utf-8")
+        rule_backup1.write_text("backup rule 1", encoding="utf-8")
 
         # Rename originals to simulate backup
         prompt_file1.rename(prompt_backup1.with_suffix(".tmp"))
@@ -305,17 +316,17 @@ content""")
         rule_file1.rename(rule_backup1.with_suffix(".tmp"))
 
         # Create new files (simulating deployment)
-        prompt_file1.write_text("new prompt 1")
-        prompt_file2.write_text("new prompt 2")
-        rule_file1.write_text("new rule 1")
+        prompt_file1.write_text("new prompt 1", encoding="utf-8")
+        prompt_file2.write_text("new prompt 2", encoding="utf-8")
+        rule_file1.write_text("new rule 1", encoding="utf-8")
 
         # Execute rollback
         handler.rollback()
 
         # Verify backups were restored
-        assert prompt_file1.read_text() == "backup prompt 1"
-        assert prompt_file2.read_text() == "backup prompt 2"
-        assert rule_file1.read_text() == "backup rule 1"
+        assert prompt_file1.read_text(encoding="utf-8") == "backup prompt 1"
+        assert prompt_file2.read_text(encoding="utf-8") == "backup prompt 2"
+        assert rule_file1.read_text(encoding="utf-8") == "backup rule 1"
 
         # Verify backups were removed
         assert not prompt_backup1.exists()
@@ -347,14 +358,14 @@ content""")
         prompt_file = handler.prompts_dir / "prompt1.md"
         prompt_backup = prompt_file.with_suffix(".md.bak")
 
-        prompt_backup.write_text("backup content")
-        prompt_file.write_text("new content")
+        prompt_backup.write_text("backup content", encoding="utf-8")
+        prompt_file.write_text("new content", encoding="utf-8")
 
         # Execute rollback
         handler.rollback()
 
         # Verify backup was restored
-        assert prompt_file.read_text() == "backup content"
+        assert prompt_file.read_text(encoding="utf-8") == "backup content"
         assert not prompt_backup.exists()
 
     def test_process_prompt_content_with_all_fields(self, tmp_path: Path):
@@ -441,10 +452,12 @@ And more content here."""
         assert target_file.exists()
 
         # Verify content
-        content = target_file.read_text()
+        content = target_file.read_text(encoding="utf-8")
         assert "name: Complex Prompt" in content
         assert "invokable: true" in content
-        assert complex_content in content
+        # Normalize line endings for Windows
+        normalized_content = content.replace("\r\n", "\n")
+        assert complex_content in normalized_content
 
     def test_deploy_rule_with_complex_content(self, tmp_path: Path):
         """Test deploy with a rule having complex content."""
@@ -477,10 +490,12 @@ More content here."""
         assert target_file.exists()
 
         # Verify content
-        content = target_file.read_text()
+        content = target_file.read_text(encoding="utf-8")
         assert "name: Complex Rule" in content
         assert "globs:" in content and "*.py" in content
-        assert complex_content in content
+        # Normalize line endings for Windows
+        normalized_content = content.replace("\r\n", "\n")
+        assert complex_content in normalized_content
 
     def test_backup_file_with_special_characters(self, tmp_path: Path):
         """Test _backup_file with special file names."""
@@ -488,7 +503,7 @@ More content here."""
 
         # Create a file with special characters
         special_file = handler.prompts_dir / "special-chars_123.md"
-        special_file.write_text("content with special chars")
+        special_file.write_text("content with special chars", encoding="utf-8")
 
         # Create backup
         handler._backup_file(special_file)
@@ -496,7 +511,7 @@ More content here."""
         # Verify backup was created
         backup_file = special_file.with_suffix(".md.bak")
         assert backup_file.exists()
-        assert backup_file.read_text() == "content with special chars"
+        assert backup_file.read_text(encoding="utf-8") == "content with special chars"
         assert not special_file.exists()  # Original should have been renamed
 
     def test_get_status_with_missing_directories(self, tmp_path: Path):
@@ -541,9 +556,9 @@ More content here."""
         assert target_file.exists()
 
         # Verify content
-        content = target_file.read_text()
+        content = target_file.read_text(encoding="utf-8")
         assert "name: Empty Content Prompt" in content
-        assert content.endswith("\n---\n")  # Body should be empty after separator
+        assert content.strip().endswith("---")  # Body should be empty after separator
 
     def test_deploy_with_unicode_content(self, tmp_path: Path):
         """Test deploy with unicode content."""
@@ -553,7 +568,11 @@ More content here."""
             title="Unicode Prompt", description="A prompt with unicode content", version="1.0.0"
         )
 
-        unicode_content = "Content with unicode characters: 🚀 🎉 💻 àáâãäåæçèéêë"
+        # Use unicode escapes to avoid source encoding issues
+        unicode_content = (
+            "Content with unicode characters: \U0001f680 \U0001f389 \U0001f4bb "
+            "\u00e0\u00e1\u00e2\u00e3\u00e4\u00e5\u00e6\u00e7\u00e8\u00e9\u00ea\u00eb"
+        )
 
         handler.deploy(prompt, "prompt", unicode_content)
 
@@ -562,7 +581,7 @@ More content here."""
         assert target_file.exists()
 
         # Verify content
-        content = target_file.read_text()
+        content = target_file.read_text(encoding="utf-8")
         assert unicode_content in content
 
     def test_process_prompt_content_yaml_order(self, tmp_path: Path):

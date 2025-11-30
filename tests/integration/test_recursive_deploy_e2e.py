@@ -112,7 +112,7 @@ Frontend prompt content
         """---
 title: root-rule
 description: Root level rule
-category: general
+category: standards
 tags: ["general"]
 version: 1.0.0
 ---

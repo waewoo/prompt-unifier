@@ -31,7 +31,9 @@ class TestEncodingValidator:
         file_content, issues = validator.validate_encoding(test_file)
 
         assert file_content is not None
-        assert content in file_content or file_content == content
+        # Normalize line endings for Windows compatibility
+        normalized_content = file_content.replace("\r\n", "\n")
+        assert content in normalized_content or normalized_content == content
         assert len(issues) == 0
 
     def test_invalid_utf8_bytes_trigger_error(
@@ -256,8 +258,11 @@ class TestEncodingValidator:
 
         assert content is not None
         assert len(issues) == 0
-        assert len(content) == len(long_content)
-        assert content == long_content
+
+        # Normalize line endings before length check to handle Windows CRLF
+        normalized_content = content.replace("\r\n", "\n")
+        assert len(normalized_content) == len(long_content)
+        assert normalized_content == long_content
 
         # Clean up
         if test_file.exists():
@@ -271,7 +276,8 @@ class TestEncodingValidator:
         mixed_content = "Line 1\nLine 2\r\nLine 3\rLine 4\n"
 
         test_file = tmp_path / "mixed_lines.md"
-        test_file.write_text(mixed_content, encoding="utf-8")
+        # Write bytes to preserve exact line endings
+        test_file.write_bytes(mixed_content.encode("utf-8"))
 
         content, issues = validator.validate_encoding(test_file)
 
