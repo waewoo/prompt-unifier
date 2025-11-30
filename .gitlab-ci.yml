@@ -1,5 +1,5 @@
 # ==============================================================================
-# GITLAB CI/CD - MAKEFILE DRIVEN
+# GITLAB CI/CD - MAKEFILE DRIVEN (PLATINUM EDITION)
 # ==============================================================================
 # Image Reference: Built from Dockerfile.ci
 # Contains: Python 3.12-slim, Make, Git, GCC, Poetry, Security Tools
@@ -21,9 +21,20 @@
 #   - CI Variables: SONAR_TOKEN, SONAR_HOST_URL, CI_PUSH_TOKEN (Write Access), PYPI_USER/PASSWORD
 # ==============================================================================
 
-# Global Optimization: Cancel old/redundant pipelines on the same branch to save resources
+# Global Optimization: Cancel old/redundant pipelines on the same branch
 default:
   interruptible: true
+
+# ==============================================================================
+# GLOBAL WORKFLOW
+# ==============================================================================
+workflow:
+  rules:
+    - if: '$CI_COMMIT_TAG'
+      when: always
+    - if: '$CI_COMMIT_MESSAGE =~ /^(bump|chore\(release\)):/i'
+      when: never
+    - when: always
 
 variables:
   FF_USE_FASTZIP: "true"
@@ -46,7 +57,6 @@ stages:
 # ==============================================================================
 
 # Cache Strategy: Pull-Push only in setup, Pull elsewhere for speed.
-# This prevents uploading the same cache multiple times in parallel jobs.
 .cache-pull: &cache-pull
   cache:
     key:
@@ -54,30 +64,22 @@ stages:
     paths: [.venv/, .cache/pip]
     policy: pull
 
-# Resilience: Retry failed jobs due to runner/network issues (not code errors).
+# Resilience: Retry failed jobs due to runner/network issues.
 .network-retry: &network-retry
   retry:
     max: 2
     when: [runner_system_failure, stuck_or_timeout_failure, api_failure]
 
 # ==============================================================================
-# RULES & LOGIC (CRITICAL SECTION)
+# RULES & LOGIC
 # ==============================================================================
 
 .base-rules:
-  # 1. PRIORITY ABSOLUTE: TAGS
-  # Matches if a Tag is pushed. MUST be first to ensure the pipeline runs
-  # even if the commit message contains "bump".
-  - if: '$CI_COMMIT_TAG'
-    when: on_success
-
-  # 2. ANTI-LOOP: KILL BUMP COMMITS ON BRANCHES
-  # Ignores commits created by the CI itself (version bumps).
-  # Since Rule #1 matches Tags first, this rule only kills the redundant branch pipeline.
-  - if: '$CI_COMMIT_MESSAGE =~ /^(bump|chore\(release\)):/i'
-    when: never
-
-  # 3. STANDARD ALLOW RULES
+  # Note: The "Anti-Loop" logic is now handled globally in 'workflow:', 
+  # so we don't need it here anymore! simpler and safer.
+  
+  # 1. Standard Allow Rules
+  - if: '$CI_COMMIT_TAG' # Needs to be allowed here for jobs to match
   - if: '$CI_COMMIT_BRANCH == "main"'
   - if: '$CI_PIPELINE_SOURCE == "merge_request_event"'
   - if: '$SIMULATE_MAIN == "true"'
@@ -86,11 +88,15 @@ stages:
   - !reference [.base-rules]
 
 .rules:quality: &rules-quality
+  - if: '$CI_COMMIT_TAG'
+    when: never
   - if: '$SKIP_QUALITY'
     when: never
   - !reference [.base-rules]
 
 .rules:security: &rules-security
+  - if: '$CI_COMMIT_TAG'
+    when: never
   - if: '$SKIP_SECURITY'
     when: never
   - !reference [.base-rules]
@@ -99,14 +105,13 @@ stages:
   # 1. Circuit Breaker
   - if: '$SKIP_BUILD'
     when: never
-  # 2. Dev Mode (MR): Run automatically to verify code integrity.
+  # 2. Dev Mode (MR): Run automatically.
   - if: '$CI_PIPELINE_SOURCE == "merge_request_event"'
     when: on_success
-  # 3. Release Mode (TAG): We MUST rebuild on Tag to package the correct bumped version.
+  # 3. Release Mode (TAG): Must rebuild on Tag.
   - if: '$CI_COMMIT_TAG'
     when: on_success
   # 4. Prod Mode (Main): Manual Gate.
-  #    'allow_failure: true' keeps the pipeline green while waiting for manual action.
   - if: '$CI_COMMIT_BRANCH == "main" || $SIMULATE_MAIN == "true"'
     when: manual
     allow_failure: true
@@ -118,13 +123,12 @@ stages:
   # 2. Safety: Never release from a Merge Request.
   - if: '$CI_PIPELINE_SOURCE == "merge_request_event"'
     when: never
-  # 3. Prod Mode (Main): Auto execution.
-  #    Implicitly waits for the previous Manual Build to finish via 'needs'.
+  # 3. Prod Mode (Main): Auto execution (wait for build).
   - if: '$CI_COMMIT_BRANCH == "main" || $SIMULATE_MAIN == "true"'
     when: on_success
 
 .rules:release-tag-strategy: &rules-release-tag-strategy
-  # 1. Official Release: Only triggered by strict SemVer tags (e.g., v1.2.3).
+  # 1. Official Release: Only triggered by strict SemVer tags.
   - if: '$CI_COMMIT_TAG =~ /^v\d+\.\d+\.\d+$/'
     when: on_success
   # 2. Safety: Ignore all other tags.
@@ -188,6 +192,8 @@ app-test:
 app-sonar:
   stage: quality
   image: sonarsource/sonar-scanner-cli:latest
+  variables:
+      GIT_DEPTH: "0"
   needs:
     - job: setup-deps
     - job: app-test
@@ -198,7 +204,6 @@ app-sonar:
   script:
     - sonar-scanner
   rules: *rules-quality
-  allow_failure: true
 
 # ==============================================================================
 # STAGE: SECURITY
@@ -221,8 +226,7 @@ sec-all:
 pkg-build:
   stage: build
   # Dependencies are enforced here.
-  # 'optional: true' is REQUIRED to support SKIP_QUALITY/SKIP_SECURITY variables without crashing.
-  # 'setup-deps' is 'optional: false' because we cannot build without environment.
+  # 'optional: true' is REQUIRED to support SKIP_QUALITY/SKIP_SECURITY variables.
   needs:
     - job: setup-deps
       optional: false
@@ -261,7 +265,12 @@ docs-build:
   artifacts:
     paths: [site/]
     expire_in: 1 hour
-  rules: *rules-build-strategy
+  rules:
+    - if: '$CI_COMMIT_TAG'
+      when: never
+    - if: '$CI_COMMIT_BRANCH == "main"'
+      when: on_success
+    - !reference [.rules:build-strategy]
 
 # ==============================================================================
 # STAGE: RELEASE
@@ -302,30 +311,45 @@ pages:
     paths: [public]
   rules: *rules-release-branch-strategy
 
-# 3. GITLAB RELEASE NOTE
-# Action: Creates the release entry in GitLab UI (linked to Tag).
+# 3. GITLAB RELEASE NOTE (Tag)
 pkg-gitlab-release:
   stage: release
-  # Uses specific release-cli image (standard CLI image does not have this tool)
   image: registry.gitlab.com/gitlab-org/release-cli:latest
   needs: ["pkg-build"]
   script:
+    # --- DRY RUN LOGIC ---
+    - >
+      if [ "$DRY_RUN" == "true" ]; then
+        echo "🛑 DRY RUN ACTIVE: Simulating GitLab Release creation.";
+        echo "Skipping command: release-cli create --name 'Release $CI_COMMIT_TAG' ...";
+        exit 0;
+      fi
+    # --- REAL ACTION ---
     - release-cli create --name "Release $CI_COMMIT_TAG" --tag-name $CI_COMMIT_TAG
   rules: *rules-release-tag-strategy
 
-# 4. PUBLISH PACKAGE
-# Action: Uploads the artifacts to PyPI or Private Registry.
+# 4. PUBLISH PACKAGE (Tag)
 pkg-publish-package:
   stage: release
   needs: 
-    - job: setup-deps         # For poetry environment
-    - job: pkg-gitlab-release # To ensure release note exists first
-    - job: pkg-build          # CRITICAL: Retrieves 'dist/' artifacts
+    - job: setup-deps
+    - job: pkg-gitlab-release
+    - job: pkg-build
       optional: false
   <<: [*cache-pull, *network-retry]
+  environment:
+    name: package
+    url: "https://pypi.org/project/prompt-unifier/"
   before_script:
     - test -d .venv || make env-install
   script:
-    # Requires PYPI_USER and PYPI_PASSWORD variables
+    # --- DRY RUN LOGIC ---
+    - >
+      if [ "$DRY_RUN" == "true" ]; then
+        echo "🛑 DRY RUN ACTIVE: Simulating PyPI Upload.";
+        echo "Skipping command: make pkg-publish-package";
+        exit 0;
+      fi
+    # --- REAL ACTION ---
     - make pkg-publish-package
   rules: *rules-release-tag-strategy

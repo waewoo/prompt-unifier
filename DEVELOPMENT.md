@@ -179,7 +179,7 @@ graph LR
 
 ### Pipeline Stages
 
-The GitLab CI pipeline is organized into 6 stages:
+The GitLab CI pipeline is organized into 5 stages:
 
 1. **setup**: Install dependencies (`setup-deps` job)
 
@@ -201,13 +201,12 @@ The GitLab CI pipeline is organized into 6 stages:
    - `pkg-build`: Build Python wheel/sdist via `make pkg-build`
    - `docs-build`: Build MkDocs site via `make docs-build`
 
-1. **release**: Version bumping and PyPI upload (manual/automated)
+1. **release**: Release automation and deployment
 
-   - `pkg-prepare-release`: Auto-bump version with commitizen
+   - `pkg-prepare-release`: Auto-bump version on `main` branch
+   - `pages`: Deploy documentation to GitLab Pages (on `main`)
    - `pkg-gitlab-release`: Create GitLab release on tags
    - `pkg-publish-package`: Upload to PyPI on tags
-
-1. **docs**: Deploy documentation to GitLab Pages
 
 ### Custom CI Image
 
@@ -270,13 +269,14 @@ graph TD
     setup_deps --> pkg_build[pkg-build]
     setup_deps --> docs_build[docs-build]
 
-    app_lint --> pkg_ci_bump
-    app_test --> pkg_ci_bump
-    sec_all --> pkg_ci_bump
-    pkg_build --> pkg_ci_bump
-    docs_build --> pkg_ci_bump
+    app_lint --> pkg_prepare_release
+    app_test --> pkg_prepare_release
+    sec_all --> pkg_prepare_release
+    pkg_build --> pkg_prepare_release
 
-    pkg_ci_bump[pkg-prepare-release] --> pkg_gitlab_release[pkg-gitlab-release]
+    docs_build --> pages[pages]
+
+    pkg_prepare_release[pkg-prepare-release] --> pkg_gitlab_release[pkg-gitlab-release]
     pkg_gitlab_release --> pkg_upload[pkg-publish-package]
 ```
 
@@ -299,56 +299,55 @@ context (branch, event, tag).
 
 *You open a MR from `feat/my-feature` to `main`.*
 
-- **Goal:** Validate quality and security before merging.
+- **Goal:** Validate quality, security, and build integrity.
 - **Jobs Launched:**
   - ✅ `setup-deps`: Prepare environment
-  - ✅ `app-lint`: Style & static analysis
-  - ✅ `app-test`: Unit tests
-  - ✅ `app-sonar`: SonarQube analysis
+  - ✅ `app-lint`, `app-test`, `app-sonar`
   - ✅ `sec-all`: Security scans
-  - ⚠️ `docs-build`: **Conditional** (Runs only if `docs/` or `mkdocs.yml` changed)
-- **Skipped:** `pkg-build`, `release`, `pages` (No deployment from dev branches).
+  - ✅ `pkg-build`: Build package artifacts
+  - ✅ `docs-build`: Build documentation site
+- **Skipped:** `release` stage (No deployment).
 
 #### 3. Main Branch (After Merge)
 
 *Your MR is merged into `main`.*
 
-- **Goal:** Verify integration, build candidate artifact, update dev docs.
+- **Goal:** Create release candidate and deploy documentation.
 - **Jobs Launched:**
   - ✅ `setup-deps`
-  - ✅ `app-lint`, `app-test`, `sec-all` (Double-check on stable branch)
-  - ✅ `pkg-build` (Verify packaging)
-  - ⚠️ `docs-build` (Conditional)
-  - ✅ `pages` (Deploy documentation to public URL)
-- **Manual Action:**
-  - ⏸️ `pkg-prepare-release`: Ready to be clicked if you want to create a new version/release.
+  - ✅ `app-lint`, `app-test`, `sec-all`
+  - ✅ `docs-build`: Automatic build of documentation.
+  - ✅ `pages`: Automatic deployment of documentation (if `docs-build` passes).
+- **Manual Gates:**
+  - ⏸️ `pkg-build`: Must be triggered manually to build the package and proceed to release.
+- **On Success (after manual trigger):**
+  - ✅ `pkg-prepare-release`: Creates new version tag (if `pkg-build` passes).
 
 #### 4. Tag (Release, e.g., `v1.0.0`)
 
-*You triggered `pkg-prepare-release` or pushed a tag manually.*
+*A tag is pushed (manually or via `pkg-prepare-release`).*
 
-- **Goal:** Delivery. No re-testing (code is identical to `main`).
+- **Goal:** Delivery.
 - **Jobs Launched:**
   - ✅ `setup-deps`
-  - ✅ `pkg-build` (Build official package with version number)
-  - ✅ `docs-build` (Rebuild docs with official version)
+  - ✅ `pkg-build` (Auto-run)
   - ✅ `pkg-gitlab-release` (Create GitLab Release)
   - ✅ `pkg-publish-package` (Publish to PyPI)
-  - ✅ `pages` (Update public site)
-- **Skipped:** Quality & Security checks (already passed on `main`).
+- **Skipped:** Quality & Security checks (already passed on `main`), `docs-build`, `pages`,
+  `pkg-prepare-release`.
 
 #### Summary Table
 
-| Job / Stage             | Feature (No MR) |  Merge Request  |  Main (Merge)   | Tag (Release) |
-| :---------------------- | :-------------: | :-------------: | :-------------: | :-----------: |
-| **Setup**               |       ⬜        |       ✅        |       ✅        |      ✅       |
-| **Quality** (Lint/Test) |       ⬜        |       ✅        |       ✅        |      ❌       |
-| **Security**            |       ⬜        |       ✅        |       ✅        |      ❌       |
-| **Build Package**       |       ⬜        |       ❌        |       ✅        |      ✅       |
-| **Build Doc**           |       ⬜        | ⚠️ (If changed) | ⚠️ (If changed) |  ✅ (Always)  |
-| **Bump Version**        |       ⬜        |       ❌        |   ⏸️ (Manual)   |      ❌       |
-| **Upload / Release**    |       ⬜        |       ❌        |       ❌        |      ✅       |
-| **Deploy Pages**        |       ⬜        |       ❌        |       ✅        |      ✅       |
+| Job / Stage          | Feature (No MR) | Merge Request |  Main (Merge)   | Tag (Release) |
+| :------------------- | :-------------: | :-----------: | :-------------: | :-----------: |
+| **Setup**            |       ⬜        |      ✅       |       ✅        |      ✅       |
+| **Quality**          |       ⬜        |      ✅       |       ✅        |      ❌       |
+| **Security**         |       ⬜        |      ✅       |       ✅        |      ❌       |
+| **Build Package**    |       ⬜        |      ✅       |   ⏸️ (Manual)   |      ✅       |
+| **Build Doc**        |       ⬜        |      ✅       |       ✅        |      ❌       |
+| **Bump Version**     |       ⬜        |      ❌       | ✅ (After gate) |      ❌       |
+| **Upload / Release** |       ⬜        |      ❌       |       ❌        |      ✅       |
+| **Deploy Pages**     |       ⬜        |      ❌       |       ✅        |      ❌       |
 
 ______________________________________________________________________
 
