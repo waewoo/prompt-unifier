@@ -4,6 +4,16 @@ All notable changes to this project will be documented in this file.
 
 This project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## v2.2.0 (2025-11-30)
+
+### Feat
+
+- consolidate documentation and CI/CD improvements
+
+### Fix
+
+- **tests**: correct linting errors in unit tests
+
 ## v2.1.0 (2025-11-28)
 
 ### Feat
