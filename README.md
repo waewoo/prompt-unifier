@@ -408,8 +408,8 @@ development and CI/CD operations. Commands are organized into functional groups:
 - `make pkg-changelog`: Generate changelog
 - `make pkg-notes VERSION=x.y.z`: Generate release notes
 - `make pkg-publish VERSION_BUMP=<patch|minor|major>`: Create release and push tags
-- `make pkg-ci-bump`: Auto-bump version (CI only)
-- `make pkg-upload`: Upload to PyPI (CI only)
+- `make pkg-prepare-release`: Auto-bump version (CI only)
+- `make pkg-publish-package`: Upload to PyPI (CI only)
 
 #### Documentation
 

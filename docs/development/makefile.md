@@ -446,12 +446,12 @@ make pkg-publish VERSION_BUMP=major
 
 - None (uses local git credentials)
 
-#### `make pkg-ci-bump`
+#### `make pkg-prepare-release`
 
 Auto-bump version using commitizen (CI only).
 
 ```bash
-make pkg-ci-bump
+make pkg-prepare-release
 ```
 
 **What it does:**
@@ -473,12 +473,12 @@ make pkg-ci-bump
 - `GITLAB_USER_NAME`
 - `CI_SERVER_HOST`
 
-#### `make pkg-upload`
+#### `make pkg-publish-package`
 
 Upload package to PyPI (CI only).
 
 ```bash
-make pkg-upload
+make pkg-publish-package
 ```
 
 **What it does:**
@@ -605,7 +605,7 @@ make ci-pipeline
 make pkg-publish VERSION_BUMP=minor
 
 # OR trigger CI release
-# Push to main, then manually trigger pkg-ci-bump job in GitLab
+# Push to main, then manually trigger pkg-prepare-release job in GitLab
 ```
 
 ______________________________________________________________________

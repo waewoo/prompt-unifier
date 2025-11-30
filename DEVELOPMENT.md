@@ -203,9 +203,9 @@ The GitLab CI pipeline is organized into 6 stages:
 
 1. **release**: Version bumping and PyPI upload (manual/automated)
 
-   - `pkg-ci-bump`: Auto-bump version with commitizen
+   - `pkg-prepare-release`: Auto-bump version with commitizen
    - `pkg-gitlab-release`: Create GitLab release on tags
-   - `pkg-upload`: Upload to PyPI on tags
+   - `pkg-publish-package`: Upload to PyPI on tags
 
 1. **docs**: Deploy documentation to GitLab Pages
 
@@ -276,8 +276,8 @@ graph TD
     pkg_build --> pkg_ci_bump
     docs_build --> pkg_ci_bump
 
-    pkg_ci_bump[pkg-ci-bump] --> pkg_gitlab_release[pkg-gitlab-release]
-    pkg_gitlab_release --> pkg_upload[pkg-upload]
+    pkg_ci_bump[pkg-prepare-release] --> pkg_gitlab_release[pkg-gitlab-release]
+    pkg_gitlab_release --> pkg_upload[pkg-publish-package]
 ```
 
 Quality, security, and build stages run **in parallel** immediately after dependencies are ready.
@@ -321,11 +321,11 @@ context (branch, event, tag).
   - ⚠️ `docs-build` (Conditional)
   - ✅ `pages` (Deploy documentation to public URL)
 - **Manual Action:**
-  - ⏸️ `pkg-ci-bump`: Ready to be clicked if you want to create a new version/release.
+  - ⏸️ `pkg-prepare-release`: Ready to be clicked if you want to create a new version/release.
 
 #### 4. Tag (Release, e.g., `v1.0.0`)
 
-*You triggered `pkg-ci-bump` or pushed a tag manually.*
+*You triggered `pkg-prepare-release` or pushed a tag manually.*
 
 - **Goal:** Delivery. No re-testing (code is identical to `main`).
 - **Jobs Launched:**
@@ -333,7 +333,7 @@ context (branch, event, tag).
   - ✅ `pkg-build` (Build official package with version number)
   - ✅ `docs-build` (Rebuild docs with official version)
   - ✅ `pkg-gitlab-release` (Create GitLab Release)
-  - ✅ `pkg-upload` (Publish to PyPI)
+  - ✅ `pkg-publish-package` (Publish to PyPI)
   - ✅ `pages` (Update public site)
 - **Skipped:** Quality & Security checks (already passed on `main`).
 
@@ -385,7 +385,7 @@ This will:
 
 The GitLab CI pipeline includes automated release jobs:
 
-1. **Version Bump** (`pkg-ci-bump`):
+1. **Version Bump** (`pkg-prepare-release`):
 
    - Manual job on `main` branch
    - Uses commitizen to analyze commits and auto-bump version
@@ -396,7 +396,7 @@ The GitLab CI pipeline includes automated release jobs:
    - Triggered automatically on version tags (e.g., `v2.1.0`)
    - Creates GitLab release with changelog
 
-1. **PyPI Upload** (`pkg-upload`):
+1. **PyPI Upload** (`pkg-publish-package`):
 
    - Triggered automatically on version tags
    - Publishes package to PyPI

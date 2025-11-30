@@ -206,19 +206,18 @@ pkg-publish: app-check-all _ensure-git ## [Rel] Create Release & Push (Usage: ma
 	git push origin main && \
 	git push origin v$$NEW_VER
 
-pkg-ci-bump: _ensure-git _ensure-poetry ## [Rel] CI Auto-bump (Require CI vars)
+pkg-prepare-release: _ensure-git _ensure-poetry ## [Rel] CI Auto-bump (Require CI vars)
 	@echo "🤖 Configuring Git for CI..."
-	@git config --global credential.helper store
-	@echo "https://oauth2:$(CI_PUSH_TOKEN)@$(CI_SERVER_HOST)" > ~/.git-credentials
 	@git config user.email "$(GITLAB_USER_EMAIL)"
 	@git config user.name "$(GITLAB_USER_NAME)"
+	@git remote set-url origin "https://gitlab-ci-token:$(CI_PUSH_TOKEN)@$(CI_SERVER_HOST)/$(CI_PROJECT_PATH).git"
 	@echo "🚀 Bumping version (Commitizen)..."
 	$(POETRY_CMD) cz bump --changelog --yes
 	@echo "📤 Pushing changes..."
 	@git push origin HEAD:main && git push origin --tags
 
 # Cible pour le Robot (CI Only) - Remplace le script 'publish-pypi' de la CI
-pkg-upload: _ensure-poetry ## [Rel] Upload to PyPI (Require PYPI_USER & PYPI_PASSWORD)
+pkg-publish-package: _ensure-poetry ## [Rel] Upload to PyPI (Require PYPI_USER & PYPI_PASSWORD)
 	@echo "📦 Uploading to PyPI..."
 	@poetry publish --username $(PYPI_USER) --password $(PYPI_PASSWORD)
 
@@ -245,4 +244,4 @@ help: ## Show this help message
 	@cat $(MAKEFILE_LIST) | grep -E '^[a-zA-Z0-9_-]+:.*?## .*$$' | awk 'BEGIN {FS = ":.*?## "}; {printf "\033[36m%-25s\033[0m %s\n", $$1, $$2}'
 	@echo "----------------------------------------------------------------"
 
-.PHONY: env-install env-update env-clean app-run app-lint app-test app-check-all ci-pipeline ci-pipeline-fast ci-job ci-list ci-clean ci-validate ci-image-login ci-image-build ci-image-push sec-all sec-code sec-secrets sec-deps pkg-build pkg-changelog pkg-notes pkg-publish docs-install docs-live docs-build help
+.PHONY: env-install env-update env-clean app-run app-lint app-test app-check-all ci-pipeline ci-pipeline-fast ci-job ci-list ci-clean ci-validate ci-image-login ci-image-build ci-image-push sec-all sec-code sec-secrets sec-deps pkg-build pkg-changelog pkg-notes pkg-publish-package docs-install docs-live docs-build help
