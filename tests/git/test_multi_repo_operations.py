@@ -5,12 +5,10 @@ path filtering, multi-repo validation, and sync orchestration.
 """
 
 from pathlib import Path
-from typing import Any
 from unittest.mock import MagicMock, Mock, patch
 
 import pytest
 
-import git
 from prompt_unifier.git.service import GitService
 from prompt_unifier.models.git_config import RepositoryConfig
 from prompt_unifier.utils.path_filter import PathFilter
@@ -102,11 +100,10 @@ class TestMultiRepoValidation:
     """Test suite for multi-repository validation."""
 
     @patch("prompt_unifier.git.service.GitService.clone_to_temp")
-    @patch("prompt_unifier.git.service.git.cmd.Git")
-    def test_validate_repositories_fail_fast_on_first_error(
-        self, mock_git: Mock, mock_clone: Mock, tmp_path: Path
+    def test_clone_and_validate_all_fail_fast_on_first_error(
+        self, mock_clone: Mock, tmp_path: Path
     ) -> None:
-        """Test that validate_repositories fails fast on first invalid repository."""
+        """Test that _clone_and_validate_all fails fast on first invalid repository."""
         service = GitService()
 
         # Create repos list with second one being invalid
@@ -116,30 +113,27 @@ class TestMultiRepoValidation:
             RepositoryConfig(url="https://github.com/valid/repo3.git"),
         ]
 
-        # Mock ls-remote to succeed for first, fail for second
-        def ls_remote_side_effect(url: str, **kwargs: Any) -> str:
-            if "invalid" in url:
-                raise git.exc.GitCommandError("ls-remote", 128, "Repository not found")
-            return "abc123\tHEAD"
+        # Mock clone_to_temp for successful validation of first repo
+        temp_dir1 = tmp_path / "temp_repo1"
+        temp_dir1.mkdir()
+        (temp_dir1 / "prompts").mkdir()
 
-        mock_git_instance = MagicMock()
-        mock_git.return_value = mock_git_instance
-        mock_git_instance.ls_remote.side_effect = ls_remote_side_effect
+        # Mock clone_to_temp for failure of second repo (missing prompts dir)
+        temp_dir2 = tmp_path / "temp_repo2"
+        temp_dir2.mkdir()
+        # No prompts dir created
 
-        # Mock clone_to_temp for successful validation
-        temp_dir = tmp_path / "temp_repo"
-        temp_dir.mkdir()
-        (temp_dir / "prompts").mkdir()
-        mock_clone.return_value = (temp_dir, MagicMock())
+        mock_clone.side_effect = [
+            (temp_dir1, MagicMock()),
+            (temp_dir2, MagicMock()),
+        ]
 
         # Should raise error on second repo without checking third
         with pytest.raises(ValueError, match="invalid/repo2"):
-            service.validate_repositories(repos)
+            service._clone_and_validate_all(repos)
 
-        # Verify ls-remote was called for first two repos only (fail-fast)
-        # Note: retry_with_backoff can make up to 3 attempts per repo, so max 6 calls
-        assert mock_git_instance.ls_remote.call_count <= 6
-        assert mock_git_instance.ls_remote.call_count >= 2  # At least first + second repo
+        # Verify clone was called for first two repos only (fail-fast)
+        assert mock_clone.call_count == 2
 
 
 class TestSyncOrchestration:
@@ -148,10 +142,8 @@ class TestSyncOrchestration:
     @patch("prompt_unifier.git.service.GitService.clone_to_temp")
     @patch("prompt_unifier.git.service.GitService.extract_prompts_dir")
     @patch("prompt_unifier.git.service.GitService.get_latest_commit")
-    @patch("prompt_unifier.git.service.GitService.validate_repositories")
     def test_sync_multiple_repos_processes_in_order_last_wins(
         self,
-        mock_validate: Mock,
         mock_get_commit: Mock,
         mock_extract: Mock,
         mock_clone: Mock,
@@ -167,14 +159,23 @@ class TestSyncOrchestration:
             RepositoryConfig(url="https://github.com/repo2/prompts.git"),
         ]
 
+        # Setup temp dirs with prompts/
+        temp1 = tmp_path / "temp1"
+        temp1.mkdir()
+        (temp1 / "prompts").mkdir()
+
+        temp2 = tmp_path / "temp2"
+        temp2.mkdir()
+        (temp2 / "prompts").mkdir()
+
         # Mock clone to return temp paths
         repo_mock1 = MagicMock()
         repo_mock1.active_branch.name = "main"
         repo_mock2 = MagicMock()
         repo_mock2.active_branch.name = "main"
         mock_clone.side_effect = [
-            (tmp_path / "temp1", repo_mock1),
-            (tmp_path / "temp2", repo_mock2),
+            (temp1, repo_mock1),
+            (temp2, repo_mock2),
         ]
 
         # Mock commit retrieval
@@ -182,9 +183,6 @@ class TestSyncOrchestration:
 
         # Call sync
         metadata = service.sync_multiple_repos(repos, storage_path)
-
-        # Verify validation was called first
-        mock_validate.assert_called_once_with(repos)
 
         # Verify clone was called for each repo in order
         assert mock_clone.call_count == 2
@@ -207,10 +205,8 @@ class TestConflictDetection:
     @patch("prompt_unifier.git.service.GitService.clone_to_temp")
     @patch("prompt_unifier.git.service.GitService.extract_prompts_dir")
     @patch("prompt_unifier.git.service.GitService.get_latest_commit")
-    @patch("prompt_unifier.git.service.GitService.validate_repositories")
     def test_conflict_detection_tracks_file_overwrites(
         self,
-        mock_validate: Mock,
         mock_get_commit: Mock,
         mock_extract: Mock,
         mock_clone: Mock,

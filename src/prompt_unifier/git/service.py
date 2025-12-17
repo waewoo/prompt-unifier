@@ -559,53 +559,41 @@ class GitService:
             if repo_path.exists():
                 shutil.rmtree(repo_path, ignore_errors=True)
 
-    def validate_repositories(self, repos: list["RepositoryConfig"]) -> None:
-        """Validate all repositories before syncing (fail-fast approach).
+    def _clone_and_validate_all(
+        self, repos: list["RepositoryConfig"]
+    ) -> list[tuple[Path, git.Repo]]:
+        """Clone and validate all repositories.
 
-        This method validates each repository in the list by checking:
-        - URL format is valid
-        - Repository is accessible via git ls-remote
-        - Repository contains a prompts/ directory
+        This method clones all repositories to temporary directories and verifies
+        that they contain a prompts/ directory. It returns a list of tuples containing
+        the path and repo object for each cloned repository.
 
-        Validation stops at the first error encountered (fail-fast).
+        If any repository fails validation, all temporary directories are cleaned up
+        and an exception is raised.
 
         Args:
             repos: List of RepositoryConfig objects to validate
 
+        Returns:
+            List of (temp_path, repo_object) tuples
+
         Raises:
-            ValueError: If any repository fails validation, with descriptive error message
-
-        Examples:
-            >>> service = GitService()
-            >>> from prompt_unifier.models.git_config import RepositoryConfig
-            >>> repos = [
-            ...     RepositoryConfig(url="https://github.com/valid/repo.git"),
-            ...     RepositoryConfig(url="https://github.com/another/repo.git"),
-            ... ]
-            >>> service.validate_repositories(repos)
+            ValueError: If validation fails for any repository
         """
-        for idx, repo_config in enumerate(repos, 1):
-            url = repo_config.url
-            branch = repo_config.branch
+        cloned_repos: list[tuple[Path, git.Repo]] = []
+        try:
+            for idx, repo_config in enumerate(repos, 1):
+                url = repo_config.url
+                branch = repo_config.branch
+                logger.info(f"[{idx}/{len(repos)}] Validating and cloning: {url}")
 
-            try:
-                # Validate URL format and accessibility using git ls-remote
-                git_cmd = git.cmd.Git()
-
-                def ls_remote_operation(cmd: git.cmd.Git = git_cmd, repo_url: str = url) -> str:
-                    """Inner function for retry logic."""
-                    try:
-                        return str(cmd.ls_remote(repo_url, heads=True))
-                    except git.exc.GitCommandError as e:
-                        raise ConnectionError(f"Git ls-remote failed: {e}") from e
-
-                # Check repository accessibility
-                retry_with_backoff(ls_remote_operation, max_attempts=3)
-
-                # Clone to temp to verify prompts/ directory exists
-                temp_path, _ = self.clone_to_temp(url, branch=branch)
-
+                # Clone repository (single authentication step)
                 try:
+                    temp_path, repo = self.clone_to_temp(
+                        url, branch=branch, auth_config=repo_config.auth_config
+                    )
+                    cloned_repos.append((temp_path, repo))
+
                     # Check for prompts/ directory
                     prompts_dir = temp_path / "prompts"
                     if not prompts_dir.exists() or not prompts_dir.is_dir():
@@ -615,24 +603,29 @@ class GitService:
                             f"Expected at: {prompts_dir}\n\n"
                             "All repositories must have a prompts/ directory."
                         )
-                finally:
-                    # Clean up temp directory
-                    if temp_path.exists():
-                        shutil.rmtree(temp_path, ignore_errors=True)
 
-            except (ValueError, ConnectionError, git.exc.GitCommandError) as e:
-                # Fail fast on first error
-                if isinstance(e, ValueError) and "does not contain a prompts/" in str(e):
-                    raise
+                except (ValueError, ConnectionError, git.exc.GitCommandError) as e:
+                    # Fail fast on first error
+                    if isinstance(e, ValueError) and "does not contain a prompts/" in str(e):
+                        raise
 
-                raise ValueError(
-                    f"Repository {idx}/{len(repos)} validation failed: {url}\n\n"
-                    f"Error: {e}\n\n"
-                    "Please verify:\n"
-                    "- Repository URL is correct\n"
-                    "- You have access to the repository\n"
-                    "- Repository contains a prompts/ directory"
-                ) from e
+                    raise ValueError(
+                        f"Repository {idx}/{len(repos)} validation failed: {url}\n\n"
+                        f"Error: {e}\n\n"
+                        "Please verify:\n"
+                        "- Repository URL is correct\n"
+                        "- You have access to the repository\n"
+                        "- Repository contains a prompts/ directory"
+                    ) from e
+
+            return cloned_repos
+
+        except Exception:
+            # Clean up all cloned repositories if any validation fails
+            for path, _ in cloned_repos:
+                if path.exists():
+                    shutil.rmtree(path, ignore_errors=True)
+            raise
 
     def sync_multiple_repos(
         self,
@@ -643,9 +636,9 @@ class GitService:
         """Sync multiple repositories with last-wins merge strategy.
 
         This method orchestrates multi-repository sync by:
-        1. Validating all repositories (fail-fast)
+        1. Validating and cloning all repositories (fail-fast, single auth)
         2. Clearing storage directory if requested
-        3. Processing repositories in order
+        3. Processing repositories in order from pre-cloned copies
         4. Applying last-wins merge (later repos override earlier ones)
         5. Tracking conflicts and file-to-repo mappings
 
@@ -671,38 +664,38 @@ class GitService:
         """
         from prompt_unifier.utils.repo_metadata import RepoMetadata
 
-        # Step 1: Validate all repositories before starting sync (fail-fast)
-        logger.info("Validating repositories...")
-        self.validate_repositories(repos)
+        # Step 1: Clone and Validate all repositories (fail-fast)
+        # This performs the authentication only once per repository
+        logger.info("Initializing sync...")
+        cloned_repos = self._clone_and_validate_all(repos)
 
-        # Step 2: Clear storage if requested
-        if clear_storage and storage_path.exists():
-            logger.info(f"Clearing storage directory: {storage_path}")
-            shutil.rmtree(storage_path, ignore_errors=True)
+        try:
+            # Step 2: Clear storage if requested
+            if clear_storage and storage_path.exists():
+                logger.info(f"Clearing storage directory: {storage_path}")
+                shutil.rmtree(storage_path, ignore_errors=True)
 
-        # Ensure storage directory exists
-        storage_path.mkdir(parents=True, exist_ok=True)
+            # Ensure storage directory exists
+            storage_path.mkdir(parents=True, exist_ok=True)
 
-        # Step 3: Initialize metadata tracking
-        metadata = RepoMetadata()
-        file_sources: dict[str, str] = {}  # Track which repo each file came from (for conflicts)
+            # Step 3: Initialize metadata tracking
+            metadata = RepoMetadata()
+            # Track which repo each file came from (for conflicts)
+            file_sources: dict[str, str] = {}
 
-        # Step 4: Process each repository in order
-        for idx, repo_config in enumerate(repos, 1):
-            url = repo_config.url
-            branch = repo_config.branch
+            # Step 4: Process each repository using the pre-cloned instances
+            for idx, (repo_config, (temp_path, repo)) in enumerate(
+                zip(repos, cloned_repos, strict=False), 1
+            ):
+                url = repo_config.url
 
-            logger.info(f"[{idx}/{len(repos)}] Syncing: {url}")
-            if branch:
-                logger.debug(f"  Branch: {branch}")
+                branch = repo_config.branch
 
-            # Clone repository
-            temp_path, repo = self.clone_to_temp(
-                url, branch=branch, auth_config=repo_config.auth_config
-            )
+                logger.info(f"[{idx}/{len(repos)}] Processing: {url}")
+                if branch:
+                    logger.debug(f"  Branch: {branch}")
 
-            try:
-                # Get commit info
+                # Get commit info from the already cloned repo
                 commit_hash = self.get_latest_commit(repo)
                 timestamp = datetime.now(UTC).isoformat()
                 actual_branch = branch if branch else repo.active_branch.name
@@ -738,13 +731,14 @@ class GitService:
                     timestamp=timestamp,
                 )
 
-            finally:
-                # Clean up temp directory
-                if temp_path.exists():
-                    shutil.rmtree(temp_path, ignore_errors=True)
+            # Step 5: Save metadata to storage
+            logger.info(f"Saving metadata to {storage_path / '.repo-metadata.json'}")
+            metadata.save_to_file(storage_path)
 
-        # Step 5: Save metadata to storage
-        logger.info(f"Saving metadata to {storage_path / '.repo-metadata.json'}")
-        metadata.save_to_file(storage_path)
+            return metadata
 
-        return metadata
+        finally:
+            # Step 6: Cleanup all temporary directories
+            for path, _ in cloned_repos:
+                if path.exists():
+                    shutil.rmtree(path, ignore_errors=True)

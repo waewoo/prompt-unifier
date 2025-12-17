@@ -24,10 +24,8 @@ class TestThreeRepoConflictResolution:
 
     @patch("prompt_unifier.git.service.GitService.clone_to_temp")
     @patch("prompt_unifier.git.service.GitService.get_latest_commit")
-    @patch("prompt_unifier.git.service.GitService.validate_repositories")
     def test_last_wins_with_three_overlapping_repos(
         self,
-        mock_validate: Mock,
         mock_get_commit: Mock,
         mock_clone: Mock,
         tmp_path: Path,
@@ -98,10 +96,8 @@ class TestBranchSpecificMultiRepoSync:
 
     @patch("prompt_unifier.git.service.GitService.clone_to_temp")
     @patch("prompt_unifier.git.service.GitService.get_latest_commit")
-    @patch("prompt_unifier.git.service.GitService.validate_repositories")
     def test_sync_with_different_branches_per_repo(
         self,
-        mock_validate: Mock,
         mock_get_commit: Mock,
         mock_clone: Mock,
         tmp_path: Path,
@@ -176,10 +172,8 @@ class TestSelectiveFilteringMetadataTracking:
 
     @patch("prompt_unifier.git.service.GitService.clone_to_temp")
     @patch("prompt_unifier.git.service.GitService.get_latest_commit")
-    @patch("prompt_unifier.git.service.GitService.validate_repositories")
     def test_metadata_only_tracks_filtered_files(
         self,
-        mock_validate: Mock,
         mock_get_commit: Mock,
         mock_clone: Mock,
         tmp_path: Path,
@@ -230,10 +224,8 @@ class TestMetadataAccuracyVerification:
 
     @patch("prompt_unifier.git.service.GitService.clone_to_temp")
     @patch("prompt_unifier.git.service.GitService.get_latest_commit")
-    @patch("prompt_unifier.git.service.GitService.validate_repositories")
     def test_metadata_file_contains_accurate_mappings(
         self,
-        mock_validate: Mock,
         mock_get_commit: Mock,
         mock_clone: Mock,
         tmp_path: Path,
@@ -302,10 +294,8 @@ class TestCompleteStorageReplacement:
 
     @patch("prompt_unifier.git.service.GitService.clone_to_temp")
     @patch("prompt_unifier.git.service.GitService.get_latest_commit")
-    @patch("prompt_unifier.git.service.GitService.validate_repositories")
     def test_storage_cleared_before_multi_repo_sync(
         self,
-        mock_validate: Mock,
         mock_get_commit: Mock,
         mock_clone: Mock,
         tmp_path: Path,
@@ -437,9 +427,8 @@ class TestFailFastValidationWithMultipleRepos:
     """Test fail-fast validation behavior with invalid repo in middle of list."""
 
     @patch("prompt_unifier.git.service.GitService.clone_to_temp")
-    @patch("prompt_unifier.git.service.git.cmd.Git")
     def test_validation_fails_on_invalid_repo_without_syncing(
-        self, mock_git: Mock, mock_clone: Mock, tmp_path: Path
+        self, mock_clone: Mock, tmp_path: Path
     ) -> None:
         """Test that validation error on invalid repo prevents any syncing."""
         service = GitService()
@@ -451,11 +440,6 @@ class TestFailFastValidationWithMultipleRepos:
             RepositoryConfig(url="https://github.com/invalid/repo2.git"),  # This will fail
             RepositoryConfig(url="https://github.com/valid/repo3.git"),
         ]
-
-        # Mock Git.ls_remote to succeed for all (URL is valid format)
-        mock_git_instance = MagicMock()
-        mock_git.return_value = mock_git_instance
-        mock_git_instance.ls_remote.return_value = "abc123\tHEAD\ndef456\trefs/heads/main"
 
         # Mock clone_to_temp to fail on second repo (prompts/ dir doesn't exist)
         temp1 = tmp_path / "temp1"
