@@ -4,6 +4,12 @@ All notable changes to this project will be documented in this file.
 
 This project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## v2.3.2 (2025-12-18)
+
+### Fix
+
+- Correct clean option with tag enabled
+
 ## v2.3.1 (2025-12-18)
 
 ### Fix
