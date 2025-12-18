@@ -110,6 +110,93 @@ prompt-unifier deploy
 prompt-unifier status
 ```
 
+## Configuration
+
+The `prompt-unifier init` command creates a `.prompt-unifier/config.yaml` file. You can configure
+the behavior of the tool by editing this file.
+
+### Top-Level Parameters
+
+| Parameter             | Description                                                                                                                               | Default                           |
+| :-------------------- | :---------------------------------------------------------------------------------------------------------------------------------------- | :-------------------------------- |
+| `repos`               | A list of repository configurations defining where to sync prompts from. See [Repository Configuration](#repository-configuration) below. | `null`                            |
+| `storage_path`        | The local directory where synced prompts and rules are merged and stored.                                                                 | `~/.prompt-unifier/storage`       |
+| `deploy_tags`         | A list of tags (strings) to filter content during deployment. If set, only content matching these tags will be deployed.                  | `null` (deploy all)               |
+| `target_handlers`     | A list of specific handlers to deploy to by default (e.g., `['continue', 'kilocode']`).                                                   | `null` (deploy to all registered) |
+| `handlers`            | Specific configuration for handlers (e.g. `base_path`). See [Handler Configuration](#handler-configuration) below.                        | `null`                            |
+| `last_sync_timestamp` | **[Auto-generated]** The timestamp of the last successful sync. Do not edit manually.                                                     | `null`                            |
+| `repo_metadata`       | **[Auto-generated]** Details about the last synced state (commit, branch) for each repo. Do not edit manually.                            | `null`                            |
+
+### Repository Configuration
+
+Each item in the `repos` list supports the following parameters to control how content is fetched:
+
+| Parameter          | Description                                                                  | Example                           |
+| :----------------- | :--------------------------------------------------------------------------- | :-------------------------------- |
+| `url`              | **(Required)** The Git repository URL (HTTPS or SSH).                        | `https://github.com/org/repo.git` |
+| `branch`           | The specific branch to sync from. If `null`, uses the repo's default branch. | `develop`                         |
+| `auth_config`      | Authentication details (e.g. `{ "method": "token", "token": "..." }`).       | `null`                            |
+| `include_patterns` | A list of glob patterns to *include*. Only matching files will be synced.    | `["prompts/python/*"]`            |
+| `exclude_patterns` | A list of glob patterns to *exclude*. Applied after includes.                | `["**/deprecated/*"]`             |
+
+### Handler Configuration
+
+The `handlers` section allows you to customize behavior for specific tools (e.g., `continue`,
+`kilocode`).
+
+| Parameter   | Description                                                                                              | Example                 |
+| :---------- | :------------------------------------------------------------------------------------------------------- | :---------------------- |
+| `base_path` | Overrides the default deployment directory for the handler. Supports environment variables like `$HOME`. | `"$HOME/.continue-dev"` |
+
+### Full Configuration Example
+
+Below is a complete `.prompt-unifier/config.yaml` example demonstrating advanced usage.
+
+**Note:** Advanced repository settings like `auth_config`, `include_patterns`, and
+`exclude_patterns` **cannot** be set via CLI flags (like `--repo`). You must edit the `config.yaml`
+file directly to use them.
+
+```yaml
+repos:
+  # Simple public repository
+  - url: https://github.com/company/public-prompts.git
+    branch: main
+
+  # Private repository with authentication and filtering
+  - url: git@gitlab.com:company/internal-prompts.git
+    branch: develop
+    auth_config:
+      method: ssh_key
+      # Optional: path to specific key if not using default agent
+      # key_path: ~/.ssh/id_rsa_company
+    include_patterns:
+      - "prompts/backend/**"
+      - "rules/python/*"
+    exclude_patterns:
+      - "**/deprecated/**"
+      - "**/*.tmp"
+
+storage_path: ~/.prompt-unifier/storage
+
+# Deploy only content with these tags
+deploy_tags:
+  - python
+  - backend
+  - security
+
+# Deploy to these handlers by default
+target_handlers:
+  - continue
+  - kilocode
+
+# Handler-specific configuration
+handlers:
+  continue:
+    base_path: $PWD/.continue
+  kilocode:
+    base_path: $HOME/.kilocode
+```
+
 ## Example Repository
 
 An example repository with prompts and rules is available as a template:
