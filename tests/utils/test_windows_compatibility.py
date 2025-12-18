@@ -221,25 +221,6 @@ class TestFileLocking:
 
         assert "modified" in test_file.read_text(encoding="utf-8")
 
-    def test_backup_restore_scenario(self, tmp_path: Path) -> None:
-        """Test backup and restore scenario without file locking issues."""
-        original = tmp_path / "config.yaml"
-        backup = tmp_path / "config.yaml.bak"
-
-        # Create original file
-        original.write_text("original: true", encoding="utf-8")
-
-        # Create backup
-        backup.write_text(original.read_text(encoding="utf-8"), encoding="utf-8")
-
-        # Modify original
-        original.write_text("modified: true", encoding="utf-8")
-
-        # Restore from backup
-        original.write_text(backup.read_text(encoding="utf-8"), encoding="utf-8")
-
-        assert original.read_text(encoding="utf-8") == "original: true"
-
 
 class TestPlatformSpecificBehavior:
     """Tests for platform-specific behavior patterns."""

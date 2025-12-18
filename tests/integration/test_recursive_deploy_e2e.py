@@ -468,12 +468,12 @@ class TestCleanOperationWithSubdirectories:
             assert (continue_dir / "prompts" / "root-prompt.md").exists()
             assert (continue_dir / "prompts" / "backend" / "backend-prompt.md").exists()
 
-    def test_clean_with_tag_filter_preserves_non_filtered_files(
+    def test_clean_with_tag_filter_removes_non_filtered_files(
         self, tmp_path: Path, complex_storage_structure: Path
     ):
-        """Test that --clean with tag filtering doesn't remove files outside filter scope.
+        """Test that --clean with tag filtering removes files outside filter scope.
 
-        Edge case test for clean operation with filtering.
+        This ensures strict synchronization: target contains ONLY what matches current filter.
         """
         project_dir = tmp_path / "project"
         project_dir.mkdir()
@@ -493,12 +493,14 @@ class TestCleanOperationWithSubdirectories:
             continue_dir = project_dir / ".continue"
             backend_file = continue_dir / "prompts" / "backend" / "backend-prompt.md"
             frontend_file = continue_dir / "prompts" / "frontend" / "frontend-prompt.md"
+            root_file = continue_dir / "prompts" / "root-prompt.md"
 
             assert backend_file.exists()
             assert frontend_file.exists()
+            assert root_file.exists()
 
             # Deploy with tag filter and clean
-            # This should only clean within the filtered scope
+            # This should clean everything NOT matching "backend" tag
             result = runner.invoke(
                 app, ["deploy", "--tags", "backend", "--clean"], catch_exceptions=False
             )
@@ -507,8 +509,9 @@ class TestCleanOperationWithSubdirectories:
             # Backend files should still exist (they were redeployed)
             assert backend_file.exists()
 
-            # Frontend files should still exist (outside filter scope, not cleaned)
-            assert frontend_file.exists()
+            # Frontend and root files should be removed (recursive clean of everything not deployed)
+            assert not frontend_file.exists()
+            assert not root_file.exists()
 
 
 class TestEdgeCases:
@@ -562,65 +565,6 @@ Content
             # Only the backend file should be deployed
             continue_dir = project_dir / ".continue"
             assert (continue_dir / "prompts" / "backend" / "test.md").exists()
-
-    def test_multiple_deployments_update_subdirectory_files(
-        self, tmp_path: Path, complex_storage_structure: Path
-    ):
-        """Test that multiple deployments correctly update files in subdirectories.
-
-        Validates that backup and update logic works with nested structures.
-        """
-        project_dir = tmp_path / "project"
-        project_dir.mkdir()
-
-        with patch("prompt_unifier.cli.commands.Path.cwd", return_value=project_dir):
-            # Initialize and configure
-            runner.invoke(app, ["init"], catch_exceptions=False)
-            config_path = project_dir / ".prompt-unifier" / "config.yaml"
-            config_manager = ConfigManager()
-            config = config_manager.load_config(config_path)
-            config.storage_path = str(complex_storage_structure)
-            config_manager.save_config(config_path, config)
-
-            # First deployment
-            result = runner.invoke(app, ["deploy"], catch_exceptions=False)
-            assert result.exit_code == 0
-
-            continue_dir = project_dir / ".continue"
-            api_file = continue_dir / "prompts" / "backend" / "api" / "api-prompt.md"
-            assert api_file.exists()
-
-            original_content = api_file.read_text()
-
-            # Modify source file
-            source_file = (
-                complex_storage_structure / "prompts" / "backend" / "api" / "api-prompt.md"
-            )
-            source_file.write_text(
-                """---
-title: api-prompt
-description: Updated API prompt
-tags: ["api", "backend"]
-version: 2.0.0
----
-
-Updated API prompt content
-"""
-            )
-
-            # Second deployment
-            result = runner.invoke(app, ["deploy"], catch_exceptions=False)
-            assert result.exit_code == 0
-
-            # File should be updated
-            updated_content = api_file.read_text()
-            assert updated_content != original_content
-            assert "Updated API prompt content" in updated_content
-
-            # Backup should exist
-            backup_file = api_file.with_suffix(".md.bak")
-            assert backup_file.exists()
-            assert original_content in backup_file.read_text()
 
     def test_deeply_nested_paths_with_special_characters(self, tmp_path: Path):
         """Test that subdirectory names with hyphens, underscores work correctly."""

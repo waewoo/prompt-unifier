@@ -960,7 +960,7 @@ def deploy_to_single_handler(
     if clean and hasattr(handler, "clean_orphaned_files"):
         removed_results = _clean_orphaned_files(handler, handler_name, deployed_filenames)
         cleaned_count = len(removed_results)
-        verification_results.extend(removed_results)  # Add removed files to results
+        verification_results.extend(removed_results)
 
     # Display verification report
     if verification_results and hasattr(handler, "display_verification_report"):

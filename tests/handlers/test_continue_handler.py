@@ -2,7 +2,6 @@
 
 import shutil
 from pathlib import Path
-from unittest.mock import MagicMock, patch
 
 import pytest
 
@@ -48,23 +47,6 @@ class TestContinueToolHandler:
     def test_init_creates_directories(self, continue_handler: ContinueToolHandler):
         assert continue_handler.prompts_dir.exists()
         assert continue_handler.rules_dir.exists()
-
-    @patch("pathlib.Path.rename")
-    def test_backup_file_creates_backup(
-        self, mock_rename: MagicMock, continue_handler: ContinueToolHandler, tmp_path: Path
-    ):
-        test_file = tmp_path / "test.md"
-        test_file.write_text("original content")
-        continue_handler._backup_file(test_file)
-        mock_rename.assert_called_once_with(test_file.with_suffix(".md.bak"))
-
-    @patch("pathlib.Path.rename")
-    def test_backup_file_does_not_backup_if_not_exists(
-        self, mock_rename: MagicMock, continue_handler: ContinueToolHandler, tmp_path: Path
-    ):
-        test_file = tmp_path / "non_existent.md"
-        continue_handler._backup_file(test_file)
-        mock_rename.assert_not_called()
 
     def test_process_prompt_content_adds_invokable(
         self, continue_handler: ContinueToolHandler, mock_prompt: PromptFrontmatter
@@ -195,19 +177,6 @@ class TestContinueToolHandler:
         )
         assert continue_handler.verify_deployment(mock_prompt.title, "prompt") is False
 
-    def test_deploy_prompt_with_existing_file_creates_backup(
-        self, continue_handler: ContinueToolHandler, mock_prompt: PromptFrontmatter
-    ):
-        target_file = continue_handler.prompts_dir / f"{mock_prompt.title}.md"
-        target_file.write_text("initial content", encoding="utf-8")
-        backup_file = target_file.with_suffix(".md.bak")
-
-        continue_handler.deploy(mock_prompt, "prompt", "This is the content body.")
-
-        assert target_file.exists()
-        assert backup_file.exists()
-        assert backup_file.read_text(encoding="utf-8") == "initial content"
-
     def test_verify_deployment_invalid_content_type(self, tmp_path: Path):
         """Test verify_deployment with invalid content type."""
         handler = ContinueToolHandler(base_path=tmp_path)
@@ -286,87 +255,6 @@ content""",
 
         result = handler.verify_deployment("test_prompt", "prompt")
         assert result is False  # invokable should be true
-
-    def test_rollback_multiple_files(self, tmp_path: Path):
-        """Test rollback with multiple backup files."""
-        handler = ContinueToolHandler(base_path=tmp_path)
-
-        # Create multiple files with backups
-        prompt_file1 = handler.prompts_dir / "prompt1.md"
-        prompt_file2 = handler.prompts_dir / "prompt2.md"
-        rule_file1 = handler.rules_dir / "rule1.md"
-
-        # Create original files
-        prompt_file1.write_text("original prompt 1", encoding="utf-8")
-        prompt_file2.write_text("original prompt 2", encoding="utf-8")
-        rule_file1.write_text("original rule 1", encoding="utf-8")
-
-        # Create backups
-        prompt_backup1 = prompt_file1.with_suffix(".md.bak")
-        prompt_backup2 = prompt_file2.with_suffix(".md.bak")
-        rule_backup1 = rule_file1.with_suffix(".md.bak")
-
-        prompt_backup1.write_text("backup prompt 1", encoding="utf-8")
-        prompt_backup2.write_text("backup prompt 2", encoding="utf-8")
-        rule_backup1.write_text("backup rule 1", encoding="utf-8")
-
-        # Rename originals to simulate backup
-        prompt_file1.rename(prompt_backup1.with_suffix(".tmp"))
-        prompt_file2.rename(prompt_backup2.with_suffix(".tmp"))
-        rule_file1.rename(rule_backup1.with_suffix(".tmp"))
-
-        # Create new files (simulating deployment)
-        prompt_file1.write_text("new prompt 1", encoding="utf-8")
-        prompt_file2.write_text("new prompt 2", encoding="utf-8")
-        rule_file1.write_text("new rule 1", encoding="utf-8")
-
-        # Execute rollback
-        handler.rollback()
-
-        # Verify backups were restored
-        assert prompt_file1.read_text(encoding="utf-8") == "backup prompt 1"
-        assert prompt_file2.read_text(encoding="utf-8") == "backup prompt 2"
-        assert rule_file1.read_text(encoding="utf-8") == "backup rule 1"
-
-        # Verify backups were removed
-        assert not prompt_backup1.exists()
-        assert not prompt_backup2.exists()
-        assert not rule_backup1.exists()
-
-    def test_rollback_no_backups(self, tmp_path: Path):
-        """Test rollback when there are no backups."""
-        handler = ContinueToolHandler(base_path=tmp_path)
-
-        # Ensure there are no backups
-        for backup in handler.prompts_dir.glob("*.bak"):
-            backup.unlink()
-        for backup in handler.rules_dir.glob("*.bak"):
-            backup.unlink()
-
-        # Execute rollback - should not crash
-        handler.rollback()
-
-        # Verify there are still no backups
-        assert len(list(handler.prompts_dir.glob("*.bak"))) == 0
-        assert len(list(handler.rules_dir.glob("*.bak"))) == 0
-
-    def test_rollback_mixed_backups(self, tmp_path: Path):
-        """Test rollback with mixed backups (some exist, some don't)."""
-        handler = ContinueToolHandler(base_path=tmp_path)
-
-        # Create only one backup
-        prompt_file = handler.prompts_dir / "prompt1.md"
-        prompt_backup = prompt_file.with_suffix(".md.bak")
-
-        prompt_backup.write_text("backup content", encoding="utf-8")
-        prompt_file.write_text("new content", encoding="utf-8")
-
-        # Execute rollback
-        handler.rollback()
-
-        # Verify backup was restored
-        assert prompt_file.read_text(encoding="utf-8") == "backup content"
-        assert not prompt_backup.exists()
 
     def test_process_prompt_content_with_all_fields(self, tmp_path: Path):
         """Test _process_prompt_content with all optional fields."""
@@ -496,23 +384,6 @@ More content here."""
         # Normalize line endings for Windows
         normalized_content = content.replace("\r\n", "\n")
         assert complex_content in normalized_content
-
-    def test_backup_file_with_special_characters(self, tmp_path: Path):
-        """Test _backup_file with special file names."""
-        handler = ContinueToolHandler(base_path=tmp_path)
-
-        # Create a file with special characters
-        special_file = handler.prompts_dir / "special-chars_123.md"
-        special_file.write_text("content with special chars", encoding="utf-8")
-
-        # Create backup
-        handler._backup_file(special_file)
-
-        # Verify backup was created
-        backup_file = special_file.with_suffix(".md.bak")
-        assert backup_file.exists()
-        assert backup_file.read_text(encoding="utf-8") == "content with special chars"
-        assert not special_file.exists()  # Original should have been renamed
 
     def test_get_status_with_missing_directories(self, tmp_path: Path):
         """Test get_status when directories are missing."""
@@ -829,37 +700,10 @@ class TestCleanOrphanedFiles:
         assert (continue_handler.prompts_dir / source_filename).exists()
         assert not orphaned.exists()
 
-    def test_clean_removes_backup_files(
+    def test_clean_removes_md_in_subdirectories(
         self, continue_handler: ContinueToolHandler, mock_prompt: PromptFrontmatter
     ):
-        """Test that clean removes .bak backup files."""
-        # Deploy a prompt
-        continue_handler.deploy(mock_prompt, "prompt", "Body")
-
-        # Create backup files manually
-        backup_prompt = continue_handler.prompts_dir / "old-backup.md.bak"
-        backup_rule = continue_handler.rules_dir / "rule-backup.md.bak"
-        backup_prompt.write_text("old backup content")
-        backup_rule.write_text("old rule backup")
-
-        # Clean with the deployed file
-        deployed = {f"{mock_prompt.title}.md"}
-        removed = continue_handler.clean_orphaned_files(deployed)
-
-        # Should remove both .bak files
-        assert len(removed) == 2
-        assert not backup_prompt.exists()
-        assert not backup_rule.exists()
-        # Deployed file should still exist
-        assert (continue_handler.prompts_dir / f"{mock_prompt.title}.md").exists()
-
-    def test_clean_removes_backup_files_recursively_but_preserves_md_in_subdirectories(
-        self, continue_handler: ContinueToolHandler, mock_prompt: PromptFrontmatter
-    ):
-        """Test that clean recursively removes .bak files but preserves .md in subdirectories.
-
-        This behavior preserves files from previous deployments with different tag filters.
-        """
+        """Test that clean removes .md in subdirectories (recursive cleanup)."""
         # Deploy a prompt (in root directory)
         continue_handler.deploy(mock_prompt, "prompt", "Body")
 
@@ -869,13 +713,9 @@ class TestCleanOrphanedFiles:
         subdir_prompts.mkdir()
         subdir_rules.mkdir()
 
-        # Create .md files in subdirectories (should be preserved)
+        # Create .md files in subdirectories (should be removed)
         (subdir_prompts / "nested.md").write_text("nested content")
         (subdir_rules / "nested-rule.md").write_text("nested rule")
-
-        # Create backup files in subdirectories (should be removed)
-        (subdir_prompts / "backup.md.bak").write_text("backup")
-        (subdir_rules / "backup-rule.md.bak").write_text("backup rule")
 
         # Create orphaned .md file in root (should be removed)
         (continue_handler.prompts_dir / "orphan.md").write_text("orphan")
@@ -884,23 +724,22 @@ class TestCleanOrphanedFiles:
         deployed = {f"{mock_prompt.title}.md"}
         removed = continue_handler.clean_orphaned_files(deployed)
 
-        # Should remove: 2 .bak files in subdirs + 1 orphaned .md in root = 3 files
+        # Should remove: 1 orphan in root + 2 nested files = 3 files
         assert len(removed) == 3
-        assert subdir_prompts.exists()  # Directory remains
-        assert subdir_rules.exists()  # Directory remains
-        # .md files in subdirectories are PRESERVED (for tag filter compatibility)
-        assert (subdir_prompts / "nested.md").exists()
-        assert (subdir_rules / "nested-rule.md").exists()
-        # .bak files in subdirectories are REMOVED
-        assert not (subdir_prompts / "backup.md.bak").exists()
-        assert not (subdir_rules / "backup-rule.md.bak").exists()
-        # Orphaned .md in root is REMOVED
+
+        # Subdirectories should be removed because they became empty
+        assert not subdir_prompts.exists()
+        assert not subdir_rules.exists()
+
+        # Files should be removed
+        assert not (subdir_prompts / "nested.md").exists()
+        assert not (subdir_rules / "nested-rule.md").exists()
         assert not (continue_handler.prompts_dir / "orphan.md").exists()
 
-    def test_clean_ignores_non_md_and_non_bak_files(
+    def test_clean_ignores_non_md_files(
         self, continue_handler: ContinueToolHandler, mock_prompt: PromptFrontmatter
     ):
-        """Test that clean ignores files that are not .md or .bak."""
+        """Test that clean ignores files that are not .md."""
         # Deploy a prompt
         continue_handler.deploy(mock_prompt, "prompt", "Body")
 
@@ -913,7 +752,7 @@ class TestCleanOrphanedFiles:
         deployed = {f"{mock_prompt.title}.md"}
         removed = continue_handler.clean_orphaned_files(deployed)
 
-        # Non-.md and non-.bak files should be ignored
+        # Non-.md files should be ignored
         assert len(removed) == 0
         assert (continue_handler.prompts_dir / "README.txt").exists()
         assert (continue_handler.prompts_dir / "config.json").exists()

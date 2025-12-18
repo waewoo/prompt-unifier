@@ -10,7 +10,6 @@ CONFIG_FILE = "config.yaml"
 
 # Glob patterns for file discovery
 MD_GLOB_PATTERN = "**/*.md"
-BAK_GLOB_PATTERN = "**/*.bak"
 
 # Continue tool handler paths
 CONTINUE_DIR = ".continue"

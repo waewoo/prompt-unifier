@@ -89,15 +89,6 @@ class TestKiloCodeToolHandler:
     #     assert any(expected_workflow_message in s for s in calls)
     #     assert any("Created Kilo Code rules directory" in s for s in calls)
 
-    @patch("pathlib.Path.rename")
-    def test_backup_file_creates_backup(
-        self, mock_rename: MagicMock, kilo_code_handler: KiloCodeToolHandler, tmp_path: Path
-    ):
-        test_file = tmp_path / "test.md"
-        test_file.write_text("original content")
-        kilo_code_handler._backup_file(test_file)
-        mock_rename.assert_called_once_with(test_file.with_suffix(".md.bak"))
-
     def test_convert_to_pure_markdown_prompt(
         self, kilo_code_handler: KiloCodeToolHandler, mock_prompt: PromptFrontmatter
     ):
@@ -191,45 +182,19 @@ class TestKiloCodeToolHandler:
         content = target_file.read_text()
         assert content.startswith("# Test Rule")
 
-    def test_rollback(self, kilo_code_handler: KiloCodeToolHandler, mock_prompt: PromptFrontmatter):
-        final_filename = kilo_code_handler._determine_target_filename(mock_prompt.title, None, None)
-        target_file = kilo_code_handler.prompts_dir / final_filename
-        backup_file = target_file.with_suffix(".md.bak")
-
-        # 1. Create an initial file (which will be backed up by deploy)
-        target_file.write_text("Original content")
-
-        # 2. Deploy new content (this will trigger backup of "Original content")
-        kilo_code_handler.deploy(mock_prompt, "prompt", "New content")
-
-        assert target_file.exists()
-        assert target_file.read_text() != "Original content"  # It should have "New content" now
-        assert backup_file.exists()
-        assert backup_file.read_text() == "Original content"
-
-        # 3. Rollback
-        kilo_code_handler.rollback()
-
-        # Verify original content is restored and backup is removed
-        assert target_file.exists()
-        assert target_file.read_text() == "Original content"
-        assert not backup_file.exists()
-
     def test_clean_orphaned_files(self, kilo_code_handler: KiloCodeToolHandler):
         orphaned_prompt = kilo_code_handler.prompts_dir / "orphan.md"
         orphaned_rule = kilo_code_handler.rules_dir / "orphan.md"
-        backup_file = kilo_code_handler.prompts_dir / "backup.md.bak"
 
         orphaned_prompt.write_text("---\nname: Orphan Prompt\n---\nContent")
         orphaned_rule.write_text("---\nname: Orphan Rule\n---\nContent")
-        backup_file.touch()
 
         removed = kilo_code_handler.clean_orphaned_files(set())
 
-        assert len(removed) == 3
+        # Only .md files are removed (.bak backup functionality removed)
+        assert len(removed) == 2
         assert not orphaned_prompt.exists()
         assert not orphaned_rule.exists()
-        assert not backup_file.exists()
 
     def test_get_deployment_status(
         self, kilo_code_handler: KiloCodeToolHandler, mock_prompt: PromptFrontmatter
@@ -434,22 +399,6 @@ class TestKiloCodeToolHandler:
         status = kilo_code_handler.get_deployment_status("test", "invalid_type", "content")
         assert status == "error"
 
-    def test_rollback_with_errors(self, kilo_code_handler: KiloCodeToolHandler):
-        """Test rollback when backup files have issues."""
-        # Create a backup file
-        backup_file = kilo_code_handler.prompts_dir / "test.md.bak"
-        backup_file.write_text("backup content")
-
-        # Create original file that will conflict
-        original_file = kilo_code_handler.prompts_dir / "test.md"
-        original_file.write_text("original content")
-
-        # Rollback should handle this gracefully
-        kilo_code_handler.rollback()
-
-        # After rollback, original should have backup content
-        assert original_file.read_text() == "backup content"
-
     def test_clean_orphaned_files_with_subdirectories(self, kilo_code_handler: KiloCodeToolHandler):
         """Test that orphaned files in subdirectories are removed for KiloCode."""
         # Create a subdirectory with a file
@@ -543,35 +492,17 @@ class TestKiloCodeToolHandler:
         assert "# Only Name" in result
         assert "Body" in result
 
-    def test_rollback_with_oserror_in_rules(self, kilo_code_handler: KiloCodeToolHandler):
-        """Test rollback handles OSError in rules directory."""
-        # Create a backup in rules directory
-        backup_file = kilo_code_handler.rules_dir / "test.md.bak"
-        backup_file.write_text("backup")
-
-        # Rollback should handle this
-        kilo_code_handler.rollback()
-
-        # Backup should be restored
-        restored = kilo_code_handler.rules_dir / "test.md"
-        assert restored.exists()
-
     def test_clean_orphaned_files_in_rules_dir(self, kilo_code_handler: KiloCodeToolHandler):
         """Test cleaning orphaned files in rules directory."""
         # Create orphaned file in rules
         orphan = kilo_code_handler.rules_dir / "orphan.md"
         orphan.write_text("---\nname: Orphan Rule\n---\nContent")
 
-        # Create backup file in rules
-        backup = kilo_code_handler.rules_dir / "backup.md.bak"
-        backup.write_text("backup")
-
         removed = kilo_code_handler.clean_orphaned_files(set())
 
-        # Both should be removed
+        # Orphan should be removed
         assert not orphan.exists()
-        assert not backup.exists()
-        assert len(removed) == 2
+        assert len(removed) == 1
 
     def test_display_verification_report_with_custom_console(
         self, kilo_code_handler: KiloCodeToolHandler

@@ -141,50 +141,6 @@ class TestEndToEndDeployVerifyWorkflow:
             assert "1 items deployed" in result.output or "API Prompt" in result.output
 
 
-class TestDeployRollbackIntegration:
-    """Tests for deploy and rollback integration."""
-
-    def test_rollback_restores_files_after_deploy_to_subdirs(self, tmp_path: Path):
-        """Test that rollback correctly restores files deployed to subdirectories."""
-        handler = ContinueToolHandler(base_path=tmp_path)
-        mock_prompt = PromptFrontmatter(
-            title="Test Prompt",
-            description="A test prompt",
-        )
-
-        relative_path = Path("backend/api")
-
-        # First deployment
-        handler.deploy(
-            mock_prompt,
-            "prompt",
-            "Original content",
-            source_filename="test.md",
-            relative_path=relative_path,
-        )
-
-        # Second deployment creates backup
-        handler.deploy(
-            mock_prompt,
-            "prompt",
-            "Updated content",
-            source_filename="test.md",
-            relative_path=relative_path,
-        )
-
-        # Verify backup exists
-        target_dir = handler.prompts_dir / relative_path
-        assert (target_dir / "test.md.bak").exists()
-        assert "Updated content" in (target_dir / "test.md").read_text()
-
-        # Rollback
-        handler.rollback()
-
-        # Verify original content restored
-        assert "Original content" in (target_dir / "test.md").read_text()
-        assert not (target_dir / "test.md.bak").exists()
-
-
 class TestVerificationWithSubdirectories:
     """Tests for verification of files in subdirectories."""
 
@@ -258,58 +214,6 @@ class TestDryRunPreviewWithSubdirectories:
                 # Should have no markdown files
                 md_files = list(prompts_dir.glob("**/*.md"))
                 assert len(md_files) == 0, f"Found unexpected files: {md_files}"
-
-
-class TestMultipleDeploymentsWithBackupRestore:
-    """Tests for multiple sequential deployments with backup and restore."""
-
-    def test_sequential_deploys_create_correct_backups(self, tmp_path: Path):
-        """Test that sequential deployments create and maintain correct backups."""
-        handler = ContinueToolHandler(base_path=tmp_path)
-        mock_prompt = PromptFrontmatter(
-            title="Sequential Test",
-            description="Test prompt",
-        )
-
-        relative_path = Path("test/subdir")
-
-        # First deployment
-        handler.deploy(
-            mock_prompt,
-            "prompt",
-            "Version 1",
-            source_filename="versioned.md",
-            relative_path=relative_path,
-        )
-
-        target_file = handler.prompts_dir / relative_path / "versioned.md"
-        assert "Version 1" in target_file.read_text()
-
-        # Second deployment
-        handler.deploy(
-            mock_prompt,
-            "prompt",
-            "Version 2",
-            source_filename="versioned.md",
-            relative_path=relative_path,
-        )
-
-        assert "Version 2" in target_file.read_text()
-        backup_file = target_file.with_suffix(".md.bak")
-        assert "Version 1" in backup_file.read_text()
-
-        # Third deployment
-        handler.deploy(
-            mock_prompt,
-            "prompt",
-            "Version 3",
-            source_filename="versioned.md",
-            relative_path=relative_path,
-        )
-
-        assert "Version 3" in target_file.read_text()
-        # Backup should now contain Version 2 (most recent backup)
-        assert "Version 2" in backup_file.read_text()
 
 
 class TestCleanWithSubdirectories:

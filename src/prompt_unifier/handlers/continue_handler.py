@@ -150,7 +150,6 @@ class ContinueToolHandler(BaseToolHandler):
         deployment_status = self._determine_deployment_status(target_file_path, processed_content)
         self._deployment_statuses[content.title] = deployment_status
 
-        self._backup_file(target_file_path)
         target_file_path.write_text(processed_content, encoding="utf-8")
         logger.debug(f"Deployed {content.title} ({content_type}) to {target_file_path}")
 

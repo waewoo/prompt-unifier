@@ -10,7 +10,7 @@ import yaml
 from rich.console import Console
 from rich.table import Table
 
-from prompt_unifier.constants import BAK_GLOB_PATTERN, KILO_CODE_MEMORY_BANK_DIR
+from prompt_unifier.constants import KILO_CODE_MEMORY_BANK_DIR
 from prompt_unifier.handlers.handler_utils import console
 from prompt_unifier.handlers.protocol import ToolHandler
 
@@ -88,19 +88,6 @@ class BaseToolHandler(ToolHandler, ABC):
         if self.prompts_dir.exists() and self.rules_dir.exists():
             return "active"
         return "inactive"
-
-    def _backup_file(self, file_path: Path) -> None:
-        """Creates a backup of the given file.
-
-        Args:
-            file_path: Path to file to backup
-        """
-        if file_path.exists():
-            backup_path = file_path.with_suffix(file_path.suffix + ".bak")
-            if backup_path.exists():
-                backup_path.unlink()
-            file_path.rename(backup_path)
-            logger.debug(f"Backed up {file_path.name} to {backup_path.name}")
 
     def _determine_deployment_status(self, target_file_path: Path, new_content: str) -> str:
         """
@@ -254,47 +241,13 @@ class BaseToolHandler(ToolHandler, ABC):
 
     def rollback(self) -> None:
         """
-        Rolls back the deployment by restoring backup files.
+        Rollback deployment.
 
-        This method:
-        1. Recursively finds all .bak files in subdirectories using BAK_GLOB_PATTERN pattern
-        2. Restores each backup file to its original location
-        3. Removes empty directories after restoration
-        4. Logs warnings and continues if backup files are missing
+        Note: Backup file functionality has been removed.
+        This method is kept for protocol compatibility but does nothing.
         """
-        # Restore backups in prompts directory recursively
-        for backup_file in self.prompts_dir.glob(BAK_GLOB_PATTERN):
-            original_path = backup_file.with_suffix("")
-            try:
-                # On Windows, rename() fails if destination exists, so remove it first
-                if original_path.exists():
-                    original_path.unlink()
-                backup_file.rename(original_path)
-                console.print(f"[yellow]Restored {original_path.name} from backup[/yellow]")
-            except OSError as e:
-                console.print(
-                    f"[yellow]Warning: Could not restore {backup_file.name}: {e}[/yellow]"
-                )
-                continue
-
-        # Restore backups in rules directory recursively
-        for backup_file in self.rules_dir.glob(BAK_GLOB_PATTERN):
-            original_path = backup_file.with_suffix("")
-            try:
-                # On Windows, rename() fails if destination exists, so remove it first
-                if original_path.exists():
-                    original_path.unlink()
-                backup_file.rename(original_path)
-                console.print(f"[yellow]Restored {original_path.name} from backup[/yellow]")
-            except OSError as e:
-                console.print(
-                    f"[yellow]Warning: Could not restore {backup_file.name}: {e}[/yellow]"
-                )
-                continue
-
-        # Clean up empty directories after restoration
-        self._remove_empty_directories(self.prompts_dir)
-        self._remove_empty_directories(self.rules_dir)
+        console.print("[yellow]Rollback functionality is no longer supported.[/yellow]")
+        logger.warning("Rollback called but backup functionality has been removed")
 
     def _extract_title_from_md_file(self, file_path: Path) -> str | None:
         """
@@ -315,23 +268,6 @@ class BaseToolHandler(ToolHandler, ABC):
         except (OSError, UnicodeDecodeError, yaml.YAMLError) as e:
             logger.warning(f"Failed to extract title from {file_path}: {e}")
         return None
-
-    def _remove_backup_files(
-        self, directory: Path, content_type: str, results: list[VerificationResult]
-    ) -> None:
-        """Remove .bak files and track them in results."""
-        for file_path in directory.glob(BAK_GLOB_PATTERN):
-            results.append(
-                VerificationResult(
-                    file_name=file_path.name,
-                    content_type=content_type,
-                    status="passed",
-                    details="Backup file removed successfully",
-                    deployment_status="deleted",
-                    actual_file_path=str(file_path),
-                )
-            )
-            file_path.unlink()
 
     def _remove_orphaned_md_files(
         self,
@@ -382,7 +318,6 @@ class BaseToolHandler(ToolHandler, ABC):
     def clean_orphaned_files(self, deployed_filenames: set[str]) -> list[VerificationResult]:
         """
         Remove files in prompts/rules directories that are not in the deployed set.
-        Also removes any .bak backup files recursively (including in subdirectories).
 
         Args:
             deployed_filenames: Set of filenames (including relative paths) that were just deployed.
@@ -391,16 +326,15 @@ class BaseToolHandler(ToolHandler, ABC):
             List of VerificationResult objects for removed files.
         """
         removed_results: list[VerificationResult] = []
-        use_recursive = self.name == "kilocode"
+        # Always use recursive cleanup to catch orphaned files in subdirectories
+        use_recursive = True
 
         # Clean prompts directory
-        self._remove_backup_files(self.prompts_dir, "prompt", removed_results)
         self._remove_orphaned_md_files(
             self.prompts_dir, "prompt", deployed_filenames, use_recursive, removed_results
         )
 
         # Clean rules directory
-        self._remove_backup_files(self.rules_dir, "rule", removed_results)
         self._remove_orphaned_md_files(
             self.rules_dir, "rule", deployed_filenames, use_recursive, removed_results
         )

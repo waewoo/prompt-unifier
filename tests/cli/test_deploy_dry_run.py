@@ -1,7 +1,6 @@
 """Tests for deploy command dry-run option and verification integration."""
 
 from pathlib import Path
-from unittest.mock import patch
 
 import pytest
 from typer.testing import CliRunner
@@ -124,23 +123,6 @@ content""")
             result = runner.invoke(app, ["deploy", "--dry-run"])
             # Should complete without error but may show info about directory creation
             assert result.exit_code == 0
-
-    def test_dry_run_skips_backup_deploy_verification(self, setup_deploy_environment):
-        """Test that dry-run skips backup, deploy, and verification operations."""
-        tmp_path, storage_dir = setup_deploy_environment
-
-        with runner.isolated_filesystem(temp_dir=tmp_path):
-            import os
-
-            os.chdir(tmp_path)
-
-            # Patch the actual deploy method to verify it's not called
-            patch_path = "prompt_unifier.handlers.continue_handler.ContinueToolHandler.deploy"
-            with patch(patch_path) as mock_deploy:
-                result = runner.invoke(app, ["deploy", "--dry-run"])
-                assert result.exit_code == 0
-                # Deploy should NOT be called during dry-run
-                mock_deploy.assert_not_called()
 
 
 class TestDeployVerificationIntegration:

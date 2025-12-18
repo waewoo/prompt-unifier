@@ -176,36 +176,3 @@ class TestRelativePathSupport:
         assert (handler.prompts_dir / "backend" / "backend-prompt.md").exists()
         assert (handler.prompts_dir / "frontend" / "frontend-prompt.md").exists()
         assert (handler.prompts_dir / "root-prompt.md").exists()
-
-    def test_deploy_with_relative_path_and_backup(
-        self, handler: ContinueToolHandler, mock_prompt: PromptFrontmatter
-    ):
-        """Test that backup works correctly with relative paths."""
-        relative_path = Path("backend")
-        source_filename = "existing-prompt.md"
-
-        # First deployment
-        handler.deploy(
-            mock_prompt,
-            "prompt",
-            "Original content",
-            source_filename=source_filename,
-            relative_path=relative_path,
-        )
-
-        # Second deployment (should create backup)
-        handler.deploy(
-            mock_prompt,
-            "prompt",
-            "Updated content",
-            source_filename=source_filename,
-            relative_path=relative_path,
-        )
-
-        target_file = handler.prompts_dir / relative_path / source_filename
-        backup_file = target_file.with_suffix(".md.bak")
-
-        assert target_file.exists()
-        assert backup_file.exists()
-        assert "Updated content" in target_file.read_text()
-        assert "Original content" in backup_file.read_text()

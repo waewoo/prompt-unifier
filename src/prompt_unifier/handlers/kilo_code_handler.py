@@ -262,8 +262,7 @@ class KiloCodeToolHandler(BaseToolHandler):
         deployment_status = self._determine_deployment_status(target_file_path, markdown_content)
         self._deployment_statuses[content.title] = deployment_status
 
-        # Backup and write
-        self._backup_file(target_file_path)
+        # Write file
         target_file_path.write_text(markdown_content, encoding="utf-8")
         logger.debug(f"Deployed {content.title} ({content_type}) to {target_file_path}")
 
