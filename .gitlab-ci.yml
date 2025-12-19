@@ -305,8 +305,6 @@ docs-build:
     paths: [site/]
     expire_in: 1 hour
   rules:
-    - if: '$CI_COMMIT_TAG'
-      when: never
     - if: '$CI_COMMIT_BRANCH == "main"'
       when: on_success
     - !reference [.rules:build-strategy]
@@ -348,7 +346,9 @@ pages:
     - if [ -d site ]; then mv site public; else mkdir -p public; fi
   artifacts:
     paths: [public]
-  rules: *rules-release-branch-strategy
+  rules:
+    - !reference [.rules:release-branch-strategy]
+    - !reference [.rules:release-tag-strategy]
 
 # 3. GITLAB RELEASE NOTE (Tag)
 pkg-gitlab-release:
