@@ -36,6 +36,20 @@ source of truth.
 - ✅ **Centralized Logging**: Global verbose mode (`-v`, `-vv`) and file logging (`--log-file`) for
   debugging.
 
+## Table of Contents
+
+- [Current Handler Support](#current-handler-support)
+- [How it Works: The Workflow](#how-it-works-the-workflow)
+- [Installation](#installation)
+- [Quick Start](#quick-start)
+- [Configuration](#configuration)
+- [Example Repository](#example-repository)
+- [Core Concepts](#core-concepts)
+- [Commands](#commands)
+- [Development Setup](#development-setup)
+- [Contributing](#contributing)
+- [License](#license)
+
 ## Current Handler Support
 
 **Prompt Unifier** currently supports the following AI assistants as handlers:
@@ -264,11 +278,10 @@ The CLI provides several commands to manage your prompts.
 
 These options can be used with any command:
 
-- <code>--verbose</code>, <code>-v</code>: Increase verbosity level. Use `-v` for INFO, `-vv` for
-  DEBUG.
-- <code>--log-file TEXT</code>: Write logs to a file for persistent debugging.
-- <code>--version</code>, <code>-V</code>: Show version and exit.
-- <code>--help</code>: Show help message and exit.
+- `--verbose`, `-v`: Increase verbosity level. Use `-v` for INFO, `-vv` for DEBUG.
+- `--log-file TEXT`: Write logs to a file for persistent debugging.
+- `--version`, `-V`: Show version and exit.
+- `--help`: Show help message and exit.
 
 ```bash
 # Run any command with verbose output
@@ -278,47 +291,35 @@ prompt-unifier -v validate
 prompt-unifier -vv --log-file debug.log sync --repo https://github.com/example/prompts.git
 ```
 
-### test
+### init
 
-Run functional tests for prompt files using AI. Discovers `.test.yaml` files and executes their test
-scenarios using the configured AI provider.
+Initialize `prompt-unifier` configuration in your current directory.
 
-**Options:**
-
-- <code>[DIRECTORY]</code>: Optional. File or directory to test (defaults to synchronized storage).
-
-```bash
-# Run tests for all prompts in storage
-prompt-unifier test
-
-# Run tests for a specific prompt file
-prompt-unifier test prompts/code-review.md
-
-# Run tests with verbose output
-prompt-unifier -v test prompts/backend/
-```
-
-<details><summary><code>prompt-unifier init</code> - Initialize configuration</summary>
-<br>
-Creates a <code>.prompt-unifier/config.yaml</code> file in your current directory. This file tracks which repositories you sync from and your deployment settings. It also sets up a local storage directory (default: <code>~/.prompt-unifier/storage/</code>) with <code>prompts/</code>, <code>rules/</code> subdirectories and a <code>.gitignore</code> file.
+Creates a `.prompt-unifier/config.yaml` file that tracks which repositories you sync from and your
+deployment settings. It also sets up a local storage directory (default:
+`~/.prompt-unifier/storage/`) with `prompts/` and `rules/` subdirectories and a `.gitignore` file.
 
 **Options:**
 
-- <code>--storage-path TEXT</code>: Specify a custom storage directory path instead of the default.
+- `--storage-path TEXT`: Specify a custom storage directory path instead of the default.
 
-</details>
+### sync
 
-<details><summary><code>prompt-unifier sync</code> - Synchronize from Git</summary>
-<br>
-Clones or pulls prompts from one or more Git repositories into a centralized local storage path. You can specify repositories via the command line or in the <code>config.yaml</code> file. The configuration is updated with metadata about the synced repositories.
+Synchronize prompts from Git repositories.
 
-**Options:**
-
-- <code>--repo TEXT</code>: Git repository URL (can be specified multiple times).
-- <code>--storage-path TEXT</code>: Override the default storage path for this sync.
+Clones or pulls prompts from one or more Git repositories into a centralized local storage path. You
+can specify repositories via the command line or in the `config.yaml` file. The configuration is
+updated with metadata about the synced repositories.
 
 **Multi-Repository Sync with Last-Wins Strategy:** When multiple repositories are synced, files with
 identical paths will be overwritten by content from later repositories in the sync order.
+
+**Options:**
+
+- `--repo TEXT`: Git repository URL (can be specified multiple times).
+- `--storage-path TEXT`: Override the default storage path for this sync.
+
+**Example:**
 
 ```bash
 prompt-unifier sync \
@@ -327,27 +328,55 @@ prompt-unifier sync \
   --storage-path /custom/path/storage
 ```
 
-</details>
+### list
 
-<details><summary><code>prompt-unifier status</code> - Check sync status</summary>
-<br>
-Displays the synchronization status, including when each repository was last synced and whether new commits are available on the remote. It also checks the deployment status of prompts and rules against configured handlers.
-</details>
+List available prompts and rules.
 
-<details><summary><code>prompt-unifier validate</code> - Validate files</summary>
-<br>
-Checks prompt and rule files for correct YAML frontmatter, required fields, and valid syntax. Also includes SCAFF methodology validation (Specific, Contextual, Actionable, Formatted, Focused) to ensure prompt quality. Supports functional testing with YAML-based test scenarios. You can validate the central storage or a local directory of files.
+Displays a table of all available prompts and rules in your centralized storage. You can filter and
+sort the content using various options.
 
 **Options:**
 
-- <code>[DIRECTORY]</code>: Optional. Directory or file to validate (defaults to synchronized
-  storage).
-- <code>--json</code>: Output validation results in JSON format.
-- <code>--type TEXT</code>, <code>-t TEXT</code>: Specify content type to validate: 'all',
-  'prompts', or 'rules' [default: 'all'].
-- <code>--scaff/--no-scaff</code>: Enable/disable SCAFF methodology validation [default: enabled].
-- <code>--test</code>: Run functional tests from `.test.yaml` file (requires a specific file, not a
-  directory).
+- `--tool`, `-t TEXT`: Filter content by target tool handler.
+- `--tag TEXT`: Filter content by a specific tag.
+- `--sort`, `-s TEXT`: Sort content by 'name' (default) or 'date'.
+
+**Examples:**
+
+```bash
+# List all content
+prompt-unifier list
+
+# List prompts tagged "python" with verbose output
+prompt-unifier -v list --tag python
+
+# List content sorted by date
+prompt-unifier list --sort date
+```
+
+### status
+
+Check sync status.
+
+Displays the synchronization status, including when each repository was last synced and whether new
+commits are available on the remote. It also checks the deployment status of prompts and rules
+against configured handlers.
+
+### validate
+
+Validate prompt and rule files.
+
+Checks prompt and rule files for correct YAML frontmatter, required fields, and valid syntax. Also
+includes SCAFF methodology validation (Specific, Contextual, Actionable, Formatted, Focused) to
+ensure prompt quality. You can validate the central storage or a local directory of files.
+
+**Options:**
+
+- `[DIRECTORY]`: Optional. Directory or file to validate (defaults to synchronized storage).
+- `--json`: Output validation results in JSON format.
+- `--type TEXT`, `-t TEXT`: Specify content type to validate: 'all', 'prompts', or 'rules' [default:
+  'all'].
+- `--scaff/--no-scaff`: Enable/disable SCAFF methodology validation [default: enabled].
 
 **SCAFF Validation:**
 
@@ -361,76 +390,6 @@ By default, the validate command analyzes your prompts against the SCAFF methodo
 
 Each prompt receives a score (0-100) and actionable suggestions for improvement. SCAFF validation is
 non-blocking (warnings only) and can be disabled with `--no-scaff`.
-
-**Functional Testing with AI:**
-
-The `--test` flag enables functional testing of prompts by executing them with real AI providers and
-validating the responses. This allows you to test how your prompts perform with actual LLM models.
-
-**Setup:**
-
-1. Install dependencies (LiteLLM supports 100+ providers):
-
-   ```bash
-   poetry add litellm python-dotenv
-   ```
-
-1. Configure API keys in `.env` file:
-
-   ```bash
-   # For OpenAI (GPT models)
-   OPENAI_API_KEY=sk-your-key-here
-
-   # For Anthropic (Claude models)
-   ANTHROPIC_API_KEY=your-key-here
-
-   # For Mistral
-   MISTRAL_API_KEY=your-key-here
-
-   # For local Ollama (no key needed)
-   # Ollama should be running at http://localhost:11434
-
-   # Default model if not specified in test file
-   DEFAULT_LLM_MODEL=gpt-4o-mini
-   ```
-
-**Create Test File:**
-
-Create a `.test.yaml` file alongside your prompt (e.g., `refactor.md.test.yaml`):
-
-```yaml
-provider: gpt-4o  # Required: AI model to use
-iterations: 1     # Optional: number of times to run tests
-scenarios:
-  - description: "Test refactoring output quality"
-    input: |
-      Refactor this code:
-      def foo(): return x+y
-    expect:
-      - type: contains
-        value: "def foo"
-        error: "Should preserve function name"
-      - type: regex
-        value: "return\\s+\\w+\\s*\\+\\s*\\w+"
-      - type: max-length
-        value: 500
-      - type: not-contains
-        value: "TODO"
-```
-
-**Supported Providers:**
-
-- OpenAI: `gpt-4o`, `gpt-4-turbo`, `gpt-3.5-turbo`
-- Anthropic: `claude-3-5-sonnet-20241022`, `claude-3-opus-20240229`
-- Mistral: `mistral/mistral-large-latest`, `mistral/codestral-latest`
-- Ollama (local): `ollama/llama2`, `ollama/devstral`, `ollama/mistral`
-- 100+ others via [LiteLLM](https://docs.litellm.ai/docs/providers)
-
-**Assertion Types:**
-
-- `contains` / `not-contains`: Check for text presence/absence (supports `case_sensitive: false`)
-- `regex`: Match against regex pattern
-- `max-length`: Verify character count limit
 
 **Examples:**
 
@@ -446,89 +405,78 @@ prompt-unifier validate ./my-prompts/
 
 # Get JSON output with SCAFF scores
 prompt-unifier validate --json
-
-# Run functional tests with AI (reads .test.yaml file)
-prompt-unifier validate prompts/refactor.md --test
-
-# Use verbose mode for detailed AI execution logs
-prompt-unifier -v validate prompts/code-review.md --test
 ```
 
-**Troubleshooting Functional Tests:**
+### test
 
-- **Missing API key**: Add your API key to `.env` file or export as environment variable:
-  `export OPENAI_API_KEY=sk-your-key`
-- **Timeout errors**: Increase timeout in `.env`: `LITELLM_TIMEOUT=120` (default: 60s)
-- **Rate limit errors**: The AI provider is rate limiting your requests. Wait and retry or upgrade
-  your API plan.
-- **Invalid model**: Check supported models at
-  [LiteLLM Providers](https://docs.litellm.ai/docs/providers)
-- **Local Ollama not working**: Ensure Ollama is running: `ollama serve`
+Run functional tests for prompt files using AI.
 
-Use the global <code>-v</code> flag for verbose output to see detailed AI execution logs.
-
-</details>
-
-<details><summary><code>prompt-unifier list</code> - List content</summary>
-<br>
-Displays a table of all available prompts and rules in your centralized storage. You can filter and sort the content using various options.
+Discovers `.test.yaml` files and executes their test scenarios using the configured AI provider.
+This allows you to verify that your prompts perform as intended with real LLM models.
 
 **Options:**
 
-- <code>--tool</code>, <code>-t TEXT</code>: Filter content by target tool handler.
-- <code>--tag TEXT</code>: Filter content by a specific tag.
-- <code>--sort</code>, <code>-s TEXT</code>: Sort content by 'name' (default) or 'date'.
+- `[DIRECTORY]`: Optional. File or directory to test (defaults to synchronized storage).
 
-Use the global <code>-v</code> flag for verbose output (e.g., <code>prompt-unifier -v list</code>).
+**Functional Testing with AI:**
 
-```bash
-# List all content
-prompt-unifier list
+The `test` command enables functional testing of prompts by executing them with real AI providers
+and validating the responses.
 
-# List prompts tagged "python" with verbose output
-prompt-unifier -v list --tag python
+**Setup:**
 
-# List content sorted by date
-prompt-unifier list --sort date
+1. Configure API keys in `.env` (OPENAI_API_KEY, ANTHROPIC_API_KEY, etc.)
+1. Create a `.test.yaml` file alongside your prompt.
+
+**Example Test File:**
+
+```yaml
+scenarios:
+  - description: "Test code generation"
+    input: "Write a function..."
+    expect:
+      - type: contains
+        value: "def function"
 ```
 
-</details>
+**Examples:**
 
-<details><summary><code>prompt-unifier deploy</code> - Deploy to handlers</summary>
-<br>
-Copies the synchronized prompts and rules to the configuration directories of your AI coding assistants.
+```bash
+# Run tests for all prompts in storage
+prompt-unifier test
+
+# Run tests for a specific prompt file
+prompt-unifier test prompts/code-review.md
+
+# Run tests with verbose output for detailed AI execution logs
+prompt-unifier -v test prompts/backend/
+```
+
+### deploy
+
+Deploy prompts and rules to tool handlers.
+
+Copies the synchronized prompts and rules to the configuration directories of your AI coding
+assistants.
 
 - **Default Handler:** `continue`
 - **Supported Handlers:** `continue`, `kilocode`
 - **Default Destinations:**
-  - **Continue**: Deploys to `./.continue/` in your current project.
-    - Prompts: `./.continue/prompts/`
-    - Rules: `./.continue/rules/`
-  - **Kilo Code**: Deploys to `./.kilocode/` in your current project.
-    - Prompts (Workflows): `./.kilocode/workflows/`
-    - Rules: `./.kilocode/rules/`
-- **Base Path Override:** Can be overridden via CLI <code>--base-path</code> or handler-specific
-  configuration in <code>config.yaml</code>.
+  - **Continue**: `./.continue/prompts/` and `./.continue/rules/`
+  - **Kilo Code**: `./.kilocode/workflows/` and `./.kilocode/rules/`
 
-**Handler-Specific Behavior:**
+**Options:**
 
-- **Continue**: Preserves YAML frontmatter in deployed files
-- **Kilo Code**: Converts to pure Markdown (no YAML frontmatter), uses flat directory structure with
-  directory-prefixed file naming
-
-**Deployment Options:**
-
-- <code>--name TEXT</code>: Deploy only a specific prompt or rule by name.
-- <code>--tags TEXT</code>: Filter content to deploy by tags (comma-separated).
-- <code>--handlers TEXT</code>: Specify target handlers for deployment (comma-separated). Supported:
+- `--name TEXT`: Deploy only a specific prompt or rule by name.
+- `--tags TEXT`: Filter content to deploy by tags (comma-separated).
+- `--handlers TEXT`: Specify target handlers for deployment (comma-separated). Supported:
   'continue', 'kilocode'.
-- <code>--base-path PATH</code>: Custom base path for handler deployment (overrides config.yaml).
-- <code>--clean</code>: Remove orphaned prompts/rules in destination that are not in your source
-  (creates backups before removal).
-- <code>--dry-run</code>: Preview deployment without executing any file operations.
+- `--base-path PATH`: Custom base path for handler deployment (overrides config.yaml).
+- `--clean`: Remove orphaned prompts/rules in destination that are not in your source (creates
+  backups before removal).
+- `--dry-run`: Preview deployment without executing any file operations.
 
-After deployment, a detailed verification report is provided, outlining the status of each deployed
-item.
+**Examples:**
 
 ```bash
 # Deploy only prompts tagged "python", with cleanup, and preview changes
@@ -540,8 +488,6 @@ prompt-unifier deploy --handlers kilocode
 # Deploy to both Continue and Kilo Code
 prompt-unifier deploy --handlers continue,kilocode
 ```
-
-</details>
 
 ## Development Setup
 

@@ -14,9 +14,21 @@ Before you begin, ensure you have the following installed:
 
 You can install Prompt Unifier using `pip` or `poetry`.
 
-=== "pip" `bash     pip install prompt-unifier     `
+=== "pip"
 
-=== "poetry" `bash     poetry add prompt-unifier     `
+````
+```bash
+pip install prompt-unifier
+```
+````
+
+=== "poetry"
+
+````
+```bash
+poetry add prompt-unifier
+```
+````
 
 ## Initial Configuration
 
@@ -64,7 +76,7 @@ configuration.
 prompt-unifier deploy
 
 # OR deploy to a specific tool
-prompt-unifier deploy --tool continue
+prompt-unifier deploy --handlers continue
 ```
 
 ## Troubleshooting

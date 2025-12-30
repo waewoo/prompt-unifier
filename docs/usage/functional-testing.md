@@ -14,16 +14,7 @@ perform as intended before you deploy them.
 
 ## Getting Started
 
-### 1. Install Dependencies
-
-Functional testing relies on [LiteLLM](https://docs.litellm.ai/) to communicate with various AI
-providers.
-
-```bash
-poetry add litellm python-dotenv
-```
-
-### 2. Configure API Keys
+### 1. Configure API Keys
 
 Create a `.env` file in your project root (or ensure environment variables are set):
 
@@ -49,9 +40,6 @@ Tests are defined in `.test.yaml` files that sit alongside your prompt files. Fo
 ### Test File Structure
 
 ```yaml
-# Optional: Override global default provider for this test file
-provider: gpt-4o
-
 # Optional: Run scenarios multiple times (useful for checking stability)
 iterations: 1
 
@@ -116,9 +104,23 @@ Prompt Unifier supports any provider compatible with
 
 You can test prompts locally without API costs using Ollama.
 
-1. Install and run [Ollama](https://ollama.com/).
-1. Pull a model: `ollama pull llama2`.
-1. Set provider in your test file: `provider: ollama/llama2`.
+1. **Install Ollama**: Download from [ollama.com](https://ollama.com).
+1. **Start the server**: Ensure Ollama is running.
+   ```bash
+   ollama serve
+   ```
+1. **Pull a model**: Download the model you want to test with (e.g., llama3).
+   ```bash
+   ollama pull llama3
+   ```
+1. **Configure Provider**: Set the provider in your `.test.yaml` file.
+   ```yaml
+   provider: ollama/llama3
+   ```
 
-```
-```
+> **Tip:** Local models might be slower than cloud APIs. If you encounter timeouts, increase the
+> `LITELLM_TIMEOUT` in your `.env` file (default is 60s).
+>
+> ```bash
+> LITELLM_TIMEOUT=300
+> ```

@@ -32,7 +32,7 @@ This is useful for quickly pulling specific sets of prompts or testing new repos
 If you only want to update your configuration for a specific tool without touching others:
 
 ```bash
-prompt-unifier deploy --tool continue
+prompt-unifier deploy --handlers continue
 ```
 
 ## Configuration Advanced
@@ -45,7 +45,7 @@ custom setup, you can override these paths in your config.
 **File:** `~/.prompt-unifier/config.yaml`
 
 ```yaml
-tools:
+handlers:
   continue:
     enabled: true
     base_path: /opt/custom/continue-config
@@ -68,7 +68,7 @@ validate-prompts:
   image: python:3.11
   script:
     - pip install prompt-unifier
-    - prompt-unifier validate --path ./prompts
+    - prompt-unifier validate ./prompts
 ```
 
 This will exit with a non-zero status code if any prompt file fails validation (e.g., missing
