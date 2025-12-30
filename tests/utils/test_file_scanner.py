@@ -99,6 +99,17 @@ class TestFileScanner:
         with pytest.raises(FileNotFoundError, match="Path is not a directory"):
             scanner.scan_directory(file_path)
 
+    def test_scan_single_md_file(self, tmp_path: Path) -> None:
+        """Test that scanner accepts a single .md file."""
+        scanner = FileScanner()
+        file_path = tmp_path / "single.md"
+        file_path.write_text("content")
+
+        results = scanner.scan_directory(file_path)
+
+        assert len(results) == 1
+        assert results[0] == file_path.resolve()
+
     def test_scan_directory_empty_returns_empty_list(self, tmp_path: Path) -> None:
         """Test that empty directory returns empty list."""
         scanner = FileScanner()

@@ -127,7 +127,7 @@ def _check_empty_repository(repo: git.Repo, repo_url: str) -> None:
     try:
         _ = repo.head.commit
     except ValueError as e:
-        if "reference at 'HEAD' does not exist" in str(e).lower():
+        if "reference at 'head' does not exist" in str(e).lower():
             raise ValueError(
                 f"Failed to clone repository: {repo_url}\n\n"
                 "Repository is empty (no commits found).\n\n"

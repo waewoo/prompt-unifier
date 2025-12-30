@@ -44,7 +44,7 @@ class TestErrorCode:
     """Test ErrorCode enum values."""
 
     def test_all_error_codes_present(self) -> None:
-        """Test that all 12 error codes are defined."""
+        """Test that all 16 error codes are defined (12 original + 4 functional test)."""
         expected_codes = {
             ErrorCode.INVALID_ENCODING,
             ErrorCode.MISSING_REQUIRED_FIELD,
@@ -58,9 +58,13 @@ class TestErrorCode:
             ErrorCode.INVALID_SEMVER,
             ErrorCode.PROHIBITED_FIELD,
             ErrorCode.INVALID_FILE_EXTENSION,
+            ErrorCode.FUNC_YAML_INVALID,
+            ErrorCode.FUNC_FILE_MISSING,
+            ErrorCode.FUNC_ASSERTION_FAILED,
+            ErrorCode.FUNC_AI_EXECUTION_ERROR,
         }
         assert set(ErrorCode) == expected_codes
-        assert len(ErrorCode) == 12
+        assert len(ErrorCode) == 16
 
     def test_error_code_values(self) -> None:
         """Test error code string values."""
@@ -73,7 +77,7 @@ class TestWarningCode:
     """Test WarningCode enum values."""
 
     def test_all_warning_codes_present(self) -> None:
-        """Test that all 8 warning codes are defined (3 existing + 5 SCAFF)."""
+        """Test that all 9 warning codes are defined (3 existing + 5 SCAFF + 1 functional test)."""
         expected_codes = {
             WarningCode.MISSING_OPTIONAL_FIELD,
             WarningCode.EMPTY_TAGS_LIST,
@@ -83,9 +87,10 @@ class TestWarningCode:
             WarningCode.SCAFF_NOT_ACTIONABLE,
             WarningCode.SCAFF_POORLY_FORMATTED,
             WarningCode.SCAFF_UNFOCUSED,
+            WarningCode.FUNC_UNKNOWN_ASSERTION_TYPE,
         }
         assert set(WarningCode) == expected_codes
-        assert len(WarningCode) == 8
+        assert len(WarningCode) == 9
 
     def test_warning_code_values(self) -> None:
         """Test warning code string values."""

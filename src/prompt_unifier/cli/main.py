@@ -24,6 +24,9 @@ from prompt_unifier.cli.commands import (
     sync as sync_command,
 )
 from prompt_unifier.cli.commands import (
+    test_prompts as test_command,
+)
+from prompt_unifier.cli.commands import (
     validate as validate_command,
 )
 from prompt_unifier.utils import configure_logging
@@ -107,6 +110,24 @@ def validate(
     """
     dir_path = Path(directory) if directory is not None else None
     validate_command(dir_path, json_output=json, content_type=type, scaff=scaff)
+
+
+@app.command(name="test", help="Run functional tests for prompt files using AI")
+def test(
+    directory: str | None = typer.Argument(
+        None, help="File or directory to test (defaults to synchronized storage)"
+    ),
+) -> None:
+    """Run functional tests for prompt files using AI.
+
+    Discovers .test.yaml files and executes their test scenarios using the
+    configured AI provider.
+
+    Args:
+        directory: File or directory to test (optional)
+    """
+    dir_path = Path(directory) if directory is not None else None
+    test_command(dir_path)
 
 
 @app.command(name="init", help="Initialize prompt-unifier in current directory")

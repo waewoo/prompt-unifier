@@ -4,13 +4,14 @@ repos:
   auth_config: null
   include_patterns: null
   exclude_patterns: null
-last_sync_timestamp: '2025-11-27T18:19:37.633461+00:00'
+last_sync_timestamp: '2025-12-30T10:12:03.579293+00:00'
 repo_metadata:
 - url: git@gitlab.com:waewoo/prompt-unifier-data.git
   branch: main
-  commit: c54cf4e
-  timestamp: '2025-11-27T18:19:37.587247+00:00'
+  commit: 3684f82
+  timestamp: '2025-12-30T10:12:03.546566+00:00'
 storage_path: /root/.prompt-unifier/storage
 deploy_tags: null
 target_handlers: null
+ai_provider: mistral/mistral-small-latest
 handlers: null

@@ -126,7 +126,13 @@ class TestCLIIntegration:
         import typer  # Import typer here
 
         try:
-            validate(directory=valid_prompts_dir, json_output=False, content_type="all")
+            validate(
+                directory=valid_prompts_dir,
+                json_output=False,
+                content_type="all",
+                scaff=True,
+                test=False,
+            )
             # If no typer.Exit is raised, it's a success (implicitly exit code 0)
             exit_code = 0
         except typer.Exit as e:
@@ -145,6 +151,8 @@ class TestCLIIntegration:
             directory=valid_prompts_dir,
             json_output=True,
             content_type="all",
+            scaff=True,
+            test=False,
         )
         captured = capsys.readouterr()
 

@@ -15,6 +15,7 @@ ______________________________________________________________________
 | [Sync Command](#sync-command)                       | Data synchronization tests                  |
 | [Status Command](#status-command)                   | Status display tests                        |
 | [Validate Command](#validate-command)               | File validation tests                       |
+| [Test Command](#test-command)                       | Functional testing tests                    |
 | [Deploy Command](#deploy-command)                   | Deployment to Continue tests                |
 | [Recursive Discovery](#recursive-discovery)         | Tests with subdirectories                   |
 | [Kilo Code Handler Tests](#kilo-code-handler-tests) | Tests for Kilo Code handler                 |
@@ -55,7 +56,7 @@ poetry run prompt-unifier --help
 
 ✓ **Expected result:**
 
-- List of available commands: `init`, `sync`, `status`, `validate`, `deploy`
+- List of available commands: `init`, `sync`, `status`, `validate`, `test`, `deploy`
 - Short description of each command
 - Global options (`--help`, `--version`, `--verbose`, `--log-file`)
 
@@ -66,6 +67,7 @@ poetry run prompt-unifier init --help
 poetry run prompt-unifier sync --help
 poetry run prompt-unifier status --help
 poetry run prompt-unifier validate --help
+poetry run prompt-unifier test --help
 poetry run prompt-unifier deploy --help
 ```
 
@@ -468,6 +470,196 @@ poetry run prompt-unifier validate /tmp/test-scaff --json
   - `grade` ("excellent", "good", or "poor")
   - `components` array with 5 objects (Specific, Contextual, Actionable, Formatted, Focused)
   - Each component has: `component_name`, `score`, `max_score`, `status`
+
+______________________________________________________________________
+
+## Test Command
+
+### Test 5.10: Functional testing with AI execution (OpenAI)
+
+**Prerequisites:** Set `OPENAI_API_KEY` in `.env` or export as environment variable
+
+```bash
+mkdir -p /tmp/test-functional
+cat > /tmp/test-functional/example-prompt.md << 'EOF'
+---
+name: code-explainer
+description: Explains code in simple terms
+version: 1.0.0
+---
+
+You are a code explainer. Explain the given code in simple, clear language.
+Focus on what the code does, not implementation details.
+EOF
+
+cat > /tmp/test-functional/example-prompt.md.test.yaml << 'EOF'
+provider: gpt-4o-mini
+scenarios:
+  - description: "Test code explanation quality"
+    input: |
+      Explain this Python code:
+      def factorial(n):
+          return 1 if n <= 1 else n * factorial(n-1)
+    expect:
+      - type: contains
+        value: "function"
+        error: "Should mention it's a function"
+      - type: contains
+        value: "recursive"
+        case_sensitive: false
+      - type: max-length
+        value: 500
+        error: "Explanation should be concise"
+EOF
+
+poetry run prompt-unifier test /tmp/test-functional/example-prompt.md
+```
+
+✓ **Expected result:**
+
+- AI executes prompt with OpenAI GPT-4o-mini
+- Response validated against assertions
+- Rich table displays test results with columns: Scenario, Status, Passed, Failed, Details
+- Summary panel shows pass/fail counts and pass rate
+- Exit code 0 if all assertions pass (Code: 0)
+
+### Test 5.11: Functional testing with failed assertions
+
+```bash
+cat > /tmp/test-functional/failing.md.test.yaml << 'EOF'
+provider: gpt-4o-mini
+scenarios:
+  - description: "Test that will fail"
+    input: "Explain recursion"
+    expect:
+      - type: contains
+        value: "nonexistent impossible text xyz123"
+        error: "This should fail as this text won't be in response"
+      - type: regex
+        value: "pattern.*that.*never.*matches"
+        error: "This regex won't match AI output"
+EOF
+
+poetry run prompt-unifier test /tmp/test-functional/example-prompt.md
+```
+
+✗ **Expected result:**
+
+- AI executes prompt and generates response
+- Assertions evaluated and fail
+- Failed assertions displayed with details
+- Failure details show: assertion type, expected value, actual excerpt (first 100 chars)
+- Exit code 1 for failed tests (Code: 1)
+
+### Test 5.12: Functional testing with missing test file
+
+```bash
+poetry run prompt-unifier test /tmp/test-functional/no-test.md
+```
+
+✗ **Expected result:**
+
+- Warning message: "Test file not found: /tmp/test-functional/no-test.md.test.yaml"
+- Suggestion to create test file
+- Exit code 1 (Code: 1)
+
+### Test 5.13: Functional testing with case-insensitive assertion
+
+```bash
+cat > /tmp/test-functional/case-test.md.test.yaml << 'EOF'
+provider: gpt-4o-mini
+scenarios:
+  - description: "Case insensitive test"
+    input: "What is a function?"
+    expect:
+      - type: contains
+        value: "FUNCTION"
+        case_sensitive: false
+        error: "Should contain 'function' (any case)"
+EOF
+
+poetry run prompt-unifier test /tmp/test-functional/example-prompt.md
+```
+
+✓ **Expected result:**
+
+- AI generates response containing "function" (lowercase)
+- Case-insensitive matching works (matches "FUNCTION" assertion)
+- Test passes even with different case
+- Exit code 0 (Code: 0)
+
+### Test 5.14: Functional testing with local Ollama
+
+**Prerequisites:** Ollama must be running locally with a model installed (e.g.,
+`ollama pull llama2`)
+
+```bash
+cat > /tmp/test-functional/local-ai.md << 'EOF'
+---
+name: code-generator
+description: Generates simple Python functions
+version: 1.0.0
+---
+
+Generate a simple Python function based on the description provided.
+Use clear variable names and add a docstring.
+EOF
+
+cat > /tmp/test-functional/local-ai.md.test.yaml << 'EOF'
+provider: ollama/llama2
+scenarios:
+  - description: "Test local AI code generation"
+    input: "Create a function that adds two numbers"
+    expect:
+      - type: contains
+        value: "def"
+        error: "Should contain a function definition"
+      - type: regex
+        value: "def\\s+\\w+\\(.*\\):"
+        error: "Should match function signature pattern"
+      - type: not-contains
+        value: "TODO"
+        error: "Should not contain placeholder TODOs"
+EOF
+
+poetry run prompt-unifier test /tmp/test-functional/local-ai.md
+```
+
+✓ **Expected result:**
+
+- Connects to local Ollama at http://localhost:11434
+- No API key required
+- AI generates function code
+- Assertions validated against local AI response
+- Exit code 0 if assertions pass (Code: 0)
+
+### Test 5.15: Functional testing with AI execution error
+
+**Prerequisites:** Invalid or missing API key
+
+```bash
+# Temporarily unset API key to simulate error
+unset OPENAI_API_KEY
+
+cat > /tmp/test-functional/error-test.md.test.yaml << 'EOF'
+provider: gpt-4o
+scenarios:
+  - description: "Test error handling"
+    input: "Test input"
+    expect:
+      - type: contains
+        value: "test"
+EOF
+
+poetry run prompt-unifier test /tmp/test-functional/example-prompt.md
+```
+
+✗ **Expected result:**
+
+- AI execution fails with authentication error
+- Error result created with type: AI_EXECUTION_ERROR
+- Clear error message: "AI execution failed: [error details]"
+- Exit code 1 (Code: 1)
 
 ______________________________________________________________________
 
@@ -1117,7 +1309,7 @@ Basic Commands
 ├─ [·] Test 1.2 - Init help
 ├─ [·] Test 1.3 - Sync help
 ├─ [·] Test 1.4 - Status help
-└─ [·] Test 1.5 - Validate, deploy help
+└─ [·] Test 1.5 - Validate, test, deploy help
 
 Init
 ├─ [·] Test 2.1 - Simple init
@@ -1137,7 +1329,7 @@ Status
 ├─ [·] Test 4.3 - Status post-sync (single repo)
 └─ [·] Test 4.4 - Status with multiple repos
 
-## Validate Command
+Validate Command
 ├─ [·] Test 5.1 - Validate prompts
 ├─ [·] Test 5.2 - Validate JSON
 ├─ [·] Test 5.3 - Invalid directory (error)
@@ -1147,6 +1339,14 @@ Status
 ├─ [·] Test 5.7 - SCAFF validation with low quality prompt
 ├─ [·] Test 5.8 - Disable SCAFF validation (--no-scaff)
 └─ [·] Test 5.9 - SCAFF validation in JSON output
+
+Test Command
+├─ [·] Test 5.10 - Functional testing with OpenAI
+├─ [·] Test 5.11 - Functional testing with failed assertions
+├─ [·] Test 5.12 - Functional testing with missing test file
+├─ [·] Test 5.13 - Functional testing with case-insensitive assertion
+├─ [·] Test 5.14 - Functional testing with local Ollama
+└─ [·] Test 5.15 - Functional testing with AI execution error
 
 List Command
 ├─ [·] Test 7.1 - List all content

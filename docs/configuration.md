@@ -51,6 +51,13 @@ repo_metadata:
     branch: main
     commit: c54cf4e
     timestamp: '2025-11-27T18:19:37.587247+00:00'
+    base_path: $PWD/.continue # (9)
+  kilo:
+    base_path: ${HOME}/.kilocode # (10)
+
+# Global AI provider for functional testing (optional)
+# Can be overridden in individual .test.yaml files
+ai_provider: mistral/mistral-small-latest # (11)
 ```
 
 1. **Default Repository**: A simple repository configuration with just the URL.
@@ -69,6 +76,8 @@ repo_metadata:
 1. **Custom Base Path for Continue**: Override where Continue's prompts are deployed (e.g., in the
    current working directory).
 1. **Custom Base Path for Kilo Code**: Another example using an environment variable for the path.
+1. **Global AI Provider**: The default model used for `test` command when not specified in the test
+   file. Supports 100+ providers via LiteLLM.
 
 ## Repository Structure
 

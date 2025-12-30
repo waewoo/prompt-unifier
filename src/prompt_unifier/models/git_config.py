@@ -226,6 +226,14 @@ class GitConfig(BaseModel):
         description="List of target handlers for deployment (None to use all registered)",
     )
 
+    ai_provider: str | None = Field(
+        default=None,
+        description=(
+            "Global AI provider/model to use for functional tests "
+            "(e.g., 'gpt-4o', 'mistral/mistral-small-latest')"
+        ),
+    )
+
     handlers: dict[str, HandlerConfig] | None = Field(
         default=None,
         description="Per-handler configuration including base paths",

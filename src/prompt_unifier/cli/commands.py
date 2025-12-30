@@ -12,6 +12,7 @@ from typing import Any
 import typer
 from rich.console import Console
 from rich.panel import Panel
+from rich.table import Table
 
 from prompt_unifier.cli.helpers import (
     check_all_content_status,
@@ -140,6 +141,12 @@ DEFAULT_VALIDATE_SCAFF_OPTION = typer.Option(
     "--scaff/--no-scaff",
     help="Enable/disable SCAFF methodology validation (default: enabled)",
 )
+DEFAULT_VALIDATE_TEST = False
+DEFAULT_VALIDATE_TEST_OPTION = typer.Option(
+    DEFAULT_VALIDATE_TEST,
+    "--test",
+    help="Run functional tests from .test.yaml file (skips SCAFF validation)",
+)
 DEFAULT_LIST_TOOL_OPTION = typer.Option(
     DEFAULT_LIST_TOOL,
     "--tool",
@@ -151,6 +158,9 @@ DEFAULT_LIST_TAG_OPTION = typer.Option(
 )
 DEFAULT_LIST_SORT_OPTION = typer.Option(
     DEFAULT_LIST_SORT, "--sort", "-s", help="Sort content by 'name' (default) or 'date'"
+)
+DEFAULT_TEST_DIRECTORY_ARG = typer.Argument(
+    None, help="File or directory to test (defaults to synchronized storage)"
 )
 
 
@@ -282,13 +292,240 @@ def _validate_with_rich_output(
         raise typer.Exit(code=1)
 
 
+def _resolve_prompt_path_and_title(test_file_path: Path) -> tuple[Path, str]:
+    """Resolve corresponding prompt file path and title for a test file."""
+    # Standard: file.md -> file.md.test.yaml
+    prompt_filename = test_file_path.name.replace(".test.yaml", "")
+    prompt_file_path = test_file_path.parent / prompt_filename
+
+    # Try to resolve prompt title from frontmatter
+    prompt_title = prompt_filename
+    if not prompt_file_path.exists() and not prompt_filename.endswith(".md"):
+        alt_path = test_file_path.parent / f"{prompt_filename}.md"
+        if alt_path.exists():
+            prompt_file_path = alt_path
+
+    if prompt_file_path.exists():
+        try:
+            cf_parser = ContentFileParser()
+            parsed_prompt = cf_parser.parse_file(prompt_file_path)
+            prompt_title = parsed_prompt.title
+        except Exception as e:
+            logger.debug(f"Could not parse prompt title for {prompt_file_path}: {e}")
+
+    return prompt_file_path, prompt_title
+
+
+def _validate_ai_connection(executor: Any, provider: str) -> None:
+    """Validate connection to AI provider and print troubleshooting tips on failure."""
+    from prompt_unifier.ai.executor import AIExecutionError
+
+    console.print("[dim]Validating connection to AI provider...[/dim]")
+    try:
+        executor.validate_connection(provider)
+        console.print("[green]✓ Connection validated successfully[/green]\n")
+    except AIExecutionError as e:
+        console.print(f"[red]✗ Connection validation failed: {e}[/red]\n")
+        # Provide helpful troubleshooting tips based on error type
+        error_str = str(e).lower()
+        if "api_key" in error_str or "authentication" in error_str:
+            console.print("[yellow]Troubleshooting:[/yellow]")
+            console.print("  • Check that your API key is set in .env file")
+            console.print("  • Example: OPENAI_API_KEY=sk-your-key-here")
+            console.print("  • Or export as environment variable:")
+            console.print("    export OPENAI_API_KEY=your-key")
+        elif "model" in error_str or "not found" in error_str:
+            console.print("[yellow]Troubleshooting:[/yellow]")
+            console.print(f"  • Model '{provider}' may not be available")
+            console.print("  • Check supported models: https://docs.litellm.ai/docs/providers")
+        elif "timeout" in error_str or "connection" in error_str:
+            console.print("[yellow]Troubleshooting:[/yellow]")
+            console.print("  • Check your internet connection")
+            console.print("  • Verify firewall settings")
+            if provider and "ollama" in provider:
+                console.print("  • Ensure Ollama is running: ollama serve")
+        raise
+
+
+def _run_single_functional_test(
+    test_file_path: Path, global_provider: str | None = None
+) -> dict[str, Any]:
+    """Run functional tests for a single test file."""
+    from prompt_unifier.cli.helpers import (
+        create_functional_test_summary,
+        format_assertion_failures,
+        format_functional_test_results,
+    )
+    from prompt_unifier.core.functional_test_parser import FunctionalTestParser
+    from prompt_unifier.core.functional_validator import FunctionalValidator
+
+    prompt_file_path, prompt_title = _resolve_prompt_path_and_title(test_file_path)
+
+    console.print(f"\n[bold underline]Testing: {prompt_title}[/bold underline]")
+    if prompt_file_path.exists():
+        console.print(f"[dim]Prompt file: {prompt_file_path}[/dim]")
+    else:
+        console.print(f"[yellow]Warning: Prompt file not found: {prompt_file_path}[/yellow]")
+
+    # Parse test file
+    parser = FunctionalTestParser(test_file_path)
+    test_spec = parser.parse()
+
+    if test_spec is None:
+        console.print(f"[yellow]Warning: Failed to parse test file: {test_file_path}[/yellow]")
+        return {
+            "success": False,
+            "name": prompt_title,
+            "total": 0,
+            "passed": 0,
+            "failed": 0,
+            "pass_rate": 0,
+            "path": str(test_file_path.absolute()),
+        }
+
+    provider = test_spec.provider or global_provider
+    if not provider:
+        console.print("[red]Error: No AI provider specified.[/red]")
+        return {
+            "success": False,
+            "name": prompt_title,
+            "total": 0,
+            "passed": 0,
+            "failed": 0,
+            "pass_rate": 0,
+            "path": str(test_file_path.absolute()),
+        }
+
+    console.print(f"[cyan]Running functional tests with AI provider: {provider}[/cyan]")
+
+    try:
+        from prompt_unifier.ai.executor import AIExecutor
+
+        executor = AIExecutor()
+        _validate_ai_connection(executor, provider)
+    except Exception:
+        return {
+            "success": False,
+            "name": prompt_title,
+            "total": 0,
+            "passed": 0,
+            "failed": 0,
+            "pass_rate": 0,
+            "path": str(test_file_path.absolute()),
+        }
+
+    # Execute functional tests with AI
+    func_validator = FunctionalValidator(test_spec)
+    results = func_validator.validate_with_ai(
+        prompt_file=prompt_file_path, executor=executor, provider=provider
+    )
+
+    # Display results
+    console.print("[bold]Functional Test Results[/bold]\n" + "━" * 80)
+    console.print(format_functional_test_results(results))
+    console.print()
+
+    # Determine status and summary
+    all_passed = all(r.status == "PASS" for r in results)
+    total = len(results)
+    passed = sum(1 for r in results if r.status == "PASS")
+    rate = (passed / total * 100) if total > 0 else 0
+
+    summary_style = "green" if all_passed else "red"
+    console.print(
+        Panel(
+            create_functional_test_summary(results),
+            title=f"[{summary_style}]Summary[/{summary_style}]",
+            border_style=summary_style,
+        )
+    )
+    console.print()
+
+    if not all_passed:
+        console.print("[bold red]Failure Details:[/bold red]")
+        for result in results:
+            if result.status == "FAIL":
+                console.print(f"\n[bold]{result.scenario_description}:[/bold]")
+                console.print(format_assertion_failures(result))
+        console.print()
+
+    return {
+        "success": all_passed,
+        "name": prompt_title,
+        "total": total,
+        "passed": passed,
+        "failed": total - passed,
+        "pass_rate": rate,
+        "path": str(test_file_path.absolute()),
+    }
+
+
+def _discover_functional_test_files(directory: Path | None) -> list[Path]:
+    """Discover all .test.yaml files based on input directory or storage."""
+    from prompt_unifier.core.functional_test_parser import FunctionalTestParser
+
+    if directory and directory.is_file():
+        if directory.name.endswith(".test.yaml"):
+            return [directory]
+        test_file_path = FunctionalTestParser.get_test_file_path(directory)
+        if not test_file_path.exists():
+            console.print(f"[yellow]Warning: Test file not found: {test_file_path}[/yellow]")
+            console.print(f"[dim]Create a test file at: {test_file_path}[/dim]")
+            raise typer.Exit(code=1)
+        return [test_file_path]
+
+    # Discovery mode
+    search_dirs: list[Path] = []
+    if directory:
+        search_dirs.append(directory)
+    else:
+        try:
+            search_dirs.append(resolve_validation_directory(None, CONFIG_DIR, CONFIG_FILE))
+        except Exception as e:
+            logger.debug(f"Could not resolve storage directory: {e}")
+        cwd = Path.cwd()
+        if cwd not in search_dirs:
+            search_dirs.append(cwd)
+
+    test_files = []
+    for s_dir in search_dirs:
+        logger.debug(f"Scanning for functional tests in: {s_dir}")
+        found = list(s_dir.glob("**/*.test.yaml"))
+        if found:
+            logger.info(f"Found {len(found)} test file(s) in {s_dir}")
+            test_files.extend(found)
+
+    if not test_files:
+        search_paths_str = ", ".join(str(d) for d in search_dirs)
+        console.print(f"[yellow]No test files found in: {search_paths_str}[/yellow]")
+        raise typer.Exit(code=1)
+
+    return sorted(set(test_files))
+
+
+def _get_global_ai_provider() -> str | None:
+    """Load global AI provider from configuration."""
+    try:
+        config_path = Path.cwd() / CONFIG_DIR / CONFIG_FILE
+        if config_path.exists():
+            config_manager = ConfigManager()
+            config = config_manager.load_config(config_path)
+            if config and config.ai_provider:
+                logger.info(f"Using global AI provider: {config.ai_provider}")
+                return config.ai_provider
+    except Exception as e:
+        logger.debug(f"Could not load global AI provider: {e}")
+    return None
+
+
 def validate(
     directory: Path | None = DEFAULT_VALIDATE_DIRECTORY_ARG,
     json_output: bool = DEFAULT_VALIDATE_JSON_OPTION,
     content_type: str = DEFAULT_VALIDATE_CONTENT_TYPE_OPTION,
     scaff: bool = DEFAULT_VALIDATE_SCAFF_OPTION,
+    test: bool = False,
 ) -> None:
-    """Validate prompt and rule files in a directory.
+    """Validate prompt and rule files.
 
     Validates .md files against the format specification. Checks for
     required fields, valid YAML frontmatter, proper separator format,
@@ -298,7 +535,7 @@ def validate(
     prompt quality (Specific, Contextual, Actionable, Formatted, Focused).
     Use --no-scaff to disable SCAFF validation.
 
-    If no directory is provided, validates files in the synchronized storage
+    If no directory/file is provided, validates files in the synchronized storage
     location (requires 'init' to have been run).
 
     Exit codes:
@@ -309,31 +546,76 @@ def validate(
         # Validate everything (prompts + rules) with SCAFF
         prompt-unifier validate
 
+        # Validate specific file
+        prompt-unifier validate prompts/my-prompt.md
+
         # Validate without SCAFF methodology checks
         prompt-unifier validate --no-scaff
-
-        # Validate only prompts
-        prompt-unifier validate --type prompts
-
-        # Validate only rules
-        prompt-unifier validate --type rules
 
         # Validate specific directory
         prompt-unifier validate ./prompts
 
         # Validate with JSON output
         prompt-unifier validate ./prompts --json
-
-        # Validate with verbose progress (using global -v flag)
-        prompt-unifier -v validate
     """
+    if test:
+        return test_prompts(directory)
+
     logger.info("Starting validation")
 
-    # Resolve directory from config if not provided
-    resolved_dir = resolve_validation_directory(directory, CONFIG_DIR, CONFIG_FILE)
+    # 1. Resolve target (file or directory)
+    # If not provided, resolve_validation_directory will use config or fail
+    try:
+        target = resolve_validation_directory(directory, CONFIG_DIR, CONFIG_FILE)
+    except typer.Exit:
+        # If no config and no directory provided, default to current dir if directory was None
+        if directory is None:
+            target = Path.cwd()
+        else:
+            raise
 
+    # 2. Handle single file validation
+    if target.is_file():
+        if target.suffix.lower() != ".md":
+            typer.echo(
+                f"Error: Neither prompts/ nor rules/ directory exists in '{target}'",
+                err=True,
+            )
+            raise typer.Exit(code=1)
+
+        logger.info(f"Validating single file: {target}")
+        validator = BatchValidator()
+        # validate_directory works because it uses FileScanner which handles single files
+
+        # Determine if SCAFF should be enabled (disabled for rules by naming convention)
+        is_rule = "rules" in target.parts
+        current_scaff_enabled = scaff and not is_rule
+
+        summary = validator.validate_directory(target, scaff_enabled=current_scaff_enabled)
+
+        if json_output:
+            json_formatter = JSONFormatter()
+            typer.echo(json_formatter.format_summary(summary, target.parent))
+        else:
+            rich_formatter = RichFormatter()
+            table_formatter = RichTableFormatter()
+            _display_directory_results(
+                console,
+                target.parent,
+                is_rule,
+                summary,
+                table_formatter,
+                rich_formatter,
+                current_scaff_enabled,
+            )
+
+        if not summary.success:
+            raise typer.Exit(code=1)
+        return
+
+    # 3. Handle directory validation (Discovery mode)
     # Determine which directories to validate based on content_type
-    directories = determine_validation_targets(resolved_dir, content_type)
+    directories = determine_validation_targets(target, content_type)
 
     logger.info(f"Found {len(directories)} directory(ies) to validate")
 
@@ -346,6 +628,46 @@ def validate(
         _validate_with_rich_output(validator, directories, scaff_enabled=scaff)
 
     logger.info("Validation complete")
+
+
+def test_prompts(directory: Path | None = DEFAULT_TEST_DIRECTORY_ARG) -> None:
+    """Run functional tests for prompt files using AI."""
+    logger.info("Running functional tests")
+
+    test_files = _discover_functional_test_files(directory)
+    console.print(f"Total discovered test file(s): {len(test_files)}")
+
+    global_provider = _get_global_ai_provider()
+    all_results = [_run_single_functional_test(tf, global_provider) for tf in test_files]
+
+    # FINAL RECAP TABLE
+    if len(all_results) > 1:
+        console.print("\n" + "━" * 80 + "\n[bold]FUNCTIONAL TEST RECAP[/bold]\n" + "━" * 80)
+        recap_table = Table(show_header=True, header_style="bold magenta")
+        recap_table.add_column("Name", style="cyan")
+        recap_table.add_column("Status", justify="center")
+        recap_table.add_column("Scenarios", justify="right")
+        recap_table.add_column("Pass Rate", justify="right")
+        recap_table.add_column("Path", style="dim", no_wrap=False)
+
+        for res in all_results:
+            style = "green" if res["success"] else "bold red"
+            status = f"[{style}]{'PASSED' if res['success'] else 'FAILED'}[/{style}]"
+            recap_table.add_row(
+                res["name"],
+                status,
+                f"{res['passed']}/{res['total']}",
+                f"{res['pass_rate']:.1f}%",
+                res["path"],
+            )
+        console.print(recap_table)
+        console.print()
+
+    if all(r["success"] for r in all_results):
+        logger.info("All functional tests passed")
+    else:
+        logger.error("Some functional tests failed")
+        raise typer.Exit(code=1)
 
 
 def init(

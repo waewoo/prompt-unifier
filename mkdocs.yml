@@ -74,6 +74,7 @@ nav:
   - Usage:
       - Basic Usage: usage/basic.md
       - Advanced Usage: usage/advanced.md
+      - Functional Testing: usage/functional-testing.md
       - Supported Tools:
           - Overview: usage/tools/index.md
           - Continue: usage/tools/continue.md

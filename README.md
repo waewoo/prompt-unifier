@@ -27,6 +27,7 @@ source of truth.
 - ✅ **Validation**: Catch errors in your prompt files before deploying them.
 - ✅ **SCAFF Method Validation**: Analyze prompt quality using the SCAFF methodology (Specific,
   Contextual, Actionable, Formatted, Focused) with scoring and actionable suggestions.
+- ✅ **Functional Testing**: Test prompt outputs with YAML-based test scenarios and assertions.
 - ✅ **Easy Deployment**: A single command to deploy prompts to supported handlers (like
   **Continue**).
 - ✅ **Structured Organization**: Recursively discovers files, preserving your subdirectory
@@ -277,6 +278,26 @@ prompt-unifier -v validate
 prompt-unifier -vv --log-file debug.log sync --repo https://github.com/example/prompts.git
 ```
 
+### test
+
+Run functional tests for prompt files using AI. Discovers `.test.yaml` files and executes their test
+scenarios using the configured AI provider.
+
+**Options:**
+
+- <code>[DIRECTORY]</code>: Optional. File or directory to test (defaults to synchronized storage).
+
+```bash
+# Run tests for all prompts in storage
+prompt-unifier test
+
+# Run tests for a specific prompt file
+prompt-unifier test prompts/code-review.md
+
+# Run tests with verbose output
+prompt-unifier -v test prompts/backend/
+```
+
 <details><summary><code>prompt-unifier init</code> - Initialize configuration</summary>
 <br>
 Creates a <code>.prompt-unifier/config.yaml</code> file in your current directory. This file tracks which repositories you sync from and your deployment settings. It also sets up a local storage directory (default: <code>~/.prompt-unifier/storage/</code>) with <code>prompts/</code>, <code>rules/</code> subdirectories and a <code>.gitignore</code> file.
@@ -315,15 +336,18 @@ Displays the synchronization status, including when each repository was last syn
 
 <details><summary><code>prompt-unifier validate</code> - Validate files</summary>
 <br>
-Checks prompt and rule files for correct YAML frontmatter, required fields, and valid syntax. Also includes SCAFF methodology validation (Specific, Contextual, Actionable, Formatted, Focused) to ensure prompt quality. You can validate the central storage or a local directory of files.
+Checks prompt and rule files for correct YAML frontmatter, required fields, and valid syntax. Also includes SCAFF methodology validation (Specific, Contextual, Actionable, Formatted, Focused) to ensure prompt quality. Supports functional testing with YAML-based test scenarios. You can validate the central storage or a local directory of files.
 
 **Options:**
 
-- <code>[DIRECTORY]</code>: Optional. Directory to validate (defaults to synchronized storage).
+- <code>[DIRECTORY]</code>: Optional. Directory or file to validate (defaults to synchronized
+  storage).
 - <code>--json</code>: Output validation results in JSON format.
 - <code>--type TEXT</code>, <code>-t TEXT</code>: Specify content type to validate: 'all',
   'prompts', or 'rules' [default: 'all'].
 - <code>--scaff/--no-scaff</code>: Enable/disable SCAFF methodology validation [default: enabled].
+- <code>--test</code>: Run functional tests from `.test.yaml` file (requires a specific file, not a
+  directory).
 
 **SCAFF Validation:**
 
@@ -338,8 +362,77 @@ By default, the validate command analyzes your prompts against the SCAFF methodo
 Each prompt receives a score (0-100) and actionable suggestions for improvement. SCAFF validation is
 non-blocking (warnings only) and can be disabled with `--no-scaff`.
 
-Use the global <code>-v</code> flag for verbose output (e.g., <code>prompt-unifier -v
-validate</code>).
+**Functional Testing with AI:**
+
+The `--test` flag enables functional testing of prompts by executing them with real AI providers and
+validating the responses. This allows you to test how your prompts perform with actual LLM models.
+
+**Setup:**
+
+1. Install dependencies (LiteLLM supports 100+ providers):
+
+   ```bash
+   poetry add litellm python-dotenv
+   ```
+
+1. Configure API keys in `.env` file:
+
+   ```bash
+   # For OpenAI (GPT models)
+   OPENAI_API_KEY=sk-your-key-here
+
+   # For Anthropic (Claude models)
+   ANTHROPIC_API_KEY=your-key-here
+
+   # For Mistral
+   MISTRAL_API_KEY=your-key-here
+
+   # For local Ollama (no key needed)
+   # Ollama should be running at http://localhost:11434
+
+   # Default model if not specified in test file
+   DEFAULT_LLM_MODEL=gpt-4o-mini
+   ```
+
+**Create Test File:**
+
+Create a `.test.yaml` file alongside your prompt (e.g., `refactor.md.test.yaml`):
+
+```yaml
+provider: gpt-4o  # Required: AI model to use
+iterations: 1     # Optional: number of times to run tests
+scenarios:
+  - description: "Test refactoring output quality"
+    input: |
+      Refactor this code:
+      def foo(): return x+y
+    expect:
+      - type: contains
+        value: "def foo"
+        error: "Should preserve function name"
+      - type: regex
+        value: "return\\s+\\w+\\s*\\+\\s*\\w+"
+      - type: max-length
+        value: 500
+      - type: not-contains
+        value: "TODO"
+```
+
+**Supported Providers:**
+
+- OpenAI: `gpt-4o`, `gpt-4-turbo`, `gpt-3.5-turbo`
+- Anthropic: `claude-3-5-sonnet-20241022`, `claude-3-opus-20240229`
+- Mistral: `mistral/mistral-large-latest`, `mistral/codestral-latest`
+- Ollama (local): `ollama/llama2`, `ollama/devstral`, `ollama/mistral`
+- 100+ others via [LiteLLM](https://docs.litellm.ai/docs/providers)
+
+**Assertion Types:**
+
+- `contains` / `not-contains`: Check for text presence/absence (supports `case_sensitive: false`)
+- `regex`: Match against regex pattern
+- `max-length`: Verify character count limit
+
+**Examples:**
 
 ```bash
 # Validate with SCAFF checks (default)
@@ -353,7 +446,26 @@ prompt-unifier validate ./my-prompts/
 
 # Get JSON output with SCAFF scores
 prompt-unifier validate --json
+
+# Run functional tests with AI (reads .test.yaml file)
+prompt-unifier validate prompts/refactor.md --test
+
+# Use verbose mode for detailed AI execution logs
+prompt-unifier -v validate prompts/code-review.md --test
 ```
+
+**Troubleshooting Functional Tests:**
+
+- **Missing API key**: Add your API key to `.env` file or export as environment variable:
+  `export OPENAI_API_KEY=sk-your-key`
+- **Timeout errors**: Increase timeout in `.env`: `LITELLM_TIMEOUT=120` (default: 60s)
+- **Rate limit errors**: The AI provider is rate limiting your requests. Wait and retry or upgrade
+  your API plan.
+- **Invalid model**: Check supported models at
+  [LiteLLM Providers](https://docs.litellm.ai/docs/providers)
+- **Local Ollama not working**: Ensure Ollama is running: `ollama serve`
+
+Use the global <code>-v</code> flag for verbose output to see detailed AI execution logs.
 
 </details>
 

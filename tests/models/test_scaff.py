@@ -39,6 +39,16 @@ class TestSCARFFComponent:
         )
         assert component.passed is False
 
+    def test_validate_score_range_invalid(self) -> None:
+        """Test that invalid scores raise ValueError."""
+        import pytest
+
+        with pytest.raises(ValueError, match="Score must be between 0 and 20"):
+            SCARFFComponent.validate_score_range(21)
+
+        with pytest.raises(ValueError, match="Score must be between 0 and 20"):
+            SCARFFComponent.validate_score_range(-1)
+
 
 class TestSCARFFScore:
     """Test SCARFFScore Pydantic model."""
@@ -142,3 +152,11 @@ class TestValidationResultWithSCAFF:
 
         assert result.scaff_score is None
         assert result.is_valid is True
+
+
+def test_rebuild_models() -> None:
+    """Test explicit call to rebuild_models."""
+    from prompt_unifier.models.scaff import rebuild_models
+
+    # Just ensure it runs without error
+    rebuild_models()

@@ -69,6 +69,18 @@ class ErrorCode(str, Enum):
     INVALID_FILE_EXTENSION = "INVALID_FILE_EXTENSION"
     """File does not have .md extension"""
 
+    FUNC_YAML_INVALID = "FUNC_YAML_INVALID"
+    """Functional test: Invalid YAML syntax in test file"""
+
+    FUNC_FILE_MISSING = "FUNC_FILE_MISSING"
+    """Functional test: Test file not found"""
+
+    FUNC_ASSERTION_FAILED = "FUNC_ASSERTION_FAILED"
+    """Functional test: Assertion failed during validation"""
+
+    FUNC_AI_EXECUTION_ERROR = "FUNC_AI_EXECUTION_ERROR"
+    """Functional test: AI execution failed (timeout, auth, rate limit)"""
+
 
 class WarningCode(str, Enum):
     """Warning codes for non-critical validation issues.
@@ -100,6 +112,9 @@ class WarningCode(str, Enum):
 
     SCAFF_UNFOCUSED = "SCAFF_UNFOCUSED"
     """SCAFF: Prompt is too long or lacks focus on single topic"""
+
+    FUNC_UNKNOWN_ASSERTION_TYPE = "FUNC_UNKNOWN_ASSERTION_TYPE"
+    """Functional test: Unknown assertion type encountered"""
 
 
 class ValidationIssue(BaseModel):

@@ -1089,6 +1089,34 @@ def determine_validation_targets(
 
     logger.debug(f"Validating content type: {content_type}")
 
+    # Check if the provided directory is part of a prompts/ or rules/ hierarchy
+    # We check if 'prompts' or 'rules' is in the path parts
+    path_parts = [p.lower() for p in directory.parts]
+    in_prompts = "prompts" in path_parts
+    in_rules = "rules" in path_parts
+
+    # If we are already inside a specific hierarchy, validate this directory directly
+    if in_prompts:
+        if content_type == "rules":
+            typer.echo(
+                f"Error: Target '{directory}' is in a prompts hierarchy "
+                "but --type rules was specified",
+                err=True,
+            )
+            raise typer.Exit(code=1)
+        return [directory]
+
+    if in_rules:
+        if content_type == "prompts":
+            typer.echo(
+                f"Error: Target '{directory}' is in a rules hierarchy "
+                "but --type prompts was specified",
+                err=True,
+            )
+            raise typer.Exit(code=1)
+        return [directory]
+
+    # Standard discovery behavior: look for subdirectories
     if content_type == "prompts":
         target_dir = directory / "prompts"
         if not target_dir.exists():
@@ -1103,7 +1131,7 @@ def determine_validation_targets(
             raise typer.Exit(code=1)
         return [target_dir]
 
-    # Validate both prompts and rules
+    # Discovery mode for 'all': find both prompts and rules subdirectories
     directories: list[Path] = []
     prompts_dir = directory / "prompts"
     rules_dir = directory / "rules"
@@ -1120,3 +1148,104 @@ def determine_validation_targets(
         raise typer.Exit(code=1)
 
     return directories
+
+
+def format_functional_test_results(results: list[Any]) -> Table:
+    """Format functional test results as a Rich table.
+
+    Args:
+        results: List of FunctionalTestResult objects
+
+    Returns:
+        Rich Table object with formatted results
+    """
+    from prompt_unifier.models.functional_test import FunctionalTestResult
+
+    table = Table(show_header=True, header_style="bold magenta")
+    table.add_column("Scenario", style="cyan", no_wrap=False)
+    table.add_column("Status", justify="center")
+    table.add_column("Passed", justify="right")
+    table.add_column("Failed", justify="right")
+    table.add_column("Details", style="dim", no_wrap=False)
+
+    for result in results:
+        if not isinstance(result, FunctionalTestResult):
+            continue
+
+        # Format status with color
+        status_style = "green" if result.status == "PASS" else "bold red"
+        status_display = f"[{status_style}]{result.status.upper()}[/{status_style}]"
+
+        # Format details (show first failure if any)
+        details = ""
+        if result.failures and len(result.failures) > 0:
+            first_failure = result.failures[0]
+            details = (
+                f"{first_failure.get('type', 'unknown')}: "
+                f"{first_failure.get('error_message', 'Failed')}"
+            )
+
+        table.add_row(
+            result.scenario_description,
+            status_display,
+            str(result.passed_count),
+            str(result.failed_count),
+            details,
+        )
+
+    return table
+
+
+def create_functional_test_summary(results: list[Any]) -> str:
+    """Create summary panel text for functional test results.
+
+    Args:
+        results: List of FunctionalTestResult objects
+
+    Returns:
+        Summary text for display in panel
+    """
+    from prompt_unifier.models.functional_test import FunctionalTestResult
+
+    total_scenarios = len(results)
+    passed_scenarios = sum(
+        1 for r in results if isinstance(r, FunctionalTestResult) and r.status == "PASS"
+    )
+    failed_scenarios = total_scenarios - passed_scenarios
+    pass_rate = (passed_scenarios / total_scenarios * 100) if total_scenarios > 0 else 0
+
+    summary_parts = [
+        f"Total scenarios: {total_scenarios}",
+        f"[green]Passed: {passed_scenarios}[/green]",
+        f"[red]Failed: {failed_scenarios}[/red]",
+        f"Pass rate: {pass_rate:.1f}%",
+    ]
+
+    return "\n".join(summary_parts)
+
+
+def format_assertion_failures(result: Any) -> str:
+    """Format detailed failure information for a test result.
+
+    Args:
+        result: FunctionalTestResult object
+
+    Returns:
+        Formatted failure details string
+    """
+    from prompt_unifier.models.functional_test import FunctionalTestResult
+
+    if not isinstance(result, FunctionalTestResult) or not result.failures:
+        return ""
+
+    lines = []
+    for failure in result.failures:
+        lines.append(
+            f"  • {failure.get('type', 'unknown')}: {failure.get('error_message', 'Failed')}"
+        )
+        lines.append(f"    Expected: {failure.get('expected', 'N/A')}")
+        excerpt = failure.get("actual_excerpt", "")
+        if excerpt:
+            lines.append(f"    Actual (excerpt): {excerpt}")
+
+    return "\n".join(lines)

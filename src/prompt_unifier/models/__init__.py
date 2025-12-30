@@ -1,5 +1,11 @@
 """Pydantic data models for validation and type safety."""
 
+from .functional_test import (
+    FunctionalTestAssertion,
+    FunctionalTestFile,
+    FunctionalTestResult,
+    FunctionalTestScenario,
+)
 from .prompt import PromptFrontmatter
 from .rule import RuleFile, RuleFrontmatter
 
@@ -11,4 +17,8 @@ __all__ = [
     "RuleFrontmatter",
     "RuleFile",
     "ContentFile",
+    "FunctionalTestAssertion",
+    "FunctionalTestScenario",
+    "FunctionalTestFile",
+    "FunctionalTestResult",
 ]

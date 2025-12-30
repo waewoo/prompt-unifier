@@ -1,0 +1,22 @@
+provider: openai:gpt-4o
+iterations: 1
+scenarios:
+  - description: "Refactoring d'une boucle inefficace"
+    input: |
+      Refactor this code:
+      def process_user_list(users):
+          result = []
+          for user in users:
+              if user.active == True:
+                  result.append(user.name)
+          return result
+    expect:
+      - type: contains
+        value: "Summary of Changes"
+        error: "Il manque la section résumé demandée"
+      - type: regex
+        value: "\[.* for .* in .*\]"
+        error: "Le code n'utilise pas de list comprehension"
+      - type: not-contains
+        value: "== True"
+        error: "Comparaison booléenne inutile conservée"
