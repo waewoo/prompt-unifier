@@ -4,6 +4,13 @@ All notable changes to this project will be documented in this file.
 
 This project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## v2.5.0 (2025-12-30)
+
+### Feat
+
+- **cli**: enhance functional testing with multiple targets and provider options
+- **cli**: optimize functional test execution with connection pre-validation
+
 ## v2.4.0 (2025-12-30)
 
 ### Feat
