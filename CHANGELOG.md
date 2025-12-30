@@ -4,6 +4,12 @@ All notable changes to this project will be documented in this file.
 
 This project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## v2.4.0 (2025-12-30)
+
+### Feat
+
+- Add prompt functional testing
+
 ## v2.3.2 (2025-12-18)
 
 ### Fix
