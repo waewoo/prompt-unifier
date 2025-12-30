@@ -466,25 +466,13 @@ def _run_single_functional_test(
     }
 
 
-def _discover_functional_test_files(directory: Path | None) -> list[Path]:
-    """Discover all .test.yaml files based on input directory or storage."""
+def _discover_functional_test_files(targets: list[Path] | None) -> list[Path]:
+    """Discover all .test.yaml files based on input targets or storage."""
     from prompt_unifier.core.functional_test_parser import FunctionalTestParser
 
-    if directory and directory.is_file():
-        if directory.name.endswith(".test.yaml"):
-            return [directory]
-        test_file_path = FunctionalTestParser.get_test_file_path(directory)
-        if not test_file_path.exists():
-            console.print(f"[yellow]Warning: Test file not found: {test_file_path}[/yellow]")
-            console.print(f"[dim]Create a test file at: {test_file_path}[/dim]")
-            raise typer.Exit(code=1)
-        return [test_file_path]
-
-    # Discovery mode
-    search_dirs: list[Path] = []
-    if directory:
-        search_dirs.append(directory)
-    else:
+    if not targets:
+        # Discovery mode in default locations
+        search_dirs: list[Path] = []
         try:
             search_dirs.append(resolve_validation_directory(None, CONFIG_DIR, CONFIG_FILE))
         except Exception as e:
@@ -493,34 +481,70 @@ def _discover_functional_test_files(directory: Path | None) -> list[Path]:
         if cwd not in search_dirs:
             search_dirs.append(cwd)
 
+        test_files = []
+        for s_dir in search_dirs:
+            logger.debug(f"Scanning for functional tests in: {s_dir}")
+            found = list(s_dir.glob("**/*.test.yaml"))
+            if found:
+                logger.info(f"Found {len(found)} test file(s) in {s_dir}")
+                test_files.extend(found)
+
+        if not test_files:
+            search_paths_str = ", ".join(str(d) for d in search_dirs)
+            console.print(f"[yellow]No test files found in: {search_paths_str}[/yellow]")
+            raise typer.Exit(code=1)
+
+        return sorted(set(test_files))
+
+    # Handle explicit targets (files or directories)
     test_files = []
-    for s_dir in search_dirs:
-        logger.debug(f"Scanning for functional tests in: {s_dir}")
-        found = list(s_dir.glob("**/*.test.yaml"))
-        if found:
-            logger.info(f"Found {len(found)} test file(s) in {s_dir}")
-            test_files.extend(found)
+    for target in targets:
+        if target.is_file():
+            if target.name.endswith(".test.yaml"):
+                test_files.append(target)
+            else:
+                test_file_path = FunctionalTestParser.get_test_file_path(target)
+                if test_file_path.exists():
+                    test_files.append(test_file_path)
+                else:
+                    console.print(f"[yellow]Warning: Test file not found for: {target}[/yellow]")
+        elif target.is_dir():
+            logger.debug(f"Scanning for functional tests in: {target}")
+            found = list(target.glob("**/*.test.yaml"))
+            if found:
+                test_files.extend(found)
+            else:
+                console.print(f"[yellow]Warning: No test files found in: {target}[/yellow]")
 
     if not test_files:
-        search_paths_str = ", ".join(str(d) for d in search_dirs)
-        console.print(f"[yellow]No test files found in: {search_paths_str}[/yellow]")
+        console.print("[red]Error: No test files found for provided targets.[/red]")
         raise typer.Exit(code=1)
 
     return sorted(set(test_files))
 
 
 def _get_global_ai_provider() -> str | None:
-    """Load global AI provider from configuration."""
+    """Load global AI provider from configuration or environment."""
+    import os
+
+    # 1. Try to load from configuration file
     try:
         config_path = Path.cwd() / CONFIG_DIR / CONFIG_FILE
         if config_path.exists():
             config_manager = ConfigManager()
             config = config_manager.load_config(config_path)
             if config and config.ai_provider:
-                logger.info(f"Using global AI provider: {config.ai_provider}")
+                logger.info(f"Using AI provider from config: {config.ai_provider}")
                 return config.ai_provider
     except Exception as e:
-        logger.debug(f"Could not load global AI provider: {e}")
+        logger.debug(f"Could not load AI provider from config: {e}")
+
+    # 2. Fallback to environment variable
+    env_provider = os.getenv("DEFAULT_LLM_MODEL")
+    if env_provider:
+        logger.info(f"Using AI provider from environment: {env_provider}")
+        return env_provider
+
     return None
 
 
@@ -565,7 +589,7 @@ def validate(
         prompt-unifier validate ./prompts --json
     """
     if test:
-        return test_prompts(directory)
+        return test_prompts([directory] if directory else None, provider=None)
 
     logger.info("Starting validation")
 
@@ -636,14 +660,15 @@ def validate(
     logger.info("Validation complete")
 
 
-def test_prompts(directory: Path | None = DEFAULT_TEST_DIRECTORY_ARG) -> None:
+def test_prompts(targets: list[Path] | None = None, provider: str | None = None) -> None:
     """Run functional tests for prompt files using AI."""
     logger.info("Running functional tests")
 
-    test_files = _discover_functional_test_files(directory)
+    test_files = _discover_functional_test_files(targets)
     console.print(f"Total discovered test file(s): {len(test_files)}")
 
-    global_provider = _get_global_ai_provider()
+    # Priority: 1. CLI flag, 2. Config file, 3. DEFAULT_LLM_MODEL env var
+    global_provider = provider or _get_global_ai_provider()
     executor = None
 
     # Pre-validate global provider connection to fail early if misconfigured

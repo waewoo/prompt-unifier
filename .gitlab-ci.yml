@@ -6,7 +6,7 @@
 #
 # STRATEGY OVERVIEW:
 #   - Merge Requests:  Build & Quality (Auto) | No Release stage.
-#   - Main Branch:     Build (Manual Gate) -> Release (Auto, contingent on success).
+#   - Main Branch:     Build (Auto) -> Release (Manual Gate).
 #   - Tags:            Artifact Publication (Auto).
 #
 # CIRCUIT BREAKERS (Variables):
@@ -111,9 +111,9 @@ stages:
   # 3. Release Mode (TAG): Must rebuild on Tag.
   - if: '$CI_COMMIT_TAG'
     when: on_success
-  # 4. Prod Mode (Main): Manual Gate.
+  # 4. Prod Mode (Main): Automatic Build.
   - if: '$CI_COMMIT_BRANCH == "main" || $SIMULATE_MAIN == "true"'
-    when: manual
+    when: on_success
     allow_failure: true
 
 .rules:release-branch-strategy: &rules-release-branch-strategy
@@ -123,9 +123,9 @@ stages:
   # 2. Safety: Never release from a Merge Request.
   - if: '$CI_PIPELINE_SOURCE == "merge_request_event"'
     when: never
-  # 3. Prod Mode (Main): Auto execution (wait for build).
+  # 3. Prod Mode (Main): Manual Gate for Release.
   - if: '$CI_COMMIT_BRANCH == "main" || $SIMULATE_MAIN == "true"'
-    when: on_success
+    when: manual
 
 .rules:release-tag-strategy: &rules-release-tag-strategy
   # 1. Official Release: Only triggered by strict SemVer tags.

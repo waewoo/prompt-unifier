@@ -28,8 +28,8 @@ ANTHROPIC_API_KEY=sk-ant-your-key...
 # Mistral
 MISTRAL_API_KEY=your-key...
 
-# Optional: Default model (defaults to gpt-4o-mini)
-DEFAULT_LLM_MODEL=gpt-4o
+# Default model used if not specified in test file
+DEFAULT_LLM_MODEL=mistral/codestral-latest
 ```
 
 ## Creating Tests
@@ -72,12 +72,19 @@ scenarios:
 
 ## Running Tests
 
-Use the `test` command to execute your functional tests.
+Use the `test` command to execute your functional tests. You can pass one or more files or
+directories as arguments.
 
-### Run tests for a specific prompt
+### Run tests for specific prompts
 
 ```bash
-prompt-unifier test prompts/my-prompt.md
+prompt-unifier test prompts/my-prompt.md prompts/other-prompt.md
+```
+
+### Run tests for all prompts in a directory
+
+```bash
+prompt-unifier test prompts/python/
 ```
 
 ### Run tests with verbose output

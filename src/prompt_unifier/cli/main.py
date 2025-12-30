@@ -35,6 +35,9 @@ from prompt_unifier.utils import configure_logging
 DEFAULT_REPOS_OPTION = typer.Option(
     None, "--repo", help="Git repository URL (can be specified multiple times)"
 )
+DEFAULT_TEST_TARGETS_ARG = typer.Argument(
+    None, help="Files or directories to test (defaults to synchronized storage)"
+)
 
 
 def version_callback(value: bool) -> None:
@@ -114,8 +117,9 @@ def validate(
 
 @app.command(name="test", help="Run functional tests for prompt files using AI")
 def test(
-    directory: str | None = typer.Argument(
-        None, help="File or directory to test (defaults to synchronized storage)"
+    targets: list[str] = DEFAULT_TEST_TARGETS_ARG,
+    provider: str | None = typer.Option(
+        None, "--provider", "-p", help="AI provider/model to use (overrides config and environment)"
     ),
 ) -> None:
     """Run functional tests for prompt files using AI.
@@ -124,10 +128,11 @@ def test(
     configured AI provider.
 
     Args:
-        directory: File or directory to test (optional)
+        targets: List of files or directories to test (optional)
+        provider: AI provider/model to use (optional)
     """
-    dir_path = Path(directory) if directory is not None else None
-    test_command(dir_path)
+    target_paths = [Path(t) for t in targets] if targets else None
+    test_command(target_paths, provider=provider)
 
 
 @app.command(name="init", help="Initialize prompt-unifier in current directory")

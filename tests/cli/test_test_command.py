@@ -30,7 +30,7 @@ class TestTestCommandCLI:
         test_file = tmp_path / "my.md.test.yaml"
         test_file.touch()
 
-        discovered = _discover_functional_test_files(test_file)
+        discovered = _discover_functional_test_files([test_file])
         assert discovered == [test_file]
 
     def test_discover_functional_test_files_prompt_file(self, tmp_path: Path):
@@ -40,7 +40,7 @@ class TestTestCommandCLI:
         test_file = tmp_path / "prompt.md.test.yaml"
         test_file.touch()
 
-        discovered = _discover_functional_test_files(prompt_file)
+        discovered = _discover_functional_test_files([prompt_file])
         assert discovered == [test_file]
 
     def test_discover_functional_test_files_recursive(self, tmp_path: Path):
@@ -52,7 +52,7 @@ class TestTestCommandCLI:
         test1.touch()
         test2.touch()
 
-        discovered = _discover_functional_test_files(tmp_path)
+        discovered = _discover_functional_test_files([tmp_path])
         assert len(discovered) == 2
         assert test1 in discovered
         assert test2 in discovered

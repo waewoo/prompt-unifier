@@ -68,11 +68,16 @@ class TestCommandsExtra2:
             assert result["passed"] == 0
             assert result["total"] == 0
 
+    @patch("prompt_unifier.cli.commands._validate_ai_connection")
+    @patch("prompt_unifier.cli.commands._get_global_ai_provider")
     @patch("prompt_unifier.cli.commands._run_single_functional_test")
     @patch("prompt_unifier.cli.commands._discover_functional_test_files")
-    def test_validate_test_mode_failure(self, mock_discover, mock_run):
+    def test_validate_test_mode_failure(
+        self, mock_discover, mock_run, mock_get_provider, mock_validate_conn
+    ):
         """Test validate command in test mode exits with 1 on failure."""
         mock_discover.return_value = [Path("test1.yaml")]
+        mock_get_provider.return_value = None
 
         # Simulate failure result
         mock_run.return_value = {

@@ -102,7 +102,7 @@ repos:
 
       - id: detect-secrets
         name: Security - Detect secrets
-        entry: poetry run python -c "import sys, subprocess; sys.exit(0) if sys.platform == 'win32' else sys.exit(subprocess.run(['poetry', 'run', 'detect-secrets-hook', '--baseline', '.secrets.baseline'] + sys.argv[1:]).returncode)"
+        entry: poetry run python3 -c "import sys, subprocess; sys.exit(0) if sys.platform == 'win32' else sys.exit(subprocess.run(['poetry', 'run', 'detect-secrets-hook', '--baseline', '.secrets.baseline'] + sys.argv[1:]).returncode)"
         language: system
         exclude: |
           (?x)^(

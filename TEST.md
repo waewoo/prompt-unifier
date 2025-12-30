@@ -661,6 +661,85 @@ poetry run prompt-unifier test /tmp/test-functional/example-prompt.md
 - Clear error message: "AI execution failed: [error details]"
 - Exit code 1 (Code: 1)
 
+### Test 5.16: Functional testing with multiple targets
+
+```bash
+# Create two prompts and their test files
+mkdir -p /tmp/test-multi-targets
+cat > /tmp/test-multi-targets/p1.md << 'EOF'
+---
+title: p1
+description: d
+---
+Content 1
+EOF
+cat > /tmp/test-multi-targets/p1.md.test.yaml << 'EOF'
+scenarios:
+  - description: "Test 1"
+    input: "in"
+    expect:
+      - type: contains
+        value: "Content"
+EOF
+
+cp /tmp/test-multi-targets/p1.md /tmp/test-multi-targets/p2.md
+cp /tmp/test-multi-targets/p1.md.test.yaml /tmp/test-multi-targets/p2.md.test.yaml
+
+# Run test with multiple arguments
+poetry run prompt-unifier test /tmp/test-multi-targets/p1.md /tmp/test-multi-targets/p2.md
+```
+
+✓ **Expected result:**
+
+- Both test files are discovered and executed
+- "Total discovered test file(s): 2" displayed
+- Recap table shows results for both `p1` and `p2`
+- Exit code 0 (Code: 0)
+
+### Test 5.17: Functional testing using DEFAULT_LLM_MODEL
+
+```bash
+# Set environment variable
+export DEFAULT_LLM_MODEL="ollama/llama3"
+
+cat > /tmp/test-functional/env-model.md.test.yaml << 'EOF'
+# No provider specified here
+scenarios:
+  - description: "Test env model"
+    input: "ping"
+    expect:
+      - type: contains
+        value: "pong"
+EOF
+
+# Run test (with -v to see chosen model)
+poetry run prompt-unifier -v test /tmp/test-functional/env-model.md
+```
+
+✓ **Expected result:**
+
+- Log message: "Using AI provider from environment: ollama/llama3"
+- Test attempts to use llama3 via Ollama
+- Exit code depends on model availability, but provider resolution should work.
+
+### Test 5.18: Functional testing early exit on connection failure
+
+```bash
+# Set an invalid global model
+export DEFAULT_LLM_MODEL="mistral/invalid-model-name"
+
+# Run tests on a directory with multiple files
+poetry run prompt-unifier test /tmp/test-multi-targets/
+```
+
+✓ **Expected result:**
+
+- "Validating connection to AI provider..." displayed
+- "✗ Connection validation failed" displayed
+- **Command exits IMMEDIATELY** after the first failure
+- NO attempt to run tests for each individual file (no cascade of errors)
+- Exit code 1 (Code: 1)
+
 ______________________________________________________________________
 
 ## List Command
@@ -1346,7 +1425,10 @@ Test Command
 ├─ [·] Test 5.12 - Functional testing with missing test file
 ├─ [·] Test 5.13 - Functional testing with case-insensitive assertion
 ├─ [·] Test 5.14 - Functional testing with local Ollama
-└─ [·] Test 5.15 - Functional testing with AI execution error
+├─ [·] Test 5.15 - Functional testing with AI execution error
+├─ [·] Test 5.16 - Functional testing with multiple targets
+├─ [·] Test 5.17 - Functional testing using DEFAULT_LLM_MODEL
+└─ [·] Test 5.18 - Functional testing early exit on connection failure
 
 List Command
 ├─ [·] Test 7.1 - List all content

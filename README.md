@@ -416,7 +416,10 @@ This allows you to verify that your prompts perform as intended with real LLM mo
 
 **Options:**
 
-- `[DIRECTORY]`: Optional. File or directory to test (defaults to synchronized storage).
+- `[TARGETS...]`: Optional. List of files or directories to test (defaults to synchronized storage).
+- `--provider`, `-p`: Optional. AI provider/model to use (e.g., `gpt-4o`,
+  `mistral/codestral-latest`). Overrides any configuration in `config.yaml` or environment
+  variables.
 
 **Functional Testing with AI:**
 
@@ -427,6 +430,11 @@ and validating the responses.
 
 1. Configure API keys in `.env` (OPENAI_API_KEY, ANTHROPIC_API_KEY, etc.)
 1. Create a `.test.yaml` file alongside your prompt.
+
+**Environment Variables:**
+
+- `DEFAULT_LLM_MODEL`: Set the default AI model to use (e.g., `mistral/codestral-latest`) if not
+  specified in the test file.
 
 **Example Test File:**
 
@@ -445,8 +453,11 @@ scenarios:
 # Run tests for all prompts in storage
 prompt-unifier test
 
-# Run tests for a specific prompt file
-prompt-unifier test prompts/code-review.md
+# Run tests for specific prompt files
+prompt-unifier test prompts/code-review.md prompts/refactor.md
+
+# Run tests for an entire directory
+prompt-unifier test prompts/python/
 
 # Run tests with verbose output for detailed AI execution logs
 prompt-unifier -v test prompts/backend/
