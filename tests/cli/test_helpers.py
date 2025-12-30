@@ -60,7 +60,7 @@ class TestCLIHelpers:
             "---\ntitle: Prompt\ndescription: desc\nversion: 1.0.0\nauthor: me\n---\nContent"
         )
         (rules_dir / "test_rule.md").write_text(
-            "---\ntitle: Rule\ndescription: desc\ncategory: cat\n---\nContent"
+            "---\ntitle: Rule\ndescription: desc\ncategory: testing\n---\nContent"
         )
         # Non-md file should be ignored
         (prompts_dir / "ignore.txt").write_text("ignored")

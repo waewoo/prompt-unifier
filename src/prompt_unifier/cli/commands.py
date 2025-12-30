@@ -348,7 +348,9 @@ def _validate_ai_connection(executor: Any, provider: str) -> None:
 
 
 def _run_single_functional_test(
-    test_file_path: Path, global_provider: str | None = None
+    test_file_path: Path,
+    global_provider: str | None = None,
+    executor: Any | None = None,
 ) -> dict[str, Any]:
     """Run functional tests for a single test file."""
     from prompt_unifier.cli.helpers import (
@@ -401,8 +403,12 @@ def _run_single_functional_test(
     try:
         from prompt_unifier.ai.executor import AIExecutor
 
-        executor = AIExecutor()
-        _validate_ai_connection(executor, provider)
+        if executor is None:
+            executor = AIExecutor()
+
+        # Only validate connection if this is NOT the global provider (already validated)
+        if provider != global_provider:
+            _validate_ai_connection(executor, provider)
     except Exception:
         return {
             "success": False,
@@ -638,7 +644,20 @@ def test_prompts(directory: Path | None = DEFAULT_TEST_DIRECTORY_ARG) -> None:
     console.print(f"Total discovered test file(s): {len(test_files)}")
 
     global_provider = _get_global_ai_provider()
-    all_results = [_run_single_functional_test(tf, global_provider) for tf in test_files]
+    executor = None
+
+    # Pre-validate global provider connection to fail early if misconfigured
+    if global_provider:
+        from prompt_unifier.ai.executor import AIExecutor
+
+        executor = AIExecutor()
+        try:
+            _validate_ai_connection(executor, global_provider)
+        except Exception:
+            # Troubleshooting info is already printed by _validate_ai_connection
+            raise typer.Exit(code=1) from None
+
+    all_results = [_run_single_functional_test(tf, global_provider, executor) for tf in test_files]
 
     # FINAL RECAP TABLE
     if len(all_results) > 1:

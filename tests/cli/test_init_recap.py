@@ -15,6 +15,7 @@ def test_test_prompts_recap_table():
         patch("prompt_unifier.cli.commands._discover_functional_test_files") as mock_discover,
         patch("prompt_unifier.cli.commands._get_global_ai_provider") as mock_provider,
         patch("prompt_unifier.cli.commands._run_single_functional_test") as mock_run,
+        patch("prompt_unifier.cli.commands._validate_ai_connection"),
     ):
         # Setup mocks
         mock_discover.return_value = [Path("test1.yaml"), Path("test2.yaml")]

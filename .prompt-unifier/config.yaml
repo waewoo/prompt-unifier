@@ -13,5 +13,5 @@ repo_metadata:
 storage_path: /root/.prompt-unifier/storage
 deploy_tags: null
 target_handlers: null
-ai_provider: mistral/mistral-small-latest
+ai_provider: mistral/codestral-latest
 handlers: null

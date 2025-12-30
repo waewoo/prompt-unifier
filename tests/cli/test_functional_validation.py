@@ -15,15 +15,21 @@ from prompt_unifier.cli.main import app
 runner = CliRunner()
 
 
+@patch("prompt_unifier.cli.commands._get_global_ai_provider")
 @patch("prompt_unifier.ai.executor.AIExecutor.validate_connection")
 class TestFunctionalValidationCLI:
     """Tests for CLI integration of functional validation."""
 
     @patch("prompt_unifier.ai.executor.AIExecutor.execute_prompt")
     def test_test_command_executes_functional_tests(
-        self, mock_execute: MagicMock, mock_validate_conn: MagicMock, tmp_path: Path
+        self,
+        mock_execute: MagicMock,
+        mock_validate_conn: MagicMock,
+        mock_global_provider: MagicMock,
+        tmp_path: Path,
     ) -> None:
         """Test that test command triggers functional test execution."""
+        mock_global_provider.return_value = None
         # Mock AI response
         mock_execute.return_value = "Content here from AI"
 
@@ -63,9 +69,13 @@ class TestFunctionalValidationCLI:
         assert "functional" in result.stdout.lower() or "test" in result.stdout.lower()
 
     def test_test_command_missing_file_shows_warning(
-        self, mock_validate_conn: MagicMock, tmp_path: Path
+        self,
+        mock_validate_conn: MagicMock,
+        mock_global_provider: MagicMock,
+        tmp_path: Path,
     ) -> None:
         """Test that missing .test.yaml file shows warning and exits with 1."""
+        mock_global_provider.return_value = None
         # Create source file without test file
         source_file = tmp_path / "test.md"
         source_file.write_text(
@@ -86,9 +96,13 @@ class TestFunctionalValidationCLI:
         assert "not found" in result.stdout.lower() or "missing" in result.stdout.lower()
 
     def test_test_command_skips_scaff_validation(
-        self, mock_validate_conn: MagicMock, tmp_path: Path
+        self,
+        mock_validate_conn: MagicMock,
+        mock_global_provider: MagicMock,
+        tmp_path: Path,
     ) -> None:
         """Test that test command skips SCAFF validation."""
+        mock_global_provider.return_value = None
         source_file = tmp_path / "test.md"
         source_file.write_text(
             dedent(
@@ -122,9 +136,13 @@ class TestFunctionalValidationCLI:
         assert "SCAFF" not in result.stdout
 
     def test_test_command_failed_assertions_exit_code_1(
-        self, mock_validate_conn: MagicMock, tmp_path: Path
+        self,
+        mock_validate_conn: MagicMock,
+        mock_global_provider: MagicMock,
+        tmp_path: Path,
     ) -> None:
         """Test that failed assertions cause exit code 1."""
+        mock_global_provider.return_value = None
         source_file = tmp_path / "test.md"
         source_file.write_text(
             dedent(
@@ -158,9 +176,13 @@ class TestFunctionalValidationCLI:
         assert result.exit_code == 1
 
     def test_test_command_invalid_yaml_shows_warning(
-        self, mock_validate_conn: MagicMock, tmp_path: Path
+        self,
+        mock_validate_conn: MagicMock,
+        mock_global_provider: MagicMock,
+        tmp_path: Path,
     ) -> None:
         """Test that invalid YAML in test file shows warning."""
+        mock_global_provider.return_value = None
         source_file = tmp_path / "test.md"
         source_file.write_text(
             dedent(
@@ -184,9 +206,14 @@ class TestFunctionalValidationCLI:
 
     @patch("prompt_unifier.ai.executor.AIExecutor.execute_prompt")
     def test_test_command_successful_tests_exit_code_0(
-        self, mock_execute: MagicMock, mock_validate_conn: MagicMock, tmp_path: Path
+        self,
+        mock_execute: MagicMock,
+        mock_validate_conn: MagicMock,
+        mock_global_provider: MagicMock,
+        tmp_path: Path,
     ) -> None:
         """Test that all passing tests result in exit code 0."""
+        mock_global_provider.return_value = None
         # Mock AI response that passes all assertions
         mock_execute.return_value = "Expected content here from AI response"
 
@@ -225,9 +252,13 @@ class TestFunctionalValidationCLI:
         assert "PASS" in result.stdout or "pass" in result.stdout.lower()
 
     def test_test_command_connection_failure_auth_error(
-        self, mock_validate_conn: MagicMock, tmp_path: Path
+        self,
+        mock_validate_conn: MagicMock,
+        mock_global_provider: MagicMock,
+        tmp_path: Path,
     ) -> None:
         """Test authentication error shows helpful troubleshooting."""
+        mock_global_provider.return_value = None
         from prompt_unifier.ai.executor import AIExecutionError
 
         # Mock validation to raise auth error
@@ -261,9 +292,13 @@ class TestFunctionalValidationCLI:
         assert "API key" in result.stdout or "OPENAI_API_KEY" in result.stdout
 
     def test_test_command_connection_failure_timeout_error(
-        self, mock_validate_conn: MagicMock, tmp_path: Path
+        self,
+        mock_validate_conn: MagicMock,
+        mock_global_provider: MagicMock,
+        tmp_path: Path,
     ) -> None:
         """Test timeout error shows network troubleshooting."""
+        mock_global_provider.return_value = None
         from prompt_unifier.ai.executor import AIExecutionError
 
         # Mock validation to raise timeout error
@@ -296,9 +331,13 @@ class TestFunctionalValidationCLI:
         assert "internet connection" in result.stdout or "firewall" in result.stdout
 
     def test_test_command_connection_failure_ollama_timeout(
-        self, mock_validate_conn: MagicMock, tmp_path: Path
+        self,
+        mock_validate_conn: MagicMock,
+        mock_global_provider: MagicMock,
+        tmp_path: Path,
     ) -> None:
         """Test Ollama timeout shows Ollama-specific help."""
+        mock_global_provider.return_value = None
         from prompt_unifier.ai.executor import AIExecutionError
 
         # Mock validation to raise timeout for Ollama
@@ -330,9 +369,13 @@ class TestFunctionalValidationCLI:
         assert "Ollama" in result.stdout or "ollama serve" in result.stdout
 
     def test_test_command_connection_failure_invalid_model(
-        self, mock_validate_conn: MagicMock, tmp_path: Path
+        self,
+        mock_validate_conn: MagicMock,
+        mock_global_provider: MagicMock,
+        tmp_path: Path,
     ) -> None:
         """Test invalid model error shows model help."""
+        mock_global_provider.return_value = None
         from prompt_unifier.ai.executor import AIExecutionError
 
         # Mock validation to raise model not found error
