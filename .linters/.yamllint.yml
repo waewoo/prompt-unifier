@@ -1,0 +1,10 @@
+extends: default
+
+rules:
+  line-length: disable
+  document-start: disable
+  trailing-spaces: disable
+  indentation: disable
+  comments: disable # Disable comment spacing checks (too noisy with GitLab CI)
+  truthy:
+    allowed-values: ["true", "false", "yes", "no"]

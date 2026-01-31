@@ -60,6 +60,8 @@
 
 24. [x] MkDocs Documentation Site — Create a professional, static documentation site using MkDocs and Material for MkDocs, hosted on GitLab Pages. Includes comprehensive guides (Getting Started, Usage, Configuration), CLI reference, and automated deployment pipeline. `M`
 
+25. [x] CI/CD - MegaLinter Integration — Integrate MegaLinter into the GitLab CI/CD pipeline to provide comprehensive linting for the entire codebase (Python, YAML, Markdown, Dockerfile, etc.). Configure it to run in the quality stage, replacing or augmenting existing linters, and ensure it produces compatible reports. `High`
+
 > Notes
 > - Order items by technical dependencies and product architecture
 > - Each item should represent an end-to-end (frontend + backend) functional and testable feature

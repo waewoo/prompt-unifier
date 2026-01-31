@@ -1,3 +1,4 @@
+---
 # ==============================================================================
 # GITLAB CI/CD - MAKEFILE DRIVEN (PLATINUM EDITION)
 # ==============================================================================
@@ -168,6 +169,23 @@ app-lint:
     - test -d .venv || make env-install
   script:
     - make app-lint
+  rules: *rules-quality
+
+megalinter:
+  stage: quality
+  image: oxsecurity/megalinter-python:v8
+  variables:
+    DEFAULT_WORKSPACE: $CI_PROJECT_DIR
+    GITLAB_ACCESS_TOKEN_MEGALINTER: $CI_PUSH_TOKEN # Use Push Token for MR comments
+  script:
+    - /bin/bash /megalinter-entrypoint.sh
+  artifacts:
+    when: always
+    reports:
+      codequality: megalinter-reports/gl-code-quality-report.json
+    paths:
+      - megalinter-reports
+    expire_in: 1 week
   rules: *rules-quality
 
 app-test-linux:

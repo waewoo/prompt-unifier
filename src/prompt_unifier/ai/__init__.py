@@ -2,4 +2,4 @@
 
 from .executor import AIExecutionError, AIExecutor
 
-__all__ = ["AIExecutor", "AIExecutionError"]
+__all__ = ["AIExecutionError", "AIExecutor"]

@@ -144,8 +144,7 @@ class AIExecutor:
             # Extract response text from LiteLLM response object
             response_text: str = str(response.choices[0].message.content)
             logger.debug(
-                f"Successfully executed prompt with {model}, "
-                f"response length: {len(response_text)}"
+                f"Successfully executed prompt with {model}, response length: {len(response_text)}"
             )
 
             return response_text

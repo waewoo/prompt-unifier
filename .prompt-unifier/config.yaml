@@ -1,17 +1,29 @@
-repos:
-- url: git@gitlab.com:waewoo/prompt-unifier-data.git
-  branch: null
-  auth_config: null
-  include_patterns: null
-  exclude_patterns: null
-last_sync_timestamp: '2025-12-30T10:12:03.579293+00:00'
-repo_metadata:
-- url: git@gitlab.com:waewoo/prompt-unifier-data.git
-  branch: main
-  commit: 3684f82
-  timestamp: '2025-12-30T10:12:03.546566+00:00'
-storage_path: /root/.prompt-unifier/storage
-deploy_tags: null
-target_handlers: null
-ai_provider: mistral/codestral-latest
-handlers: null
+---
+# ==============================================================================
+# PROMPT UNIFIER CONFIGURATION
+# ==============================================================================
+
+# Git Integration Configuration
+git:
+  # The path where prompts and rules are stored locally.
+  # Defaults to ~/.prompt-unifier/storage if not specified.
+  storage_path: ~/.prompt-unifier/storage
+
+  # List of Git repositories to sync prompts from.
+  # Format: "https://git.example.com/repo.git"
+  repositories: []
+
+# Tool Handlers Configuration
+handlers:
+  # Continue AI Assistant (VS Code / JetBrains)
+  continue:
+    # Enable or disable this handler
+    enabled: true
+    # Base path for deployment (e.g., ~/.continue or project/.continue)
+    # If null, defaults to project directory: .continue/
+    base_path: null
+
+  # Kilo Code (Internal Tool)
+  kilo_code:
+    enabled: true
+    base_path: null

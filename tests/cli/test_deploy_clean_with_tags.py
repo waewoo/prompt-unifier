@@ -128,25 +128,25 @@ def test_clean_removes_files_not_matching_tag_filter(
     ]
 
     # Assert: javascript and react guides SHOULD be removed
-    assert any(
-        "javascript-guide.md" in f for f in removed_files
-    ), "javascript-guide.md should be removed as it doesn't match --tags python"
-    assert any(
-        "react-guide.md" in f for f in removed_files
-    ), "react-guide.md should be removed as it doesn't match --tags python"
+    assert any("javascript-guide.md" in f for f in removed_files), (
+        "javascript-guide.md should be removed as it doesn't match --tags python"
+    )
+    assert any("react-guide.md" in f for f in removed_files), (
+        "react-guide.md should be removed as it doesn't match --tags python"
+    )
 
     # These files should be removed
-    assert not (
-        deployed_prompts_dir / "javascript-guide.md"
-    ).exists(), "javascript-guide.md should be removed after deploy with --tags python --clean"
-    assert not (
-        deployed_prompts_dir / "react-guide.md"
-    ).exists(), "react-guide.md should be removed after deploy with --tags python --clean"
+    assert not (deployed_prompts_dir / "javascript-guide.md").exists(), (
+        "javascript-guide.md should be removed after deploy with --tags python --clean"
+    )
+    assert not (deployed_prompts_dir / "react-guide.md").exists(), (
+        "react-guide.md should be removed after deploy with --tags python --clean"
+    )
 
     # Python file should still exist
-    assert (
-        deployed_prompts_dir / "python-guide.md"
-    ).exists(), "python-guide.md should still exist after deploy with --tags python --clean"
+    assert (deployed_prompts_dir / "python-guide.md").exists(), (
+        "python-guide.md should still exist after deploy with --tags python --clean"
+    )
 
 
 def test_clean_should_only_remove_truly_orphaned_files(
@@ -215,9 +215,9 @@ Old content"""
 
     # Assert: Only the orphaned file should be removed
     assert len(removed_md_files) == 1, f"Expected 1 orphaned file, got {len(removed_md_files)}"
-    assert (
-        "old-deleted-prompt.md" in removed_md_files[0]
-    ), "The orphaned file should be old-deleted-prompt.md"
+    assert "old-deleted-prompt.md" in removed_md_files[0], (
+        "The orphaned file should be old-deleted-prompt.md"
+    )
 
     # Python guide should still exist
     assert (deployed_prompts_dir / "python-guide.md").exists()

@@ -1,0 +1,96 @@
+---
+# MegaLinter configuration file
+# More info: https://megalinter.io/latest/config-vars/
+
+# ==============================================================================
+# GLOBAL CONFIGURATION
+# ==============================================================================
+APPLY_FIXES: none
+VALIDATE_ALL_CODEBASE: true
+SHOW_ELAPSED_TIME: true
+FILE_IO_THRESHOLD: 100
+
+# ==============================================================================
+# REPORTERS (GITLAB INTEGRATION)
+# ==============================================================================
+TEXT_REPORTER: true
+JSON_REPORTER: true
+HTML_REPORTER: true
+
+# Integration GitLab MR
+GITLAB_COMMENT_REPORTER: true
+GITLAB_CODE_QUALITY_REPORTS: true
+
+# Performance
+FLAVOR_SUGGESTIONS: false
+
+# ==============================================================================
+# EXCLUSIONS
+# ==============================================================================
+EXCLUDED_DIRECTORIES:
+  - .venv
+  - .git
+  - .gitlab-ci-local
+  - .mypy_cache
+  - .pytest_cache
+  - .ruff_cache
+  - build
+  - dist
+  - htmlcov
+  - megalinter-reports
+  - node_modules
+  - public
+  - site
+  - .kilocode
+  - .prompt-unifier/storage
+  - agent-os
+  - .linters
+
+# ==============================================================================
+# LINTERS SELECTION
+# ==============================================================================
+ENABLE_LINTERS:
+  # Python Suite
+  - PYTHON_RUFF
+  - PYTHON_BANDIT
+  # - PYTHON_MYPY
+
+  # Security & Deps
+  - REPOSITORY_GITLEAKS
+  - REPOSITORY_TRIVY
+
+  # Web/Docs
+  - MARKDOWN_MARKDOWNLINT
+  - YAML_YAMLLINT
+  - JSON_JSONLINT
+
+  # DevOps
+  - BASH_SHELLCHECK
+  - DOCKERFILE_HADOLINT
+
+# ==============================================================================
+# DYNAMIC ENVIRONMENT SETUP (Runtime centralization)
+# ==============================================================================
+# We copy configs from .linters/ to root at runtime.
+PRE_COMMANDS:
+  - command: "cp .linters/.* .linters/* . 2>/dev/null || true"
+    cwd: "workspace"
+
+# ==============================================================================
+# LINTERS CONFIGURATION
+# ==============================================================================
+
+# --- PYTHON ---
+PYTHON_RUFF_ARGUMENTS: "--config pyproject.toml"
+PYTHON_BANDIT_ARGUMENTS: "-c pyproject.toml"
+PYTHON_BANDIT_FILTER_REGEX_EXCLUDE: "tests/.*"
+
+# --- REPOSITORY ---
+REPOSITORY_TRIVY_ARGUMENTS: "--ignorefile .trivyignore"
+REPOSITORY_GITLEAKS_ARGUMENTS: "--config .gitleaks.toml"
+
+# --- YAML ---
+YAML_YAMLLINT_ARGUMENTS: "-c .yamllint.yml"
+
+# --- MARKDOWN ---
+MARKDOWN_MARKDOWNLINT_ARGUMENTS: "-c .markdownlint.json --ignore .markdownlintignore"

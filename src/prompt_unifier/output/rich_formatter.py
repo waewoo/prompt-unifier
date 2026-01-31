@@ -204,8 +204,7 @@ class RichFormatter:
 
         # Display SCAFF score header
         self.console.print(
-            f"  [{score_color}]SCAFF Score: {scaff_score.total_score}/100 "
-            f"({grade})[/{score_color}]"
+            f"  [{score_color}]SCAFF Score: {scaff_score.total_score}/100 ({grade})[/{score_color}]"
         )
 
         # Display component breakdown table
@@ -296,7 +295,6 @@ class RichFormatter:
             )
         else:
             self.console.print(
-                f"[{self.ERROR_COLOR}]Validation FAILED "
-                f"{self.FAILED_SYMBOL}[/{self.ERROR_COLOR}]"
+                f"[{self.ERROR_COLOR}]Validation FAILED {self.FAILED_SYMBOL}[/{self.ERROR_COLOR}]"
             )
         self.console.print()

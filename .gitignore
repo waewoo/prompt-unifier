@@ -73,6 +73,7 @@ bandit-report.json
 safety-report.json
 pip-audit-report.json
 .secrets.baseline.tmp
+megalinter-reports/
 
 #mkdoc
 site/

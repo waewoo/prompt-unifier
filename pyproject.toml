@@ -36,12 +36,16 @@ pyyaml = "^6.0.3"
 gitpython = "^3.1.45"
 litellm = "^1.80.11"
 python-dotenv = "^1.2.1"
+filelock = ">=3.20.3"
+aiohttp = ">=3.13.3"
+urllib3 = ">=2.6.3"
+virtualenv = ">=20.36.1"
 
 [tool.poetry.group.dev.dependencies]
 pytest = "^8.0.0"
 pytest-cov = "^4.1.0"
 pytest-mock = "^3.12.0"
-ruff = "^0.3.0"
+ruff = "^0.9.0"
 mypy = "^1.8.0"
 mypy-gitlab-code-quality = "^1.3.0"
 pre-commit = "^3.6.0"
@@ -117,12 +121,19 @@ known-first-party = ["prompt_unifier"]
     "PLR0913", # Too many arguments (test functions often need many fixtures)
     "PLR0915", # Too many statements (test functions can be long)
     "PLR2004", # Magic value comparison (acceptable in tests)
+    "PLC0415", # Import should be at the top-level of a file (common in tests)
     "RUF012",  # Mutable class attributes (common in test classes)
+    "RUF059",  # Unpacked variable is never used (common in tests unpacking fixtures)
     "S101",    # Use of assert detected (Allowed in tests) - AJOUTÉ
     "S110",    # try-except-pass (acceptable in tests for error handling)
     "S603",    # subprocess call without shell=True (safe in tests)
     "S607",    # subprocess with partial path (safe for git commands in tests)
 ]
+"src/prompt_unifier/cli/*.py" = ["PLC0415"]  # Lazy imports in CLI are acceptable for performance
+"src/prompt_unifier/core/content_parser.py" = ["PLC0415"] # Lazy imports
+"src/prompt_unifier/core/functional_validator.py" = ["PLC0415"] # Lazy imports
+"src/prompt_unifier/git/service.py" = ["PLC0415"] # Lazy imports
+"src/prompt_unifier/models/scaff.py" = ["PLC0415"] # Lazy imports
 
 # ============================================================================
 # MYPY CONFIGURATION
@@ -188,7 +199,7 @@ exclude_lines = [
     "raise NotImplementedError",
     "if __name__ == .__main__.:",
     "if TYPE_CHECKING:",
-    "\\.\\.\\.",
+    '\.\.\.',
 ]
 
 # ============================================================================

@@ -443,6 +443,7 @@ ______________________________________________________________________
 - **Roadmap update is non-negotiable**
 - **TDD is mandatory**
 - **Run `make app-check-all` before committing**
+- **Respond in FRENCH by default** in the chat, unless the user explicitly requests otherwise.
 
 ______________________________________________________________________
 
@@ -492,6 +493,7 @@ make help                     # Show all available make targets with description
 
 - `make pkg-build` — Build packages
 - `make pkg-changelog` — Generate changelog
+- `make pkg-notes` — Generate release notes (use VERSION=x.y.z)
 - `make pkg-publish` — Create release (use VERSION_BUMP=...)
 
 **Documentation:**
@@ -499,13 +501,3 @@ make help                     # Show all available make targets with description
 - `make docs-install` — Install doc dependencies
 - `make docs-live` — Serve docs locally
 - `make docs-build` — Build static docs
-
-______________________________________________________________________
-
-## Additional Context
-
-For Tessl-managed rules, see: `.tessl/RULES.md`
-
-# Agent Rules <!-- tessl-managed -->
-
-@.tessl/RULES.md follow the [instructions](.tessl/RULES.md)

@@ -1,0 +1,9 @@
+# Generated files
+CHANGELOG.md
+docs/reference/cli-commands.md
+
+# Specs and OS internal files (often raw markdown)
+agent-os/
+
+# Hidden files and folders (dotfiles)
+.*

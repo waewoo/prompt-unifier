@@ -1,0 +1,6 @@
+[allowlist]
+  paths = [
+    '''\.secrets\.baseline''',
+    '''poetry\.lock''',
+    '''tests/fixtures/'''
+  ]

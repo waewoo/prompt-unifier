@@ -149,6 +149,8 @@ Code quality is enforced automatically by pre-commit hooks and the CI pipeline.
 - **Linting & Formatting**: We use [Ruff](https://github.com/astral-sh/ruff) for fast linting and
   formatting. Configuration is in `pyproject.toml`.
 - **Type Checking**: We use [mypy](http://mypy-lang.org/) in `strict` mode for static type analysis.
+- **Comprehensive Linting (CI)**: We use [MegaLinter](https://megalinter.io/) in the CI pipeline to
+  ensure consistency across all file types (YAML, Markdown, Dockerfile, Bash, etc.).
 
 You can run these checks manually at any time:
 
@@ -191,6 +193,7 @@ The GitLab CI pipeline is organized into 5 stages:
    - `app-lint`: Linting, formatting, type checking via `make app-lint`
    - `app-test`: Unit tests with coverage via `make app-test`
    - `app-sonar`: SonarQube code analysis (optional)
+   - `megalinter`: Comprehensive multi-language linting via MegaLinter
 
 1. **security**: Security scanning (runs in parallel with quality)
 

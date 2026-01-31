@@ -314,16 +314,13 @@ class FunctionalValidator:
             actual_excerpt += "..."
 
         # Use custom error message if provided, otherwise generate default
-        if assertion.error:
-            error_message = assertion.error
-        else:
-            error_message = self._generate_default_error_message(assertion)
+        error_message = assertion.error or self._generate_default_error_message(assertion)
 
         return {
-            "type": assertion.type,
-            "expected": str(assertion.value),
-            "actual_excerpt": actual_excerpt,
-            "error_message": error_message,
+            "passed": False,
+            "error": error_message,
+            "assertion": assertion.type,
+            "params": assertion.params,
         }
 
     def _generate_default_error_message(self, assertion: FunctionalTestAssertion) -> str:

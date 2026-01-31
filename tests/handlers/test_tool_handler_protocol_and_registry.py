@@ -126,7 +126,7 @@ def test_registry_can_register_and_retrieve_handlers():
 def test_registry_raises_error_for_non_existent_handler():
     """Test that the registry raises an error for a non-existent handler."""
     registry = ToolHandlerRegistry()
-    with pytest.raises(ValueError, match="ToolHandler with name 'non_existent' not found."):
+    with pytest.raises(ValueError, match=r"ToolHandler with name 'non_existent' not found."):
         registry.get_handler("non_existent")
 
 
@@ -156,7 +156,7 @@ def test_registry_rejects_non_protocol_conforming_objects():
 
     # The registry's register method should raise TypeError for non-conforming objects
     with pytest.raises(
-        TypeError, match="Only instances conforming to ToolHandler protocol can be registered."
+        TypeError, match=r"Only instances conforming to ToolHandler protocol can be registered."
     ):
         registry.register(NonConforming())
 
@@ -169,7 +169,7 @@ def test_registry_raises_error_for_duplicate_handler_name():
 
     registry.register(mock_handler_1)
     with pytest.raises(
-        ValueError, match="ToolHandler with name 'duplicate_name' is already registered."
+        ValueError, match=r"ToolHandler with name 'duplicate_name' is already registered."
     ):
         registry.register(mock_handler_2)
 
