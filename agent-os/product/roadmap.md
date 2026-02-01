@@ -60,6 +60,8 @@
 
 24. [x] MkDocs Documentation Site — Create a professional, static documentation site using MkDocs and Material for MkDocs, hosted on GitLab Pages. Includes comprehensive guides (Getting Started, Usage, Configuration), CLI reference, and automated deployment pipeline. `M`
 
+25. [x] Automated Code Review — Integrate pr-agent for AI-powered code reviews. Support local usage via Make commands and automated reviews in GitLab CI/CD pipelines. Features include configurable LLM backend (Gemini default), token-based security via .env, and simple TOML configuration. `H`
+
 > Notes
 > - Order items by technical dependencies and product architecture
 > - Each item should represent an end-to-end (frontend + backend) functional and testable feature

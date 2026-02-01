@@ -208,9 +208,9 @@ class TestLogFileFormat:
         ansi_pattern = r"\x1b\[[0-9;]*m"
 
         # Log file should not contain ANSI codes
-        assert not re.search(
-            ansi_pattern, log_content
-        ), "Log file should not contain ANSI color codes"
+        assert not re.search(ansi_pattern, log_content), (
+            "Log file should not contain ANSI color codes"
+        )
 
 
 class TestMultipleCommandsWithLogging:
@@ -308,9 +308,9 @@ class TestVerbosityLevelProgression:
 
                 # Verify level
                 root_logger = logging.getLogger()
-                assert (
-                    root_logger.level == expected_level
-                ), f"Expected {expected_level} for {flags}, got {root_logger.level}"
+                assert root_logger.level == expected_level, (
+                    f"Expected {expected_level} for {flags}, got {root_logger.level}"
+                )
             finally:
                 # Close handlers to release file lock
                 for handler in root_logger.handlers[:]:

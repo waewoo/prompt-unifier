@@ -571,10 +571,8 @@ class SCARFFValidator:
             return True
 
         # Pattern 2: "Role: X"
-        if re.search(rf"role:\s*{roles}", content_lower):
-            return True
-
-        return False
+        # Using bool() to convert Match object/None to boolean (Ruff SIM103 compliant)
+        return bool(re.search(rf"role:\s*{roles}", content_lower))
 
     def _analyze_actionable(self, content: str) -> tuple[int, str]:
         """Analyze content for actionable verbs and instructions.

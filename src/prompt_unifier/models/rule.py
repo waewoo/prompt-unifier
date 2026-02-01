@@ -122,8 +122,7 @@ class RuleFrontmatter(BaseModel):
         """
         if v not in VALID_CATEGORIES:
             warnings.warn(
-                f"Non-standard category '{v}'. "
-                f"Standard categories: {', '.join(VALID_CATEGORIES)}",
+                f"Non-standard category '{v}'. Standard categories: {', '.join(VALID_CATEGORIES)}",
                 UserWarning,
                 stacklevel=2,
             )

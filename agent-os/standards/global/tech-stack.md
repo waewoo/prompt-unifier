@@ -1,6 +1,6 @@
 # Technology Stack
 
-- Language: Python 3.12+
+- Language: Python 3.13+
 - Package Manager: Poetry
 - Test Framework: pytest with pytest-mock
 - Linting: ruff, black

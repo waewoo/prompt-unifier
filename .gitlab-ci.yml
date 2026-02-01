@@ -46,11 +46,12 @@ variables:
 image: $CI_IMAGE
 
 stages:
-  - setup    # Install project dependencies
-  - quality  # Lint, Test, Sonar
-  - security # SAST, Secrets, Dependency Audits
-  - build    # Build packages (Wheel/Sdist) & Documentation
-  - release  # Version Bump, Git Tag, Pages Deploy, Publish
+  - setup        # Install project dependencies
+  - quality      # Lint, Test, Sonar
+  - security     # SAST, Secrets, Dependency Audits
+  - build        # Build packages (Wheel/Sdist) & Documentation
+  - release      # Version Bump, Git Tag, Pages Deploy, Publish
+  - pull-request # AI Code Review (pr-agent tools, runs in parallel with needs: [])
 
 # ==============================================================================
 # TEMPLATES & CONFIGURATION
@@ -233,6 +234,12 @@ app-sonar:
   image: sonarsource/sonar-scanner-cli:latest
   variables:
       GIT_DEPTH: "0"
+      SONAR_USER_HOME: "${CI_PROJECT_DIR}/.sonar"
+      SONAR_SCANNER_OPTS: "-Xmx512m"
+      SONAR_PULLREQUEST_KEY: "${CI_MERGE_REQUEST_IID:-}"
+      SONAR_PULLREQUEST_BRANCH: "${CI_MERGE_REQUEST_SOURCE_BRANCH_NAME:-}"
+      SONAR_PULLREQUEST_BASE: "${CI_MERGE_REQUEST_TARGET_BRANCH_NAME:-}"
+      SONAR_PULLREQUEST_GITLAB_PROJECT_ID: "${CI_PROJECT_ID:-}"
   needs:
     - job: setup-deps
     - job: app-test-linux
@@ -243,6 +250,7 @@ app-sonar:
   script:
     - sonar-scanner
   rules: *rules-quality
+  timeout: 10 minutes
 
 # ==============================================================================
 # STAGE: SECURITY
@@ -313,6 +321,45 @@ docs-build:
     - if: '$CI_COMMIT_BRANCH == "main"'
       when: on_success
     - !reference [.rules:build-strategy]
+
+# ==============================================================================
+# STAGE: PULL-REQUEST (AI Code Review with pr-agent)
+# ==============================================================================
+# Runs in parallel with quality stage using needs: []
+
+# Template for pr-agent jobs (review, improve, describe, check)
+.pr-agent-base:
+  stage: pull-request
+  image: python:3.13-slim
+  needs: []  # Run in parallel with quality stage (no dependencies)
+  rules:
+    - if: '$CI_PIPELINE_SOURCE == "merge_request_event" && $AI_REVIEW_ENABLED != "false"'
+      when: manual
+      allow_failure: true
+  before_script:
+    # Install system dependencies (git, make, build tools for pr-agent C extensions)
+    - apt-get update && apt-get install -y --no-install-recommends git make gcc g++ libc-dev && rm -rf /var/lib/apt/lists/*
+    # Install uv (Python package manager used by Makefile)
+    - pip install --no-cache-dir uv
+  script:
+    # Pass variables directly to make command (visible in make sub-shells)
+    - GITLAB_TOKEN="$GITLAB_TOKEN" MISTRAL_API_KEY="$MISTRAL_API_KEY" make ${PR_CMD} MR_URL="$CI_PROJECT_URL/-/merge_requests/$CI_MERGE_REQUEST_IID"
+  timeout: 8 minutes
+
+pr-review:
+  extends: .pr-agent-base
+  variables:
+    PR_CMD: pr-review
+
+pr-improve:
+  extends: .pr-agent-base
+  variables:
+    PR_CMD: pr-improve
+
+pr-describe:
+  extends: .pr-agent-base
+  variables:
+    PR_CMD: pr-describe
 
 # ==============================================================================
 # STAGE: RELEASE

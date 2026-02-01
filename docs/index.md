@@ -7,7 +7,7 @@
 **The Missing Link Between Your Team's Prompts and Your IDE**
 
 [![GitLab CI](https://gitlab.com/waewoo/prompt-unifier/badges/main/pipeline.svg)](https://gitlab.com/waewoo/prompt-unifier/-/pipelines)
-[![Python Version](https://img.shields.io/badge/python-3.11%2B-blue)](https://www.python.org/)
+[![Python Version](https://img.shields.io/badge/python-3.13%2B-blue)](https://www.python.org/)
 [![License](https://img.shields.io/badge/license-MIT-green)](license.md)
 
 <a href="getting-started.md" class="md-button md-button--primary">🚀 Getting Started</a>

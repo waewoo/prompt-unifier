@@ -5,10 +5,10 @@ Prompt Unifier is a CLI-only Python application with no web interface, no centra
 
 ## Language & Runtime
 
-### Python 3.12+
+### Python 3.13+
 - **Rationale**: Modern Python with improved performance, enhanced type system, better error messages, and long-term support
 - **Key Features Used**: Type hints, Protocol classes, pattern matching (if needed), improved asyncio performance
-- **Minimum Version**: 3.12 (for latest typing features and performance improvements)
+- **Minimum Version**: 3.13 (for latest typing features and performance improvements)
 
 ## Frontend
 
@@ -169,7 +169,7 @@ This is a pure command-line interface tool with no graphical user interface, no 
 **ToolHandler Protocol**
 - **Purpose**: Define interface for AI tool integrations (Continue, Cursor, Windsurf, Aider, Kilo Code)
 - **Benefits**: Extensibility without core code changes, dependency inversion, testability via mocks, clear contracts
-- **Implementation**: Python 3.12 Protocol class with deploy(), validate_deployment(), get_tool_info() methods
+- **Implementation**: Python 3.13 Protocol class with deploy(), validate_deployment(), get_tool_info() methods
 
 ### Layered Architecture
 
@@ -238,7 +238,7 @@ This is a pure command-line interface tool with no graphical user interface, no 
 
 | Category | Technology | Purpose |
 |----------|-----------|---------|
-| Language | Python 3.12+ | Core runtime |
+| Language | Python 3.13+ | Core runtime |
 | Package Manager | Poetry | Dependency management |
 | CLI Framework | Typer/Click | Command-line interface |
 | Terminal UI | Rich | Beautiful CLI output |

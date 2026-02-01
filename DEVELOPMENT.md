@@ -26,7 +26,7 @@ ______________________________________________________________________
 
 | Requirement | Version | Check Installation |
 | ----------- | ------- | ------------------ |
-| **Python**  | 3.11+   | `python --version` |
+| **Python**  | 3.13+   | `python --version` |
 | **Poetry**  | 1.7+    | `poetry --version` |
 | **Git**     | 2.x+    | `git --version`    |
 

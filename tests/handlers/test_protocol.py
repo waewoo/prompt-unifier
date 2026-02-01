@@ -771,15 +771,15 @@ class TestProtocol:
         # Verify method annotations
         deploy_annotations = ToolHandler.deploy.__annotations__
         assert deploy_annotations["content"] == Any
-        assert deploy_annotations["content_type"] == str
-        assert deploy_annotations["body"] == str
+        assert deploy_annotations["content_type"] is str
+        assert deploy_annotations["body"] is str
         assert deploy_annotations["return"] is None
 
         get_status_annotations = ToolHandler.get_status.__annotations__
-        assert get_status_annotations["return"] == str
+        assert get_status_annotations["return"] is str
 
         get_name_annotations = ToolHandler.get_name.__annotations__
-        assert get_name_annotations["return"] == str
+        assert get_name_annotations["return"] is str
 
         rollback_annotations = ToolHandler.rollback.__annotations__
         assert rollback_annotations["return"] is None

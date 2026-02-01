@@ -100,7 +100,7 @@ pip install prompt-unifier
 
 **Prerequisites:**
 
-- Python 3.11+
+- Python 3.13+
 - Git 2.x+
 - Poetry (for development)
 
@@ -575,10 +575,126 @@ development and CI/CD operations. Commands are organized into functional groups:
 
 Run `make help` to see all available targets with descriptions.
 
-## Contributing
+## 🤖 AI Code Review
 
-See [CONTRIBUTING.md](CONTRIBUTING.md) for guidelines.
+Automated reviews of Merge Requests via [pr-agent](https://github.com/qodo-ai/pr-agent).
 
-## License
+### 🏠 Local Usage
 
-MIT License - see [LICENSE](LICENSE) for details.
+#### Prerequisites
+
+- **uv**: [Install uv](https://github.com/astral-sh/uv) (for isolated execution)
+- **Token GitLab**: `api` scope
+- **LLM API Key**: Mistral, Gemini, etc.
+
+#### Setup
+
+```bash
+# Copy .env.example to .env and fill in tokens
+cp .env.example .env
+```
+
+#### Run a review
+
+```bash
+make review MR_URL=https://gitlab.com/waewoo/prompt-unifier/-/merge_requests/123
+```
+
+(This automatically runs `pr-agent` in an isolated environment via `uvx`)
+
+#### Change LLM provider
+
+**Edit `.pr_agent.toml`:**
+
+```toml
+[config]
+model = "gemini/gemini-3-flash-preview"  # or "anthropic/claude-3-5-sonnet"
+git_provider = "gitlab"
+
+[gitlab]
+url = "https://gitlab.com"
+
+[github]
+# SECURITY: Non-functional placeholder (not a real token)
+# Required due to pr-agent bug - DO NOT replace with real GitHub token
+user_token = "ghp_PLACEHOLDER_NotARealToken_DoNotReplace"  # pragma: allowlist secret
+```
+
+**Configure in `.env`:**
+
+```bash
+# Required
+GITLAB_TOKEN=your-gitlab-token
+
+# LLM Model (change this line to switch providers)
+PR_AGENT_MODEL=mistral/mistral-large-latest
+
+# LLM API Keys (add the key for your chosen provider)
+MISTRAL_API_KEY=your-key      # For mistral/* models
+# GEMINI_API_KEY=your-key     # For gemini/* models
+# ANTHROPIC_API_KEY=your-key  # For anthropic/* models
+# OPENAI_API_KEY=your-key     # For openai/* models
+```
+
+**To change LLM provider**, just edit `PR_AGENT_MODEL` in `.env`:
+
+```bash
+# Switch to Gemini
+PR_AGENT_MODEL=gemini/gemini-3-flash-preview
+
+# Or use Claude
+PR_AGENT_MODEL=anthropic/claude-3-5-sonnet
+```
+
+No need to modify the Makefile or `.pr_agent.toml` !
+
+### ☁️ GitLab CI Usage
+
+#### Configuration
+
+Add the following variables in GitLab: **Settings → CI/CD → Variables**
+
+**Required variables** (✅ Masked, ❌ **NOT** Protected):
+
+| Variable          | Description            | Example                   |
+| :---------------- | :--------------------- | :------------------------ |
+| `GITLAB_TOKEN`    | Token with `api` scope | `glpat-xxx...`            |
+| `MISTRAL_API_KEY` | Your Mistral AI key    | `xxx...`                  |
+| `PR_AGENT_MODEL`  | LLM model to use       | `mistral/devstral-latest` |
+
+**Optional variables**:
+
+| Variable                | Description                  | Default  |
+| :---------------------- | :--------------------------- | :------- |
+| `PR_AGENT_MAX_TOKENS`   | Max tokens for custom models | `256000` |
+| `PR_AGENT_GIT_PROVIDER` | Git provider                 | `gitlab` |
+| `AI_REVIEW_ENABLED`     | Set to `false` to disable    | `true`   |
+
+> ⚠️ **Important**: Variables must be **Masked** but **NOT Protected**. Protected variables are only
+> available on protected branches (main/master). Feature branches need access to these variables.
+
+#### Available Jobs
+
+The CI provides 3 manual jobs in the `pull-request` stage (run in parallel):
+
+- `pr-review` : Full AI code review with suggestions
+- `pr-improve` : Code improvement suggestions
+- `pr-describe` : Generate MR description
+
+To run: Go to your MR → Pipelines → Click ▶️ on the job you want.
+
+### 📋 Supported Models (Examples)
+
+| Provider    | Model                    | Variable            |
+| :---------- | :----------------------- | :------------------ |
+| **Mistral** | `mistral-large-latest`   | `MISTRAL_API_KEY`   |
+| Gemini      | `gemini-3-flash-preview` | `GEMINI_API_KEY`    |
+| Claude      | `claude-3-5-sonnet`      | `ANTHROPIC_API_KEY` |
+
+## 🤝 Contributing
+
+Contributions are welcome! Please see [CONTRIBUTING.md](CONTRIBUTING.md) for details.
+
+## 📄 License
+
+This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.

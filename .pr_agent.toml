@@ -1,0 +1,38 @@
+[config]
+model = "mistral/devstral-latest"
+fallback_models = ["mistral/devstral-latest"]
+custom_model_max_tokens = 256000
+git_provider = "gitlab"
+max_tokens = 8000
+temperature = 0.2
+
+[gitlab]
+url = "https://gitlab.com"
+
+[github]
+# ⚠️  CRITICAL SECURITY NOTICE - READ BEFORE MODIFYING ⚠️
+#
+# This is a NON-FUNCTIONAL placeholder token, NOT a real GitHub credential.
+#
+# WHY IS THIS REQUIRED?
+# pr-agent has an initialization bug where GithubProvider.__init__() validates
+# the GitHub token BEFORE determining which provider (GitLab/GitHub) to use.
+# This causes a failure even when using GitLab exclusively.
+#
+# IMPORTANT:
+# - This placeholder allows pr-agent initialization to succeed
+# - DO NOT replace with a real GitHub token (we use GitLab, not GitHub)
+# - This value MUST match the placeholder in Makefile (line 284) for security validation
+# - The Makefile validates this placeholder at runtime before executing pr-agent
+# - Changing this breaks the runtime security validation
+#
+# CROSS-REFERENCE:
+# - Makefile: lines 284-290 (security check)
+# - .gitlab-ci.yml: Not used in CI (CI uses environment variables)
+#
+# Reference: https://github.com/Codium-ai/pr-agent/issues
+user_token = "ghp_PLACEHOLDER_NotARealToken_DoNotReplace"  # pragma: allowlist secret | DO NOT MODIFY - placeholder for pr-agent bug
+
+[pr_reviewer]
+inline_code_comments = true
+num_code_suggestions = 5

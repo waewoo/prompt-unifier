@@ -455,8 +455,7 @@ def _warn_missing_handler_dirs(handler: Any) -> None:
         )
     if hasattr(handler, "rules_dir") and not handler.rules_dir.exists():
         console.print(
-            f"[yellow]Warning: Target rules directory does not exist: "
-            f"{handler.rules_dir}[/yellow]"
+            f"[yellow]Warning: Target rules directory does not exist: {handler.rules_dir}[/yellow]"
         )
 
 

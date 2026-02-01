@@ -7,7 +7,7 @@ prompts in minutes.
 
 Before you begin, ensure you have the following installed:
 
-- **Python 3.11+**: Required for running the CLI.
+- **Python 3.13+**: Required for running the CLI.
 - **Git**: Required for syncing repositories.
 
 ## Installation

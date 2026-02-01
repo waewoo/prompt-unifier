@@ -100,7 +100,7 @@ frontmatter, with version control, validation, and deployment support.
 
 **Core:**
 
-- Python 3.11+
+- Python 3.13+
 - Poetry (dependency management)
 - Typer (CLI framework)
 
@@ -362,6 +362,8 @@ ______________________________________________________________________
 - Squash commits before merging to main
 - No direct commits to main
 - Pull latest before starting work
+- **No AI attribution**: Never add AI attribution in commits (no "Co-Authored-By: Claude" or
+  similar) or in code comments
 
 ______________________________________________________________________
 

@@ -74,6 +74,14 @@ safety-report.json
 pip-audit-report.json
 .secrets.baseline.tmp
 
-#mkdoc
+# MkDocs
 site/
 public/
+
+# Environment and secrets
+.env
+.env.local
+.secrets.toml
+
+# pr-agent configuration (keep .pr_agent.toml in version control)
+# configuration.toml and pr_agent.toml are ignored as they're not used
