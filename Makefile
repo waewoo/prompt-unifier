@@ -100,6 +100,7 @@ _ci-volumes: _ensure-docker
 env-install: _ensure-poetry ## [Env] Install dependencies and git hooks (First setup)
 	@echo "🔧 Installing dependencies..."
 	$(POETRY_EXE) install
+	$(POETRY_CMD) pip install --upgrade pip
 	$(POETRY_CMD) pre-commit install
 
 env-update: _ensure-poetry ## [Env] Update all dependencies (within constraints)

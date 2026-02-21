@@ -1,0 +1,99 @@
+# Agent OS Standards Index
+
+backend:
+  ai-provider-config:
+    description: LiteLLM multi-provider setup; provider string format, .env keys, AIExecutionError
+  batch-validator:
+    description: BatchValidator orchestrator; SCAFF only on format-passed files; never short-circuits
+  cli-architecture:
+    description: Three-layer CLI split; main.py wrappers, commands.py logic, helpers.py complexity extracts
+  cli-dual-output:
+    description: Pattern for supporting both Rich (human) and JSON (machine) output in CLI commands
+  cli-exit-codes:
+    description: Exit code rules — 0 for success/warnings, 1 for errors; status always exits 0
+  cli-option-constants:
+    description: Declare Typer options as module-level DEFAULT_* constants, not inline defaults
+  config-manager:
+    description: ConfigManager returns None on failure; never raises; config.yaml always in cwd
+  content-file-format:
+    description: .md file structure (--- frontmatter ---), YAML quoting rules, file locations
+  content-file-parser:
+    description: ContentFileParser parses .md to PromptFile/RuleFile; strips legacy type field
+  continue-handler-format:
+    description: ContinueToolHandler field mapping (title→name, applies_to→globs, invokable:true required)
+  docstrings:
+    description: Google-style docstrings describing purpose, parameters, returns, and exceptions
+  file-scanner:
+    description: FileScanner excludes README.md, returns sorted absolute paths, accepts file or dir
+  frontmatter-schemas:
+    description: PromptFrontmatter vs RuleFrontmatter fields; type detection by directory not field
+  functional-validator:
+    description: Assertion dict-dispatch; unknown type=FAIL; case_sensitive flag; AIExecutionError→FAIL result
+  git-multi-repo-sync:
+    description: Last-wins merge strategy; all repos validated before storage clear; retry backoff
+  handler-base-path:
+    description: Handler base_path resolution order (CLI > config > None); env var expansion raises on unknown vars
+  handler-plugin-system:
+    description: Three-layer handler architecture (Protocol + BaseToolHandler + Registry) for adding new deployment targets
+  kilocode-handler-format:
+    description: KiloCodeToolHandler pure Markdown output; deploys to .kilocode/workflows/ not prompts/
+  output-formatters:
+    description: JSONFormatter returns str (for typer.echo); RichFormatter prints directly; escape user strings
+  path-filter:
+    description: PathFilter include-before-exclude allowlist semantics; Path.match() on relative strings
+  project-structure:
+    description: Standard Python layout with src/, tests/, docs/, and Poetry configuration
+  pydantic-forward-refs:
+    description: model_rebuild() pattern for cross-module circular Pydantic type references
+  scaff-methodology:
+    description: SCAFF prompt quality scoring (0-100), 5 mandatory sections, 95-point pass threshold
+  style:
+    description: PEP8 compliance with 4-space indents, snake_case, PascalCase, and docstrings
+  validation-codes:
+    description: ErrorCode/WarningCode enums; ValidationIssue requires suggestion; is_valid checks errors list
+  validation-pipeline:
+    description: 5-step validation pipeline (Encoding→Separator→YAML→Prohibited→Pydantic); collects all issues
+
+frontend:
+  README:
+    description: No frontend; placeholder noting no frontend standards defined for this Python project
+
+global:
+  build-system:
+    description: Poetry packaging, Makefile targets, metadata validation, wheel and sdist artifacts
+  ci-pipeline:
+    description: Makefile-driven GitLab CI; 6 stages; branch/tag strategy; circuit breakers; AI code review on MR
+  code-quality-toolchain:
+    description: Ruff rules + complexity=15; mypy strict on src/ only; pre-commit hooks; agent-os/ excluded from formatters
+  coding-style:
+    description: Consistent naming, meaningful descriptive names, small focused functions, DRY principle
+  commenting:
+    description: Self-documenting code, minimal helpful comments, evergreen not temporary fixes
+  constants-module:
+    description: All magic strings (paths, dir names, error messages) go in constants.py
+  conventions:
+    description: Consistent structure, documentation, version control, environment config, changelog
+  dependency-management:
+    description: Poetry pyproject.toml, poetry.lock, sync installation, regular updates
+  error-handling:
+    description: User-friendly messages, specific exception types, centralized handling, graceful degradation
+  logging-convention:
+    description: logger for traces (stderr), console for display (stdout); -v/-vv verbosity mapping
+
+testing:
+  best-practices:
+    description: One behavior per test, fixtures, mock dependencies, informative names
+  coverage:
+    description: Minimum 90% coverage target with coverage.py, artifacts, build failure on threshold miss
+  functional-test-files:
+    description: Naming and discovery convention for .test.yaml AI-driven prompt test files
+  functional-test-format:
+    description: .test.yaml YAML schema — scenarios, assertion types, provider priority
+  makefile-testing:
+    description: Make targets for test, cov-xml, test-html with local-CI parity
+  pytest:
+    description: pytest framework with pytest-mock, mirrored tests/, isolated deterministic tests
+  pytest-patterns:
+    description: Patch at import site; CliRunner + isolated_filesystem for CLI tests; tests/fixtures/ real .md files
+  test-writing:
+    description: Focus on core user flows, test behavior not implementation, mock externals, fast execution

@@ -2,7 +2,7 @@
 
 ## General Conventions
 
-- Follow [PEP8](https://peps.python.org/pep-0008/) for indentation (4 spaces) and max line length (79 chars).  
+- Follow [PEP8](https://peps.python.org/pep-0008/) for indentation (4 spaces) and max line length (100 chars).  
 - Separate imports by standard library, third-party packages, and local modules, with blank lines between groups.  
 - Use snake_case for variable and function names.  
 - Use PascalCase for classes and exceptions.  
