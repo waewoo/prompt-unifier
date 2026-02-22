@@ -60,8 +60,27 @@ def load_config_or_exit(config_path: Path) -> GitConfig:
     return config
 
 
+def _scan_content_subdir(
+    storage_dir: Path,
+    subdir: str,
+    content_type: str,
+    parse_fn: Any,
+    content_files: list[ContentFile],
+) -> None:
+    """Scan a single content subdirectory and append parsed files to content_files."""
+    dir_path = storage_dir / subdir
+    if not dir_path.exists():
+        return
+    for md_file in dir_path.glob(MD_GLOB_PATTERN):
+        try:
+            parsed = parse_fn(md_file)
+            content_files.append((parsed, content_type, md_file))
+        except Exception as e:
+            console.print(f"[yellow]Warning: Failed to parse {md_file}: {e}[/yellow]")
+
+
 def scan_content_files(storage_dir: Path) -> list[ContentFile]:
-    """Scan storage directory for content files (prompts and rules).
+    """Scan storage directory for content files (prompts, rules, and skills).
 
     Args:
         storage_dir: Path to the storage directory.
@@ -72,23 +91,9 @@ def scan_content_files(storage_dir: Path) -> list[ContentFile]:
     parser = ContentFileParser()
     content_files: list[ContentFile] = []
 
-    prompts_dir = storage_dir / "prompts"
-    if prompts_dir.exists():
-        for md_file in prompts_dir.glob(MD_GLOB_PATTERN):
-            try:
-                parsed_content = parser.parse_file(md_file)
-                content_files.append((parsed_content, "prompt", md_file))
-            except Exception as e:
-                console.print(f"[yellow]Warning: Failed to parse {md_file}: {e}[/yellow]")
-
-    rules_dir = storage_dir / "rules"
-    if rules_dir.exists():
-        for md_file in rules_dir.glob(MD_GLOB_PATTERN):
-            try:
-                parsed_content = parser.parse_file(md_file)
-                content_files.append((parsed_content, "rule", md_file))
-            except Exception as e:
-                console.print(f"[yellow]Warning: Failed to parse {md_file}: {e}[/yellow]")
+    _scan_content_subdir(storage_dir, "prompts", "prompt", parser.parse_file, content_files)
+    _scan_content_subdir(storage_dir, "rules", "rule", parser.parse_file, content_files)
+    _scan_content_subdir(storage_dir, "skills", "skill", parser.parse_file, content_files)
 
     logger.debug(f"Found {len(content_files)} content files")
     return content_files
@@ -105,7 +110,9 @@ def check_duplicate_titles(content_files: list[ContentFile]) -> dict[str, list[P
     """
     title_to_files: dict[str, list[Path]] = {}
     for parsed_content, _, file_path in content_files:
-        title = parsed_content.title
+        title: str = (
+            getattr(parsed_content, "title", None) or getattr(parsed_content, "name", "") or ""
+        )
         if title not in title_to_files:
             title_to_files[title] = []
         title_to_files[title].append(file_path)
@@ -131,7 +138,8 @@ def filter_content_files(
     filtered = []
     for parsed_content, content_type, file_path in content_files:
         # Filter by name if specified
-        if prompt_name and parsed_content.title != prompt_name:
+        identifier = getattr(parsed_content, "title", None) or getattr(parsed_content, "name", None)
+        if prompt_name and identifier != prompt_name:
             continue
         # Filter by tags if specified
         if deploy_tags:
@@ -216,11 +224,15 @@ def _deploy_single_content_item(
 
     frontmatter_dict = parsed_content.model_dump(exclude={"content"})
 
-    content_obj: PromptFrontmatter | RuleFrontmatter
+    from prompt_unifier.models.skill import SkillFrontmatter
+
+    content_obj: PromptFrontmatter | RuleFrontmatter | SkillFrontmatter
     if content_type == "prompt":
         content_obj = PromptFrontmatter(**frontmatter_dict)
     elif content_type == "rule":
         content_obj = RuleFrontmatter(**frontmatter_dict)
+    elif content_type == "skill":
+        content_obj = SkillFrontmatter(**frontmatter_dict)
     else:
         raise ValueError(f"Unsupported content type: {content_type}")
 
@@ -250,6 +262,14 @@ def _get_deployed_filename(
     """
     source_filename = file_path.name if file_path else None
     relative_path = _calculate_relative_path(file_path, content_type, prompts_dir, rules_dir)
+
+    if content_type == "skill" and isinstance(handler, KiloCodeToolHandler):
+        # Skills are identified for orphan-cleanup as "{dir_name}/{skill_name}"
+        mode = getattr(parsed_content, "mode", None)
+        from prompt_unifier.constants import KILO_CODE_SKILLS_DIR
+
+        dir_name = f"{KILO_CODE_SKILLS_DIR}-{mode}" if mode else KILO_CODE_SKILLS_DIR
+        return f"{dir_name}/{parsed_content.name}"
 
     if isinstance(handler, KiloCodeToolHandler) and source_filename:
         return handler.calculate_deployed_filename(
@@ -369,14 +389,16 @@ def _calculate_relative_path(
     content_type: str,
     prompts_dir: Path,
     rules_dir: Path,
+    skills_dir: Path | None = None,
 ) -> Path | None:
     """Calculate relative path from content directory.
 
     Args:
         file_path: Path to the content file.
-        content_type: Type of content ("prompt" or "rule").
+        content_type: Type of content ("prompt", "rule", or "skill").
         prompts_dir: Path to prompts directory.
         rules_dir: Path to rules directory.
+        skills_dir: Path to skills directory (optional).
 
     Returns:
         Relative path or None.
@@ -389,6 +411,11 @@ def _calculate_relative_path(
     elif content_type == "rule" and rules_dir:
         try:
             return file_path.parent.relative_to(rules_dir)
+        except ValueError:
+            return None
+    elif content_type == "skill" and skills_dir:
+        try:
+            return file_path.parent.relative_to(skills_dir)
         except ValueError:
             return None
     return None
@@ -1061,6 +1088,37 @@ def resolve_validation_directory(
     return resolved
 
 
+def _require_subdir(directory: Path, subdir: str) -> list[Path]:
+    """Return [directory/subdir] or raise typer.Exit if it doesn't exist."""
+    import typer
+
+    target = directory / subdir
+    if not target.exists():
+        typer.echo(f"Error: {subdir.capitalize()} directory '{target}' does not exist", err=True)
+        raise typer.Exit(code=1)
+    return [target]
+
+
+def _check_hierarchy_conflict(directory: Path, detected: str, content_type: str) -> None:
+    """Raise typer.Exit if content_type conflicts with the detected hierarchy."""
+    import typer
+
+    # detected is the hierarchy we're in ("prompts", "rules", or "skills")
+    # content_type is what the user requested
+    conflicts = {
+        "prompts": ("rules",),
+        "rules": ("prompts",),
+        "skills": ("prompts", "rules"),
+    }
+    if content_type in conflicts.get(detected, ()):
+        typer.echo(
+            f"Error: Target '{directory}' is in a {detected} hierarchy "
+            f"but --type {content_type} was specified",
+            err=True,
+        )
+        raise typer.Exit(code=1)
+
+
 def determine_validation_targets(
     directory: Path,
     content_type: str,
@@ -1069,7 +1127,7 @@ def determine_validation_targets(
 
     Args:
         directory: Base directory.
-        content_type: Type of content to validate ('all', 'prompts', or 'rules').
+        content_type: Type of content to validate ('all', 'prompts', 'rules', or 'skills').
 
     Returns:
         List of directories to validate.
@@ -1079,69 +1137,35 @@ def determine_validation_targets(
     """
     import typer
 
-    if content_type not in ("all", "prompts", "rules"):
+    if content_type not in ("all", "prompts", "rules", "skills"):
         typer.echo(
-            f"Error: Invalid --type '{content_type}'. Must be 'all', 'prompts', or 'rules'",
+            f"Error: Invalid --type '{content_type}'. "
+            "Must be 'all', 'prompts', 'rules', or 'skills'",
             err=True,
         )
         raise typer.Exit(code=1)
 
     logger.debug(f"Validating content type: {content_type}")
 
-    # Check if the provided directory is part of a prompts/ or rules/ hierarchy
-    # We check if 'prompts' or 'rules' is in the path parts
+    # Check if the provided directory is already inside a specific hierarchy
     path_parts = [p.lower() for p in directory.parts]
-    in_prompts = "prompts" in path_parts
-    in_rules = "rules" in path_parts
+    for hierarchy in ("prompts", "rules", "skills"):
+        if hierarchy in path_parts:
+            _check_hierarchy_conflict(directory, hierarchy, content_type)
+            return [directory]
 
-    # If we are already inside a specific hierarchy, validate this directory directly
-    if in_prompts:
-        if content_type == "rules":
-            typer.echo(
-                f"Error: Target '{directory}' is in a prompts hierarchy "
-                "but --type rules was specified",
-                err=True,
-            )
-            raise typer.Exit(code=1)
-        return [directory]
+    # Single-type discovery: look for the specific subdirectory
+    if content_type != "all":
+        return _require_subdir(directory, content_type)
 
-    if in_rules:
-        if content_type == "prompts":
-            typer.echo(
-                f"Error: Target '{directory}' is in a rules hierarchy "
-                "but --type prompts was specified",
-                err=True,
-            )
-            raise typer.Exit(code=1)
-        return [directory]
-
-    # Standard discovery behavior: look for subdirectories
-    if content_type == "prompts":
-        target_dir = directory / "prompts"
-        if not target_dir.exists():
-            typer.echo(f"Error: Prompts directory '{target_dir}' does not exist", err=True)
-            raise typer.Exit(code=1)
-        return [target_dir]
-
-    if content_type == "rules":
-        target_dir = directory / "rules"
-        if not target_dir.exists():
-            typer.echo(f"Error: Rules directory '{target_dir}' does not exist", err=True)
-            raise typer.Exit(code=1)
-        return [target_dir]
-
-    # Discovery mode for 'all': find both prompts and rules subdirectories
-    directories: list[Path] = []
-    prompts_dir = directory / "prompts"
-    rules_dir = directory / "rules"
-    if prompts_dir.exists():
-        directories.append(prompts_dir)
-    if rules_dir.exists():
-        directories.append(rules_dir)
+    # Discovery mode for 'all': collect all existing subdirectories
+    directories = [
+        directory / sub for sub in ("prompts", "rules", "skills") if (directory / sub).exists()
+    ]
 
     if not directories:
         typer.echo(
-            f"Error: Neither prompts/ nor rules/ directory exists in '{directory}'",
+            f"Error: Neither prompts/, rules/, nor skills/ directory exists in '{directory}'",
             err=True,
         )
         raise typer.Exit(code=1)

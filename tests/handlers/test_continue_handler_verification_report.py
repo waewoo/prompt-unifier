@@ -350,3 +350,62 @@ class TestVerificationIntegrationWithDeploy:
         result = handler.verify_deployment_with_details(mock_rule.title, "rule", "test-rule.md")
 
         assert result.status == "passed"
+
+
+class TestSkillSkippedBehavior:
+    """Tests for skill content type being skipped by Continue handler."""
+
+    def test_deploy_skill_is_noop(self, handler: ContinueToolHandler, tmp_path: Path):
+        """Test that deploying a skill does nothing (no files created)."""
+        from prompt_unifier.models.skill import SkillFrontmatter
+
+        skill = SkillFrontmatter(name="my-skill", description="A skill")
+        handler.deploy(skill, "skill", "Skill body")
+
+        # No files should be created in the Continue directories
+        assert not any(handler.prompts_dir.rglob("*.md"))
+        assert not any(handler.rules_dir.rglob("*.md"))
+
+    def test_verify_skill_returns_skipped(self, handler: ContinueToolHandler):
+        """Test that verify_deployment_with_details returns skipped for skills."""
+        result = handler.verify_deployment_with_details(
+            "my-skill", "skill", "skills/my-skill/SKILL.md"
+        )
+
+        assert result.status == "skipped"
+        assert "continue" in result.details.lower() or "not supported" in result.details.lower()
+
+    def test_get_deployment_status_skill_returns_synced(self, handler: ContinueToolHandler):
+        """Test that get_deployment_status returns synced for skills (no-op)."""
+        status = handler.get_deployment_status("my-skill", "skill", "any content")
+        assert status == "synced"
+
+    def test_aggregate_results_counts_skipped(self, handler: ContinueToolHandler):
+        """Test that aggregate_verification_results counts skipped items."""
+        from prompt_unifier.handlers.base_handler import VerificationResult
+
+        results = [
+            VerificationResult("p.md", "prompt", "passed", "OK"),
+            VerificationResult("my-skill", "skill", "skipped", "Not supported by Continue"),
+        ]
+
+        summary = handler.aggregate_verification_results(results)
+
+        assert summary["passed"] == 1
+        assert summary["skipped"] == 1
+        assert summary["failed"] == 0
+
+    def test_display_report_shows_skipped(self, handler: ContinueToolHandler):
+        """Test that verification report shows SKIPPED for skill items."""
+        from prompt_unifier.handlers.base_handler import VerificationResult
+
+        results = [
+            VerificationResult("my-skill", "skill", "skipped", "Not supported by Continue"),
+        ]
+
+        console = Console(file=StringIO(), force_terminal=True)
+        handler.display_verification_report(results, console=console)
+
+        output = console.file.getvalue()
+        assert "SKIPPED" in output or "skipped" in output.lower()
+        assert "skipped" in output.lower()  # summary line

@@ -17,6 +17,7 @@ CONTINUE_DIR = ".continue"
 # Kilo Code tool handler paths
 KILO_CODE_DIR = ".kilocode"
 KILO_CODE_MEMORY_BANK_DIR = "memory-bank"  # New constant
+KILO_CODE_SKILLS_DIR = "skills"  # Base name; mode-specific = f"skills-{mode}"
 
 # Error messages
 ERROR_CONFIG_NOT_FOUND = "Error: Configuration not found. Run 'prompt-unifier init' first."

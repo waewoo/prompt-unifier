@@ -8,9 +8,10 @@ from .functional_test import (
 )
 from .prompt import PromptFrontmatter
 from .rule import RuleFile, RuleFrontmatter
+from .skill import SkillFile, SkillFrontmatter
 
-# Union type for content files (prompts or rules)
-ContentFile = PromptFrontmatter | RuleFile
+# Union type for content files (prompts, rules, or skills)
+ContentFile = PromptFrontmatter | RuleFile | SkillFrontmatter
 
 __all__ = [
     "ContentFile",
@@ -21,4 +22,6 @@ __all__ = [
     "PromptFrontmatter",
     "RuleFile",
     "RuleFrontmatter",
+    "SkillFile",
+    "SkillFrontmatter",
 ]

@@ -28,7 +28,7 @@ class VerificationResult:
 
     file_name: str
     content_type: str
-    status: str  # "passed", "failed", "warning"
+    status: str  # "passed", "failed", "warning", "skipped"
     details: str
     deployment_status: str = "unknown"  # "new", "updated", "unchanged", "unknown"
     actual_file_path: str | None = None  # New field for actual file system path
@@ -359,6 +359,7 @@ class BaseToolHandler(ToolHandler, ABC):
             "passed": 0,
             "failed": 0,
             "warnings": 0,
+            "skipped": 0,
             "total": len(results),
         }
 
@@ -369,6 +370,8 @@ class BaseToolHandler(ToolHandler, ABC):
                 summary["failed"] += 1
             elif result.status == "warning":
                 summary["warnings"] += 1
+            elif result.status == "skipped":
+                summary["skipped"] += 1
 
         return summary
 
@@ -378,6 +381,8 @@ class BaseToolHandler(ToolHandler, ABC):
         """Format status color, text and issues for a result."""
         if result.status == "passed":
             return SUCCESS_COLOR, "PASSED", "None"
+        elif result.status == "skipped":
+            return "dim", "SKIPPED", f"[dim]{result.details}[/dim]"
         elif result.status == "failed":
             detailed_issues.append((result.file_name, "ERROR", result.details))
             return ERROR_COLOR, "FAILED", f"[{ERROR_COLOR}]1 error[/{ERROR_COLOR}]"
@@ -418,9 +423,12 @@ class BaseToolHandler(ToolHandler, ABC):
                 else f"[{status_color}]{base_status}[/{status_color}]"
             )
 
-            file_path = self._get_deployed_file_path(result)
+            if result.status == "skipped":
+                file_path_str = ""
+            else:
+                file_path_str = str(self._get_deployed_file_path(result))
             table.add_row(
-                result.file_name, result.content_type, status_text, issues_text, str(file_path)
+                result.file_name, result.content_type, status_text, issues_text, file_path_str
             )
 
         return table
@@ -453,7 +461,8 @@ class BaseToolHandler(ToolHandler, ABC):
         output_console.print()
         output_console.print(
             f"[bold]Summary:[/bold] {summary['passed']} passed, "
-            f"{summary['failed']} failed, {summary['warnings']} warnings"
+            f"{summary['failed']} failed, {summary['warnings']} warnings, "
+            f"{summary['skipped']} skipped"
         )
 
         # Display detailed issues only if there are any

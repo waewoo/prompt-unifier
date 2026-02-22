@@ -72,7 +72,7 @@ Content
             result = runner.invoke(app, ["validate"])
 
             assert result.exit_code == 1
-            assert "Neither prompts/ nor rules/" in result.output
+            assert "Neither prompts/, rules/, nor skills/" in result.output
 
     def test_validate_json_output_with_failures(self):
         """Test validate with JSON output when validation fails."""

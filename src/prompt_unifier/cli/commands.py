@@ -49,6 +49,8 @@ console = Console()
 # Get logger for this module
 logger = logging.getLogger(__name__)
 
+_TROUBLESHOOTING = "[yellow]Troubleshooting:[/yellow]"
+
 # Constants for default values to avoid function calls in argument defaults
 DEFAULT_PROMPT_NAME = None
 DEFAULT_TAGS = None
@@ -172,14 +174,19 @@ def _validate_with_json_output(
     all_success = True
 
     for dir_path in directories:
-        # Automatically disable SCAFF for rules directories as it's designed for prompts
-        current_scaff_enabled = scaff_enabled
-        if dir_path.name == "rules":
-            current_scaff_enabled = False
-            logger.debug(f"Disabling SCAFF validation for rules directory: {dir_path}")
+        is_skills = "skills" in dir_path.parts
+        if is_skills:
+            logger.debug(f"Validating skills directory: {dir_path}")
+            summary = validator.validate_skill_directory(dir_path)
+        else:
+            # Automatically disable SCAFF for rules directories as it's designed for prompts
+            current_scaff_enabled = scaff_enabled
+            if dir_path.name == "rules":
+                current_scaff_enabled = False
+                logger.debug(f"Disabling SCAFF validation for rules directory: {dir_path}")
 
-        logger.debug(f"Validating directory: {dir_path}")
-        summary = validator.validate_directory(dir_path, scaff_enabled=current_scaff_enabled)
+            logger.debug(f"Validating directory: {dir_path}")
+            summary = validator.validate_directory(dir_path, scaff_enabled=current_scaff_enabled)
         logger.info(f"Validated {summary.total_files} files in {dir_path}")
         json_output_str = json_formatter.format_summary(summary, dir_path)
         typer.echo(json_output_str)
@@ -199,12 +206,16 @@ def _display_directory_results(
     table_formatter: RichTableFormatter,
     rich_formatter: RichFormatter,
     current_scaff_enabled: bool,
+    is_skills: bool = False,
 ) -> None:
     """Display validation results for a single directory."""
     # Display header with prominent title
-    section_title = "RULES" if is_rules else "PROMPTS"
-    header_style = "bold blue" if is_rules else "bold magenta"
-    border_style = "blue" if is_rules else "magenta"
+    if is_skills:
+        section_title, header_style, border_style = "SKILLS", "bold green", "green"
+    elif is_rules:
+        section_title, header_style, border_style = "RULES", "bold blue", "blue"
+    else:
+        section_title, header_style, border_style = "PROMPTS", "bold magenta", "magenta"
 
     console.print()
     console.print(
@@ -261,15 +272,20 @@ def _validate_with_rich_output(
     all_success = True
 
     for dir_path in directories:
-        # Determine if this is a rules directory
-        is_rules = dir_path.name == "rules"
-        current_scaff_enabled = scaff_enabled and not is_rules
+        # Determine directory type
+        is_skills = "skills" in dir_path.parts
+        is_rules = not is_skills and dir_path.name == "rules"
+        current_scaff_enabled = scaff_enabled and not is_rules and not is_skills
 
-        if is_rules:
-            logger.debug(f"Disabling SCAFF validation for rules directory: {dir_path}")
+        if is_skills:
+            logger.debug(f"Using skill validation for: {dir_path}")
+            summary = validator.validate_skill_directory(dir_path)
+        else:
+            if is_rules:
+                logger.debug(f"Disabling SCAFF validation for rules directory: {dir_path}")
+            logger.debug(f"Validating directory: {dir_path}")
+            summary = validator.validate_directory(dir_path, scaff_enabled=current_scaff_enabled)
 
-        logger.debug(f"Validating directory: {dir_path}")
-        summary = validator.validate_directory(dir_path, scaff_enabled=current_scaff_enabled)
         logger.info(
             f"Validated {summary.total_files} files: "
             f"{summary.passed} passed, {summary.failed} failed"
@@ -283,6 +299,7 @@ def _validate_with_rich_output(
             table_formatter,
             rich_formatter,
             current_scaff_enabled,
+            is_skills=is_skills,
         )
 
         if not summary.success:
@@ -329,22 +346,32 @@ def _validate_ai_connection(executor: Any, provider: str) -> None:
         # Provide helpful troubleshooting tips based on error type
         error_str = str(e).lower()
         if "api_key" in error_str or "authentication" in error_str:
-            console.print("[yellow]Troubleshooting:[/yellow]")
+            console.print(_TROUBLESHOOTING)
             console.print("  • Check that your API key is set in .env file")
             console.print("  • Example: OPENAI_API_KEY=sk-your-key-here")
             console.print("  • Or export as environment variable:")
             console.print("    export OPENAI_API_KEY=your-key")
         elif "model" in error_str or "not found" in error_str:
-            console.print("[yellow]Troubleshooting:[/yellow]")
+            console.print(_TROUBLESHOOTING)
             console.print(f"  • Model '{provider}' may not be available")
             console.print("  • Check supported models: https://docs.litellm.ai/docs/providers")
         elif "timeout" in error_str or "connection" in error_str:
-            console.print("[yellow]Troubleshooting:[/yellow]")
+            console.print(_TROUBLESHOOTING)
             console.print("  • Check your internet connection")
             console.print("  • Verify firewall settings")
             if provider and "ollama" in provider:
                 console.print("  • Ensure Ollama is running: ollama serve")
         raise
+
+
+def _print_test_failures(results: list[Any], format_fn: Any) -> None:
+    """Print failure details for all failed functional test scenarios."""
+    console.print("[bold red]Failure Details:[/bold red]")
+    for result in results:
+        if result.status == "FAIL":
+            console.print(f"\n[bold]{result.scenario_description}:[/bold]")
+            console.print(format_fn(result))
+    console.print()
 
 
 def _run_single_functional_test(
@@ -448,12 +475,7 @@ def _run_single_functional_test(
     console.print()
 
     if not all_passed:
-        console.print("[bold red]Failure Details:[/bold red]")
-        for result in results:
-            if result.status == "FAIL":
-                console.print(f"\n[bold]{result.scenario_description}:[/bold]")
-                console.print(format_assertion_failures(result))
-        console.print()
+        _print_test_failures(results, format_assertion_failures)
 
     return {
         "success": all_passed,
@@ -466,55 +488,63 @@ def _run_single_functional_test(
     }
 
 
-def _discover_functional_test_files(targets: list[Path] | None) -> list[Path]:
-    """Discover all .test.yaml files based on input targets or storage."""
+def _discover_test_files_in_default_locations() -> list[Path]:
+    """Discover .test.yaml files from storage and cwd when no targets provided."""
+    search_dirs: list[Path] = []
+    try:
+        search_dirs.append(resolve_validation_directory(None, CONFIG_DIR, CONFIG_FILE))
+    except Exception as e:
+        logger.debug(f"Could not resolve storage directory: {e}")
+    cwd = Path.cwd()
+    if cwd not in search_dirs:
+        search_dirs.append(cwd)
+
+    test_files: list[Path] = []
+    for s_dir in search_dirs:
+        logger.debug(f"Scanning for functional tests in: {s_dir}")
+        found = list(s_dir.glob("**/*.test.yaml"))
+        if found:
+            logger.info(f"Found {len(found)} test file(s) in {s_dir}")
+            test_files.extend(found)
+
+    if not test_files:
+        search_paths_str = ", ".join(str(d) for d in search_dirs)
+        console.print(f"[yellow]No test files found in: {search_paths_str}[/yellow]")
+        raise typer.Exit(code=1)
+
+    return sorted(set(test_files))
+
+
+def _collect_test_files_from_target(target: Path, test_files: list[Path]) -> None:
+    """Add .test.yaml files from a single file or directory target."""
     from prompt_unifier.core.functional_test_parser import FunctionalTestParser
 
+    if target.is_file():
+        if target.name.endswith(".test.yaml"):
+            test_files.append(target)
+        else:
+            test_file_path = FunctionalTestParser.get_test_file_path(target)
+            if test_file_path.exists():
+                test_files.append(test_file_path)
+            else:
+                console.print(f"[yellow]Warning: Test file not found for: {target}[/yellow]")
+    elif target.is_dir():
+        logger.debug(f"Scanning for functional tests in: {target}")
+        found = list(target.glob("**/*.test.yaml"))
+        if found:
+            test_files.extend(found)
+        else:
+            console.print(f"[yellow]Warning: No test files found in: {target}[/yellow]")
+
+
+def _discover_functional_test_files(targets: list[Path] | None) -> list[Path]:
+    """Discover all .test.yaml files based on input targets or storage."""
     if not targets:
-        # Discovery mode in default locations
-        search_dirs: list[Path] = []
-        try:
-            search_dirs.append(resolve_validation_directory(None, CONFIG_DIR, CONFIG_FILE))
-        except Exception as e:
-            logger.debug(f"Could not resolve storage directory: {e}")
-        cwd = Path.cwd()
-        if cwd not in search_dirs:
-            search_dirs.append(cwd)
+        return _discover_test_files_in_default_locations()
 
-        test_files = []
-        for s_dir in search_dirs:
-            logger.debug(f"Scanning for functional tests in: {s_dir}")
-            found = list(s_dir.glob("**/*.test.yaml"))
-            if found:
-                logger.info(f"Found {len(found)} test file(s) in {s_dir}")
-                test_files.extend(found)
-
-        if not test_files:
-            search_paths_str = ", ".join(str(d) for d in search_dirs)
-            console.print(f"[yellow]No test files found in: {search_paths_str}[/yellow]")
-            raise typer.Exit(code=1)
-
-        return sorted(set(test_files))
-
-    # Handle explicit targets (files or directories)
-    test_files = []
+    test_files: list[Path] = []
     for target in targets:
-        if target.is_file():
-            if target.name.endswith(".test.yaml"):
-                test_files.append(target)
-            else:
-                test_file_path = FunctionalTestParser.get_test_file_path(target)
-                if test_file_path.exists():
-                    test_files.append(test_file_path)
-                else:
-                    console.print(f"[yellow]Warning: Test file not found for: {target}[/yellow]")
-        elif target.is_dir():
-            logger.debug(f"Scanning for functional tests in: {target}")
-            found = list(target.glob("**/*.test.yaml"))
-            if found:
-                test_files.extend(found)
-            else:
-                console.print(f"[yellow]Warning: No test files found in: {target}[/yellow]")
+        _collect_test_files_from_target(target, test_files)
 
     if not test_files:
         console.print("[red]Error: No test files found for provided targets.[/red]")
@@ -546,6 +576,41 @@ def _get_global_ai_provider() -> str | None:
         return env_provider
 
     return None
+
+
+def _validate_single_file(target: Path, scaff: bool, json_output: bool) -> None:
+    """Validate a single .md file and exit with appropriate code."""
+    if target.suffix.lower() != ".md":
+        typer.echo(
+            f"Error: Neither prompts/, rules/, nor skills/ directory exists in '{target}'",
+            err=True,
+        )
+        raise typer.Exit(code=1)
+
+    logger.info(f"Validating single file: {target}")
+    validator = BatchValidator()
+    is_rule = "rules" in target.parts
+    current_scaff_enabled = scaff and not is_rule
+    summary = validator.validate_directory(target, scaff_enabled=current_scaff_enabled)
+
+    if json_output:
+        json_formatter = JSONFormatter()
+        typer.echo(json_formatter.format_summary(summary, target.parent))
+    else:
+        rich_formatter = RichFormatter()
+        table_formatter = RichTableFormatter()
+        _display_directory_results(
+            console,
+            target.parent,
+            is_rule,
+            summary,
+            table_formatter,
+            rich_formatter,
+            current_scaff_enabled,
+        )
+
+    if not summary.success:
+        raise typer.Exit(code=1)
 
 
 def validate(
@@ -606,41 +671,7 @@ def validate(
 
     # 2. Handle single file validation
     if target.is_file():
-        if target.suffix.lower() != ".md":
-            typer.echo(
-                f"Error: Neither prompts/ nor rules/ directory exists in '{target}'",
-                err=True,
-            )
-            raise typer.Exit(code=1)
-
-        logger.info(f"Validating single file: {target}")
-        validator = BatchValidator()
-        # validate_directory works because it uses FileScanner which handles single files
-
-        # Determine if SCAFF should be enabled (disabled for rules by naming convention)
-        is_rule = "rules" in target.parts
-        current_scaff_enabled = scaff and not is_rule
-
-        summary = validator.validate_directory(target, scaff_enabled=current_scaff_enabled)
-
-        if json_output:
-            json_formatter = JSONFormatter()
-            typer.echo(json_formatter.format_summary(summary, target.parent))
-        else:
-            rich_formatter = RichFormatter()
-            table_formatter = RichTableFormatter()
-            _display_directory_results(
-                console,
-                target.parent,
-                is_rule,
-                summary,
-                table_formatter,
-                rich_formatter,
-                current_scaff_enabled,
-            )
-
-        if not summary.success:
-            raise typer.Exit(code=1)
+        _validate_single_file(target, scaff, json_output)
         return
 
     # 3. Handle directory validation (Discovery mode)
@@ -786,6 +817,7 @@ def init(
         create_directory_with_tracking(storage_dir, created_items, existing_items)
         create_directory_with_tracking(storage_dir / "prompts", created_items, existing_items)
         create_directory_with_tracking(storage_dir / "rules", created_items, existing_items)
+        create_directory_with_tracking(storage_dir / "skills", created_items, existing_items)
 
         # Create .gitignore template in storage directory if it doesn't exist
         gitignore_path = storage_dir / ".gitignore"

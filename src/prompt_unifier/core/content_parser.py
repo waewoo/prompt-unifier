@@ -3,14 +3,16 @@ from pathlib import Path
 
 import yaml
 
-from prompt_unifier.models.prompt import PromptFile, PromptFrontmatter
-from prompt_unifier.models.rule import RuleFile, RuleFrontmatter
+from prompt_unifier.models.prompt import PromptFile
+from prompt_unifier.models.rule import RuleFile
+from prompt_unifier.models.skill import SkillFile
 from prompt_unifier.models.validation import ValidationResult
 
 
 class ContentFileParser:
     """
-    Parses and validates content files (prompts or rules) with YAML frontmatter.
+    Parses and validates content files (prompts, rules, or skills) with YAML frontmatter.
+    Content type is determined automatically from the file path.
     """
 
     def __init__(self, separator: str = "---"):
@@ -20,11 +22,10 @@ class ContentFileParser:
             re.DOTALL | re.MULTILINE,
         )
 
-    def parse_file(
-        self, file_path: Path
-    ) -> PromptFile | RuleFile | PromptFrontmatter | RuleFrontmatter:
+    def parse_file(self, file_path: Path) -> PromptFile | RuleFile | SkillFile:
         """
         Parses a content file, separating frontmatter and body.
+        Handles prompts, rules, and skills based on file path.
         """
         try:
             content = file_path.read_text(encoding="utf-8")
@@ -39,13 +40,16 @@ class ContentFileParser:
         frontmatter_str, body = match.groups()
         try:
             frontmatter = yaml.safe_load(frontmatter_str)
-        except yaml.YAMLError:
-            raise ValueError("invalid yaml") from None
-
-        # Remove 'type' field for backward compatibility (ignored)
-        frontmatter.pop("type", None)
+        except yaml.YAMLError as e:
+            raise ValueError(f"invalid yaml: {e}") from e
 
         content_type = self._determine_content_type(file_path)
+
+        if content_type == "skill":
+            return SkillFile(**frontmatter, content=body.strip())
+
+        # Remove 'type' field for backward compatibility (ignored by prompt/rule models)
+        frontmatter.pop("type", None)
 
         if content_type == "prompt":
             return PromptFile(**frontmatter, content=body.strip())
@@ -74,20 +78,26 @@ class ContentFileParser:
             )
             return ValidationResult(file=file_path, status="failed", errors=[error_issue])
 
+    def parse_skill_file(self, path: Path) -> SkillFile:
+        """Parse a skill file. Delegates to parse_file."""
+        result = self.parse_file(path)
+        if not isinstance(result, SkillFile):
+            raise ValueError(f"Expected a skill file but got {type(result).__name__}: {path}")
+        return result
+
     def _determine_content_type(self, file_path: Path) -> str:
         """
-        Determines the content type (prompt or rule) based on the file's path.
+        Determines the content type based on the file's path.
         """
-        if "rules" in file_path.parts:
+        if "skills" in file_path.parts:
+            return "skill"
+        elif "rules" in file_path.parts:
             return "rule"
         else:
-            # Default to prompt if not in rules directory
             return "prompt"
 
 
-def parse_content_file(
-    file_path: Path,
-) -> PromptFile | RuleFile | PromptFrontmatter | RuleFrontmatter:
+def parse_content_file(file_path: Path) -> PromptFile | RuleFile | SkillFile:
     """
     Convenience function to parse a content file.
 

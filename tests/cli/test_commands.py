@@ -127,7 +127,7 @@ class TestValidateCommand:
         """Test validate with a directory that doesn't exist."""
         result = runner.invoke(app, ["validate", "/nonexistent/directory"])
         assert result.exit_code == 1
-        assert "Neither prompts/ nor rules/ directory exists" in result.output
+        assert "Neither prompts/, rules/, nor skills/ directory exists" in result.output
 
     def test_validate_directory_not_a_directory(self):
         """Test validate with a path that is not a directory."""
@@ -138,7 +138,7 @@ class TestValidateCommand:
 
             result = runner.invoke(app, ["validate", str(test_file)])
             assert result.exit_code == 1
-            assert "Neither prompts/ nor rules/ directory exists" in result.output
+            assert "Neither prompts/, rules/, nor skills/ directory exists" in result.output
 
     def test_validate_no_storage_path_in_config(self):
         """Test validate fails when storage_path is not in config."""
@@ -562,7 +562,7 @@ This is the prompt content.
 
             # Should have found one prompt file
             assert len(content_files) == 1
-            parsed_content, content_type, file_path = content_files[0]
+            parsed_content, content_type, _ = content_files[0]
             assert parsed_content.title == "test-prompt"
             assert content_type == "prompt"
             assert "python" in parsed_content.tags

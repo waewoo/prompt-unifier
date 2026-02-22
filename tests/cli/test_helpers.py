@@ -72,6 +72,36 @@ class TestCLIHelpers:
         assert "prompt" in types
         assert "rule" in types
 
+    def test_scan_content_files_includes_skills(self, tmp_path: Path):
+        """Test scan_content_files discovers skills in addition to prompts and rules."""
+        storage_dir = tmp_path / "storage"
+        skills_dir = storage_dir / "skills"
+        skills_dir.mkdir(parents=True)
+
+        (skills_dir / "my-skill.md").write_text(
+            "---\nname: my-skill\ndescription: A skill\n---\nSkill body"
+        )
+
+        content_files = scan_content_files(storage_dir)
+        assert len(content_files) == 1
+
+        parsed, content_type, _ = content_files[0]
+        assert content_type == "skill"
+        assert parsed.name == "my-skill"
+
+    def test_scan_content_files_skills_parse_error_warns(self, tmp_path: Path):
+        """Test scan_content_files warns on unparseable skill files."""
+        storage_dir = tmp_path / "storage"
+        skills_dir = storage_dir / "skills"
+        skills_dir.mkdir(parents=True)
+
+        # Invalid skill (missing required fields)
+        (skills_dir / "bad.md").write_text("---\ntitle: wrong\n---\nBody")
+
+        content_files = scan_content_files(storage_dir)
+        # Bad file is skipped, no crash
+        assert len(content_files) == 0
+
     def test_check_duplicate_titles(self):
         """Test check_duplicate_titles identifies duplicates."""
         mock_prompt1 = MagicMock()

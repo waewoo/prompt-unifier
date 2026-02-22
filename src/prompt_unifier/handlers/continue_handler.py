@@ -123,7 +123,10 @@ class ContinueToolHandler(BaseToolHandler):
             # Fallback to title-based naming for backward compatibility
             filename = f"{content.title}.md"
 
-        if content_type == "prompt":
+        if content_type == "skill":
+            # Skills are KiloCode-only — Continue does not support them
+            return
+        elif content_type == "prompt":
             if not isinstance(content, PromptFrontmatter):
                 raise ValueError("Content must be a PromptFrontmatter instance for type 'prompt'")
             processed_content = self._process_prompt_content(content, body)
@@ -265,6 +268,14 @@ class ContinueToolHandler(BaseToolHandler):
         """
         logger.debug(f"Verifying deployment: '{content_name}' ({content_type}) at '{file_name}'")
 
+        if content_type == "skill":
+            return VerificationResult(
+                file_name=content_name,
+                content_type=content_type,
+                status="skipped",
+                details="Not supported by Continue",
+            )
+
         target_file_path, error = self._get_target_file_path(content_type, file_name)
         if error or target_file_path is None:
             return VerificationResult(
@@ -360,6 +371,9 @@ class ContinueToolHandler(BaseToolHandler):
         Returns:
             Status string: "synced", "outdated", "missing", or "error".
         """
+        if content_type == "skill":
+            return "synced"  # Skills are not deployed by Continue — always considered in sync
+
         actual_filename = self._determine_target_filename(content_name, source_filename)
 
         # Combine relative_path and actual_filename to form file_path_in_handler_dir

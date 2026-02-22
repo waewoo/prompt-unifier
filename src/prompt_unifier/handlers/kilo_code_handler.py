@@ -1,5 +1,6 @@
-"""Kilo Code tool handler for deploying prompts and rules."""
+"""Kilo Code tool handler for deploying prompts, rules, and skills."""
 
+import contextlib
 import logging
 import re
 from pathlib import Path
@@ -7,13 +8,16 @@ from typing import Any
 
 import yaml
 
-from prompt_unifier.constants import KILO_CODE_DIR
+from prompt_unifier.constants import KILO_CODE_DIR, KILO_CODE_SKILLS_DIR
 from prompt_unifier.handlers.base_handler import BaseToolHandler, VerificationResult
 from prompt_unifier.handlers.handler_utils import console
 from prompt_unifier.models.prompt import PromptFrontmatter
 from prompt_unifier.models.rule import RuleFrontmatter
+from prompt_unifier.models.skill import SkillFrontmatter
 
 logger = logging.getLogger(__name__)
+
+SKILL_FILENAME = "SKILL.md"
 
 
 class KiloCodeToolHandler(BaseToolHandler):
@@ -225,6 +229,63 @@ class KiloCodeToolHandler(BaseToolHandler):
         # Apply prefix
         return f"{prefix}{filename}"
 
+    def _get_skill_target_dir(self, mode: str | None) -> Path:
+        """Return the target directory for a skill based on mode.
+
+        Args:
+            mode: The skill mode (e.g., "code") or None for the base skills dir.
+
+        Returns:
+            Path to .kilocode/skills/ or .kilocode/skills-{mode}/
+        """
+        dir_name = f"{KILO_CODE_SKILLS_DIR}-{mode}" if mode else KILO_CODE_SKILLS_DIR
+        return self.base_path / KILO_CODE_DIR / dir_name
+
+    def _build_skill_yaml_content(self, content: SkillFrontmatter, body: str) -> str:
+        """Build YAML frontmatter + body for a skill file (frontmatter preserved).
+
+        Args:
+            content: The SkillFrontmatter object.
+            body: The skill body content.
+
+        Returns:
+            String with YAML frontmatter delimiters and body.
+        """
+        frontmatter_dict: dict[str, Any] = {
+            "name": content.name,
+            "description": content.description,
+        }
+        if content.mode is not None:
+            frontmatter_dict["mode"] = content.mode
+        if content.license is not None:
+            frontmatter_dict["license"] = content.license
+        if content.compatibility is not None:
+            frontmatter_dict["compatibility"] = content.compatibility
+        if content.metadata is not None:
+            frontmatter_dict["metadata"] = content.metadata
+
+        yaml_str = yaml.safe_dump(frontmatter_dict, sort_keys=False)
+        return f"---\n{yaml_str.rstrip()}\n---\n{body}"
+
+    def _deploy_skill(self, content: SkillFrontmatter, body: str) -> None:
+        """Deploy a skill: creates {target}/{name}/SKILL.md with YAML frontmatter preserved.
+
+        Args:
+            content: The SkillFrontmatter object.
+            body: The skill body content.
+        """
+        target_dir = self._get_skill_target_dir(content.mode)
+        skill_dir = target_dir / content.name
+        skill_dir.mkdir(parents=True, exist_ok=True)
+        skill_file = skill_dir / SKILL_FILENAME
+
+        yaml_content = self._build_skill_yaml_content(content, body)
+        deployment_status = self._determine_deployment_status(skill_file, yaml_content)
+        self._deployment_statuses[content.name] = deployment_status
+
+        skill_file.write_text(yaml_content, encoding="utf-8")
+        logger.debug(f"Deployed skill '{content.name}' to {skill_file}")
+
     def deploy(
         self,
         content: Any,
@@ -234,16 +295,22 @@ class KiloCodeToolHandler(BaseToolHandler):
         relative_path: Path | None = None,
     ) -> None:
         """
-        Deploys a prompt or rule to the Kilo Code directories.
+        Deploys a prompt, rule, or skill to the Kilo Code directories.
 
         Args:
-            content: The content object (PromptFrontmatter or RuleFrontmatter).
-            content_type: Type of content ("prompt" or "rule").
+            content: The content object (PromptFrontmatter, RuleFrontmatter, or SkillFrontmatter).
+            content_type: Type of content ("prompt", "rule", or "skill").
             body: The body content as a string.
             source_filename: Original filename to preserve. If None, uses content.title.
             relative_path: Relative path from prompts/ or rules/ directory to preserve
                           subdirectory structure. If None, deploys to root directory.
         """
+        if content_type == "skill":
+            if not isinstance(content, SkillFrontmatter):
+                raise ValueError("Content must be a SkillFrontmatter instance for type 'skill'")
+            self._deploy_skill(content, body)
+            return
+
         # Validate and get base directory
         base_dir = self._validate_content_and_get_base_dir(content, content_type)
 
@@ -374,8 +441,9 @@ class KiloCodeToolHandler(BaseToolHandler):
         """Determine the target file path for deployment status check.
 
         Args:
-            content_type: Type of content ("prompt" or "rule").
+            content_type: Type of content ("prompt", "rule", or "skill").
             final_filename: The final filename with prefix applied.
+                For skills, this should be "{name}/SKILL.md".
 
         Returns:
             The target file path, or None if content_type is invalid.
@@ -384,6 +452,13 @@ class KiloCodeToolHandler(BaseToolHandler):
             return self.prompts_dir / final_filename
         elif content_type == "rule":
             return self.rules_dir / final_filename
+        elif content_type == "skill":
+            # final_filename for skills is "{dir_name}/{name}" (used for orphan tracking).
+            # Append SKILL.md to get the actual file path for verification.
+            skill_path = final_filename
+            if not skill_path.endswith(SKILL_FILENAME):
+                skill_path = f"{skill_path}/{SKILL_FILENAME}"
+            return self.base_path / KILO_CODE_DIR / skill_path
         return None
 
     def get_deployment_status(
@@ -393,29 +468,39 @@ class KiloCodeToolHandler(BaseToolHandler):
         source_content: str,
         source_filename: str | None = None,
         relative_path: Path | None = None,
+        content: Any = None,
     ) -> str:
         """
         Check the deployment status of a content item.
 
         Args:
             content_name: The name/title of the content item.
-            content_type: Type of content ("prompt" or "rule").
+            content_type: Type of content ("prompt", "rule", or "skill").
             source_content: The expected content string (processed).
             source_filename: Optional specific filename if different from title.
             relative_path: Relative subdirectory path where the file was deployed.
+            content: Optional content object (SkillFrontmatter) for skill mode resolution.
 
         Returns:
             Status string: "synced", "outdated", "missing", or "error".
         """
+        if content_type == "skill":
+            mode = getattr(content, "mode", None) if content else None
+            target_file = self._get_skill_target_dir(mode) / content_name / SKILL_FILENAME
+            if not target_file.exists():
+                return "missing"
+            return self._compare_content_hashes(source_content, target_file)
+
         # Determine target filename with directory prefix
         final_filename = self._determine_target_filename(
             content_name, source_filename, relative_path
         )
-        target_file = self._determine_target_file_path(content_type, final_filename)
+        maybe_target = self._determine_target_file_path(content_type, final_filename)
 
-        if target_file is None:
+        if maybe_target is None:
             return "error"
 
+        target_file = maybe_target
         if not target_file.exists():
             return "missing"
 
@@ -472,22 +557,32 @@ class KiloCodeToolHandler(BaseToolHandler):
                 details=f"Cannot read file: {e}",
             )
 
-        # Validate pure Markdown format
-        if deployed_content.startswith("---"):
-            return VerificationResult(
-                file_name=content_name,
-                content_type=content_type,
-                status="failed",
-                details="File contains YAML frontmatter delimiters (should be pure Markdown)",
-            )
+        if content_type == "skill":
+            # Skills must preserve YAML frontmatter
+            if not deployed_content.startswith("---"):
+                return VerificationResult(
+                    file_name=content_name,
+                    content_type=content_type,
+                    status="failed",
+                    details="Skill file does not contain YAML frontmatter (should start with ---)",
+                )
+        else:
+            # Validate pure Markdown format for prompts and rules
+            if deployed_content.startswith("---"):
+                return VerificationResult(
+                    file_name=content_name,
+                    content_type=content_type,
+                    status="failed",
+                    details="File contains YAML frontmatter delimiters (should be pure Markdown)",
+                )
 
-        if not deployed_content.startswith("# "):
-            return VerificationResult(
-                file_name=content_name,
-                content_type=content_type,
-                status="failed",
-                details="File does not start with H1 title (# Title)",
-            )
+            if not deployed_content.startswith("# "):
+                return VerificationResult(
+                    file_name=content_name,
+                    content_type=content_type,
+                    status="failed",
+                    details="File does not start with H1 title (# Title)",
+                )
 
         # Retrieve deployment status from tracking dictionary
         deployment_status = self._deployment_statuses.get(content_name, "unknown")
@@ -500,3 +595,74 @@ class KiloCodeToolHandler(BaseToolHandler):
             deployment_status=deployment_status,
             actual_file_path=str(target_file_path),
         )
+
+    def _is_skills_dir(self, dir_name: str) -> bool:
+        """Check whether a directory name is a skills deployment directory."""
+        return dir_name == KILO_CODE_SKILLS_DIR or dir_name.startswith(f"{KILO_CODE_SKILLS_DIR}-")
+
+    def _clean_orphaned_skill_dir(
+        self,
+        skill_dir: Path,
+        dir_name: str,
+        deployed_filenames: set[str],
+        results: list[VerificationResult],
+    ) -> None:
+        """Remove a skill subdirectory if it is not in the deployed set."""
+        skill_identifier = f"{dir_name}/{skill_dir.name}"
+        if skill_identifier in deployed_filenames:
+            return
+        skill_file = skill_dir / SKILL_FILENAME
+        if skill_file.exists():
+            skill_file.unlink()
+        with contextlib.suppress(OSError):
+            skill_dir.rmdir()  # Ignore error if dir is non-empty (has subdirectories)
+        results.append(
+            VerificationResult(
+                file_name=skill_dir.name,
+                content_type="skill",
+                status="passed",
+                details="Skill directory removed successfully",
+                deployment_status="deleted",
+                actual_file_path=str(skill_dir),
+            )
+        )
+
+    def _clean_skills_container_dir(
+        self,
+        skills_dir: Path,
+        deployed_filenames: set[str],
+        results: list[VerificationResult],
+    ) -> None:
+        """Remove orphaned skill subdirectories inside a skills container directory."""
+        dir_name = skills_dir.name
+        for skill_dir in skills_dir.iterdir():
+            if skill_dir.is_dir():
+                self._clean_orphaned_skill_dir(skill_dir, dir_name, deployed_filenames, results)
+        with contextlib.suppress(OSError):
+            if not any(skills_dir.iterdir()):
+                skills_dir.rmdir()
+
+    def clean_orphaned_files(self, deployed_filenames: set[str]) -> list[VerificationResult]:
+        """Remove files not in the deployed set, including orphaned skill directories.
+
+        Skills are deployed as {name}/SKILL.md inside skills/ or skills-{mode}/ directories.
+        Skill deployed filenames are tracked as "{dir_name}/{skill_name}" (e.g.
+        "skills/my-skill" or "skills-code/my-skill").
+
+        Args:
+            deployed_filenames: Set of deployed identifiers. For skills: "{dir_name}/{skill_name}".
+
+        Returns:
+            List of VerificationResult objects for removed files.
+        """
+        removed_results = super().clean_orphaned_files(deployed_filenames)
+
+        kilocode_dir = self.base_path / KILO_CODE_DIR
+        if not kilocode_dir.exists():
+            return removed_results
+
+        for candidate in kilocode_dir.iterdir():
+            if candidate.is_dir() and self._is_skills_dir(candidate.name):
+                self._clean_skills_container_dir(candidate, deployed_filenames, removed_results)
+
+        return removed_results

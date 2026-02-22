@@ -7,9 +7,13 @@ prompt files in a directory and aggregating the results.
 import logging
 from pathlib import Path
 
+from prompt_unifier.core.content_parser import ContentFileParser
 from prompt_unifier.core.scaff_validator import SCARFFValidator
 from prompt_unifier.core.validator import PromptValidator
-from prompt_unifier.models.validation import ValidationResult, ValidationSummary
+from prompt_unifier.models.validation import (
+    ValidationResult,
+    ValidationSummary,
+)
 from prompt_unifier.utils.file_scanner import FileScanner
 
 # Get logger for this module
@@ -40,6 +44,7 @@ class BatchValidator:
         self.file_scanner = FileScanner()
         self.prompt_validator = PromptValidator()
         self.scaff_validator = SCARFFValidator()
+        self.skill_parser = ContentFileParser()
 
     def validate_directory(self, directory: Path, scaff_enabled: bool = True) -> ValidationSummary:
         """Validate all .md files in a directory and return summary.
@@ -131,32 +136,42 @@ class BatchValidator:
 
             results.append(result)
 
-        # Step 3: Compute summary statistics
+        # Step 3: Compute and return ValidationSummary
+        return self._build_summary(results)
+
+    def validate_skill_directory(self, directory: Path) -> ValidationSummary:
+        """Validate all .md files in a skills directory using SkillFrontmatter schema.
+
+        Skills are validated against the SkillFrontmatter schema (name, description,
+        optional mode/license/...). SCAFF methodology validation is not applied.
+
+        Args:
+            directory: Path to the directory containing skill .md files.
+
+        Returns:
+            ValidationSummary with aggregated results.
+        """
+        logger.debug(f"Scanning skills directory: {directory}")
+        md_files = self.file_scanner.scan_directory(directory)
+        logger.info(f"Found {len(md_files)} skill file(s) to validate")
+
+        results = [self.skill_parser.validate_file(fp) for fp in md_files]
+        return self._build_summary(results)
+
+    def _build_summary(self, results: list[ValidationResult]) -> ValidationSummary:
+        """Build a ValidationSummary from a list of results."""
         total_files = len(results)
         passed_files = sum(1 for r in results if r.status == "passed")
         failed_files = sum(1 for r in results if r.status == "failed")
-
-        # Count total errors and warnings across all files
         total_errors = sum(len(r.errors) for r in results)
         total_warnings = sum(len(r.warnings) for r in results)
 
-        # Success is True if no errors across all files
-        # Warnings (including SCAFF warnings) do not block success
-        success = total_errors == 0
-
-        logger.info(
-            f"Validation complete: {total_files} files, "
-            f"{passed_files} passed, {failed_files} failed, "
-            f"{total_errors} errors, {total_warnings} warnings"
-        )
-
-        # Step 4: Create and return ValidationSummary
         return ValidationSummary(
             total_files=total_files,
             passed=passed_files,
             failed=failed_files,
             error_count=total_errors,
             warning_count=total_warnings,
-            success=success,
+            success=total_errors == 0,
             results=results,
         )

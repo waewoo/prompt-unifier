@@ -694,3 +694,41 @@ This is valid content.""",
         result = parser.validate_file(test_file)
         assert result.status == "passed"
         assert len(result.errors) == 0
+
+
+class TestParseSkillFile:
+    """Test parse_skill_file method."""
+
+    def test_parse_valid_skill(self, tmp_path: Path):
+        parser = ContentFileParser()
+        skills_dir = tmp_path / "skills"
+        skills_dir.mkdir()
+        skill_file = skills_dir / "my-skill.md"
+        skill_file.write_text("---\nname: my-skill\ndescription: A skill\n---\nSkill body")
+        from prompt_unifier.models.skill import SkillFile
+
+        result = parser.parse_skill_file(skill_file)
+        assert isinstance(result, SkillFile)
+        assert result.name == "my-skill"
+        assert result.content == "Skill body"
+
+    def test_parse_skill_missing_frontmatter_raises(self, tmp_path: Path):
+        parser = ContentFileParser()
+        bad_file = tmp_path / "bad.md"
+        bad_file.write_text("No frontmatter at all")
+        with pytest.raises(ValueError, match="separator"):
+            parser.parse_skill_file(bad_file)
+
+    def test_parse_skill_invalid_yaml_raises(self, tmp_path: Path):
+        parser = ContentFileParser()
+        bad_file = tmp_path / "bad.md"
+        bad_file.write_text("---\n: bad: yaml:\n---\nBody")
+        with pytest.raises(ValueError):
+            parser.parse_skill_file(bad_file)
+
+    def test_parse_skill_encoding_error_raises(self, tmp_path: Path):
+        parser = ContentFileParser()
+        bad_file = tmp_path / "bad.md"
+        bad_file.write_bytes(b"\xff\xfe invalid utf-8")
+        with pytest.raises(ValueError, match="encoding"):
+            parser.parse_skill_file(bad_file)
