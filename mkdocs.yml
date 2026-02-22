@@ -79,7 +79,7 @@ nav:
           - Overview: usage/tools/index.md
           - Continue: usage/tools/continue.md
           - Kilo Code: usage/tools/kilo-code.md
-      - Creating Prompts (SCAFF): usage/creating-prompts.md
+      - Creating Prompts & Skills: usage/creating-prompts.md
       - Examples: usage/examples.md
   - Configuration: configuration.md
   - CLI Reference: reference/cli-commands.md

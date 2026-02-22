@@ -105,5 +105,8 @@ By default, this attempts to deploy to **all** enabled tools found in your confi
 - **Test before deploying**: Use the `test` command to verify that your prompts work as expected
   with actual LLMs.
 - **Validate before committing**: If you contribute to the prompt repository, run
-  `prompt-unifier validate` on your files before pushing to ensure they meet the schema
-  requirements.
+  `prompt-unifier validate` (or `validate --type skills` for skills only) before pushing to ensure
+  files meet the schema requirements.
+- **Skills require Kilo Code**: Skills are only deployed by the `kilocode` handler. Use
+  `prompt-unifier deploy --handlers kilocode` (or the default all-handlers deploy) to include them.
+  Running `deploy --handlers continue` will show skills as `SKIPPED` — this is expected.

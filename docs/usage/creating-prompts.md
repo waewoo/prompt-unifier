@@ -73,6 +73,85 @@ tools: ["kilo", "continue"]
 5. Docstrings must follow Google style.
 ```
 
+## Creating Skills
+
+Skills are a [Kilo Code](tools/kilo-code.md)-exclusive content type. They are portable AI agent
+guidance packages that provide specialised behaviour for specific tasks or modes.
+
+### Where to Store Skills
+
+Author skill files in the `skills/` directory of your storage repository:
+
+```
+storage/
+└── skills/
+    ├── k8s-debug.md
+    ├── python-tdd.md
+    └── git-conventional-commits.md
+```
+
+### Skill Frontmatter Fields
+
+| Field           | Required | Description                                                                                 |
+| :-------------- | :------: | :------------------------------------------------------------------------------------------ |
+| `name`          |    ✅    | Slug identifier (lowercase, hyphens, max 64 chars). Must match the deployed directory name. |
+| `description`   |    ✅    | Short description of the skill (max 1024 chars).                                            |
+| `mode`          |    ❌    | Kilo Code mode (`code`, `architect`, …). Determines the target directory.                   |
+| `license`       |    ❌    | License identifier (e.g. `MIT`).                                                            |
+| `compatibility` |    ❌    | Compatibility notes.                                                                        |
+| `metadata`      |    ❌    | Arbitrary key-value pairs for additional metadata.                                          |
+
+### Example Skill File
+
+```markdown
+---
+name: k8s-debug
+description: Debug Kubernetes deployments and pod issues step by step
+mode: code
+license: MIT
+---
+You are a Kubernetes expert embedded in the developer's IDE.
+
+## Your Responsibilities
+
+- Diagnose failing pods, crashlooping containers and misconfigured services
+- Read kubectl output and explain the root cause in plain language
+- Propose minimal, targeted fixes
+
+## Workflow
+
+1. Ask for `kubectl describe pod <name>` and recent logs
+2. Identify the failure pattern (OOMKilled, ImagePullBackOff, CrashLoopBackOff, …)
+3. Suggest the fix with the exact kubectl/YAML patch to apply
+```
+
+### Name Constraints
+
+The `name` field must:
+
+- Be lowercase alphanumeric with hyphens only (`^[a-z0-9][a-z0-9-]*[a-z0-9]$`)
+- Be at most 64 characters
+- Match the name of the deployed directory (Kilo Code requirement)
+
+### Validating and Deploying Skills
+
+```bash
+# Validate skill files only
+prompt-unifier validate --type skills
+
+# Validate all content types (prompts, rules, skills)
+prompt-unifier validate --type all
+
+# Deploy skills (kilocode handler only)
+prompt-unifier deploy --handlers kilocode
+```
+
+!!! warning "Skills are Kilo Code only" Continue does not support skills. Running `deploy` without
+`--handlers kilocode` will show skills as `SKIPPED` in the verification report — this is expected
+behaviour.
+
+______________________________________________________________________
+
 ## Leveraging `prompt-unifier-data`
 
 The best way to learn is by example. Our official data repository contains dozens of SCAFF-compliant
