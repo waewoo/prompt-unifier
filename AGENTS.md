@@ -27,12 +27,8 @@ Execute this checklist **IN ORDER** when developer asks to add a feature:
 ### ✓ STEP 2: Agent OS Workflow (REQUIRED)
 
 - [ ] Ask: "Do you have a spec in `agent-os/specs/`?"
-- [ ] If NO, guide through phases:
-  - **Vague idea** → `agent-os/commands/shape-spec/shape-spec.md run this`
-  - **Clear requirements** → `agent-os/commands/write-spec/write-spec.md run this`
-- [ ] If YES, confirm phase:
-  - **Need tasks** → `agent-os/commands/create-tasks/create-tasks.md run this`
-  - **Ready to implement** → `agent-os/commands/implement-tasks/implement-tasks.md run this`
+- [ ] If NO → run `/shape-spec` (in plan mode) to shape, plan, and create tasks in one step
+- [ ] If YES → review the spec's `plan.md` and proceed with implementation
 
 ### ✓ STEP 3: Implementation
 
@@ -130,8 +126,8 @@ prompt-unifier/
 ├── agent-os/                  # Agent OS config
 │   ├── product/               # Vision, roadmap, tech-stack
 │   ├── standards/             # Coding standards
-│   ├── specs/                 # Feature specs
-│   └── commands/              # Agent OS workflow
+│   └── specs/                 # Feature specs
+├── .claude/commands/agent-os/ # Agent OS v3 slash commands
 ├── pyproject.toml             # Dependencies & config
 ├── Makefile                   # Build commands
 └── AGENTS.md                  # This file
@@ -141,7 +137,7 @@ ______________________________________________________________________
 
 ## Development Methodology: Agent OS
 
-**Spec-driven development system** (Agent OS v2.x) with 3-layer context.
+**Spec-driven development system** (Agent OS v3) with 3-layer context.
 
 Learn more: [buildermethods.com/agent-os](https://buildermethods.com/agent-os)
 
@@ -151,6 +147,18 @@ Learn more: [buildermethods.com/agent-os](https://buildermethods.com/agent-os)
 1. **Product** (`agent-os/product/`): Mission, roadmap, tech decisions
 1. **Specs** (`agent-os/specs/`): Feature specifications
 
+### Agent OS v3 Slash Commands
+
+All commands are slash commands available in plan mode:
+
+| Command               | Purpose                                      | When to use                   |
+| --------------------- | -------------------------------------------- | ----------------------------- |
+| `/plan-product`       | Define product strategy, roadmap, tech stack | Project start / reset         |
+| `/shape-spec`         | Shape scope + generate plan with tasks       | Any new feature               |
+| `/discover-standards` | Extract coding patterns from codebase        | After major refactors         |
+| `/index-standards`    | Add descriptions to standards index          | After adding standards        |
+| `/inject-standards`   | Load relevant standards into context         | Before implementing a feature |
+
 ### Agent OS Workflow
 
 #### Phase 0: Plan Product (Run Once)
@@ -158,58 +166,42 @@ Learn more: [buildermethods.com/agent-os](https://buildermethods.com/agent-os)
 Define product strategy, roadmap, tech stack.
 
 ```
-agent-os/commands/plan-product/plan-product.md run this
+/plan-product
 ```
 
-**When:** Project start or Agent OS installation
+**When:** Project start or major direction change.
 
-#### Feature Development Cycle (Phases 1-5)
+#### Feature Development Cycle
 
-##### Phase 1: Shape Spec (Optional)
+##### Phase 1: Shape Spec (always required)
 
-Clarify vague requirements into well-scoped features.
-
-```
-agent-os/commands/shape-spec/shape-spec.md run this
-```
-
-Skip if requirements already clear.
-
-##### Phase 2: Write Spec (Required)
-
-Create detailed specification with implementation details.
+Shape scope, gather context, and generate a plan with implementation tasks — all in one step.
 
 ```
-agent-os/commands/write-spec/write-spec.md run this
+/shape-spec
 ```
 
-Output: Spec file in `agent-os/specs/[feature-name]/`
+Must be run **in plan mode**. Output: spec folder in `agent-os/specs/YYYY-MM-DD-HHMM-{slug}/`
+containing `plan.md`, `shape.md`, `standards.md`, `references.md`, and optionally `visuals/`.
 
-##### Phase 3: Create Tasks (Required)
+##### Phase 2: Implement
 
-Break spec into prioritized, actionable checklist.
+Execute the tasks from `plan.md` directly. No separate "create-tasks" or "implement-tasks" commands
+needed in v3.
 
-```
-agent-os/commands/create-tasks/create-tasks.md run this
-```
+##### Standards Management
 
-##### Phase 4: Implement Tasks (Simple)
-
-Direct implementation for straightforward features.
+Before implementing, inject relevant standards into context:
 
 ```
-agent-os/commands/implement-tasks/implement-tasks.md run this
+/inject-standards
 ```
 
-##### Phase 5: Orchestrate Tasks (Complex)
-
-Advanced orchestration with subagents for complex features.
+To rebuild the standards index after adding/modifying standards:
 
 ```
-agent-os/commands/orchestrate-tasks/orchestrate-tasks.md run this
+/index-standards
 ```
-
-**Note:** Choose ONE: implement-tasks OR orchestrate-tasks (not both).
 
 ______________________________________________________________________
 
@@ -339,8 +331,9 @@ ______________________________________________________________________
 
 1. Check roadmap (`agent-os/product/roadmap.md`)
 1. If not there, add it (see Protocol above)
-1. Follow Agent OS workflow (shape → write → tasks → implement)
-1. Use plan mode for complex features
+1. Enter plan mode, run `/shape-spec` → review generated `plan.md`
+1. Optionally run `/inject-standards` to load relevant standards into context
+1. Implement the tasks from `plan.md`
 
 ### During Development
 
@@ -351,9 +344,8 @@ ______________________________________________________________________
 
 ### For Complex Features
 
-- Create `plan.md` file with Spec, Plan, Tasks, Context sections
-- Use planning mode: separate planning from implementation
-- Keep checklist of tasks, mark as completed
+- Use plan mode + `/shape-spec` to generate a structured `plan.md` with all tasks
+- Mark tasks as completed in the plan as you go
 - Clear context after completing major phases
 
 ### Repository Etiquette
@@ -385,8 +377,8 @@ ______________________________________________________________________
 
 **Specs:** `agent-os/specs/`
 
-- Each feature has dedicated directory
-- Contains requirements, design, tasks
+- Each feature has dedicated directory (`YYYY-MM-DD-HHMM-{slug}/`)
+- Contains `plan.md`, `shape.md`, `standards.md`, `references.md`
 
 ______________________________________________________________________
 
@@ -415,29 +407,29 @@ ______________________________________________________________________
 
 ## Quick Reference
 
-| Developer Says   | Your Response                                              |
-| ---------------- | ---------------------------------------------------------- |
-| "Add feature X"  | Execute Protocol → Check roadmap → Guide Agent OS workflow |
-| "I have an idea" | `shape-spec` command                                       |
-| "Implement Y"    | "Spec ready? In roadmap?"                                  |
-| "Fix bug Z"      | Assess severity → Add to roadmap if significant            |
-| "Refactor"       | Check standards, update docs                               |
+| Developer Says   | Your Response                                                |
+| ---------------- | ------------------------------------------------------------ |
+| "Add feature X"  | Execute Protocol → Check roadmap → plan mode + `/shape-spec` |
+| "I have an idea" | plan mode + `/shape-spec`                                    |
+| "Implement Y"    | "Spec ready? In roadmap?" → review `plan.md` tasks           |
+| "Fix bug Z"      | Assess severity → Add to roadmap if significant              |
+| "Refactor"       | Check standards (`/inject-standards`), update docs           |
 
 ______________________________________________________________________
 
 ## Assistant-Specific Notes
 
-### For Claude Code Users
+### For Claude Code Users (Agent OS v3)
 
-- Use `/memory` commands to manage context
-- Use `/clear` after 1-3 messages to prevent bloat
-- Turn off auto-compact in `/config` (prevents stale context)
+- Agent OS commands are slash commands: `/shape-spec`, `/plan-product`, `/inject-standards`, etc.
+- `/shape-spec` **must be run in plan mode** (enter plan mode first)
+- Use `/clear` after completing major phases to prevent context bloat
 
-### For Gemini Users
+### For Gemini / Other Assistants
 
-- Use memory refresh commands when available
-- Follow the same Protocol steps as Claude
-- Orchestration commands may have limited support
+- Agent OS v3 slash commands may not be available; refer to `.claude/commands/agent-os/` files and
+  follow the instructions manually
+- Follow the same Protocol steps
 
 ### For All Assistants
 
@@ -503,11 +495,3 @@ make help                     # Show all available make targets with description
 - `make docs-build` — Build static docs
 
 ______________________________________________________________________
-
-## Additional Context
-
-For Tessl-managed rules, see: `.tessl/RULES.md`
-
-# Agent Rules <!-- tessl-managed -->
-
-@.tessl/RULES.md follow the [instructions](.tessl/RULES.md)
