@@ -1,15 +1,15 @@
 repos:
-- url: git@gitlab.com:waewoo/prompt-unifier-data.git
+- url: /root/travail/prompt-unifier-data
   branch: null
   auth_config: null
   include_patterns: null
   exclude_patterns: null
-last_sync_timestamp: '2025-12-30T10:12:03.579293+00:00'
+last_sync_timestamp: '2026-02-22T16:55:15.873222+00:00'
 repo_metadata:
-- url: git@gitlab.com:waewoo/prompt-unifier-data.git
+- url: /root/travail/prompt-unifier-data
   branch: main
-  commit: 3684f82
-  timestamp: '2025-12-30T10:12:03.546566+00:00'
+  commit: 7628e83
+  timestamp: '2026-02-22T16:55:15.802398+00:00'
 storage_path: /root/.prompt-unifier/storage
 deploy_tags: null
 target_handlers: null
