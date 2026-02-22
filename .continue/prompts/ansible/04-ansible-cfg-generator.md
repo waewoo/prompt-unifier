@@ -1,5 +1,5 @@
 ---
-name: ansible.cfg Generator
+name: Ansible Configuration File Generator
 description: Generate a best-practice ansible.cfg file for an Ansible project.
 invokable: true
 category: development
@@ -33,10 +33,10 @@ The generated file is for a DevOps engineer to place at the root of their Ansibl
 ### Instructions
 
 1. **Analyze** project requirements.
-1. **Configure** `[defaults]` section.
-1. **Set** privilege escalation settings in `[privilege_escalation]`.
-1. **Define** connection settings.
-1. **Optimize** performance parameters.
+2. **Configure** `[defaults]` section.
+3. **Set** privilege escalation settings in `[privilege_escalation]`.
+4. **Define** connection settings.
+5. **Optimize** performance parameters.
 
 ### Format
 

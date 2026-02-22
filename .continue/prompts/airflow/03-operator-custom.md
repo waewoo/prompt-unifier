@@ -38,11 +38,11 @@ reusable components according to best practices.
 ### Instructions
 
 1. **Analyze** the custom logic required.
-1. **Inherit** from `BaseOperator`.
-1. **Define** `template_fields` for Jinja support.
-1. **Implement** the `execute` method.
-1. **Validate** input parameters in `__init__`.
-1. **Test** the operator.
+2. **Inherit** from `BaseOperator`.
+3. **Define** `template_fields` for Jinja support.
+4. **Implement** the `execute` method.
+5. **Validate** input parameters in `__init__`.
+6. **Test** the operator.
 
 ### Format
 
@@ -50,7 +50,7 @@ The output must contain two Python code blocks:
 
 1. **Custom Operator Code**: The complete code for the custom operator. This should be presented as
    if it were in a file like `plugins/my_operators/my_custom_operator.py`.
-1. **Example DAG**: A complete DAG file that imports and uses the custom operator, demonstrating how
+2. **Example DAG**: A complete DAG file that imports and uses the custom operator, demonstrating how
    to pass parameters to it.
 
 ### Foundations

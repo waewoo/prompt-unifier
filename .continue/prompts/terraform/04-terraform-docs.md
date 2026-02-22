@@ -35,10 +35,10 @@ understand or use the module/configuration.
 ### Instructions
 
 1. **Parse** the Terraform configuration.
-1. **Extract** variables, resources, and outputs.
-1. **Format** the documentation table.
-1. **Add** usage examples.
-1. **Generate** README.md content.
+2. **Extract** variables, resources, and outputs.
+3. **Format** the documentation table.
+4. **Add** usage examples.
+5. **Generate** README.md content.
 
 ### Format
 

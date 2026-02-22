@@ -37,10 +37,10 @@ automation.
 ### Instructions
 
 1. **Create** the role directory structure.
-1. **Define** tasks in `tasks/main.yml`.
-1. **Set** default variables in `defaults/main.yml`.
-1. **Implement** handlers for event-driven actions.
-1. **Document** the role in `README.md`.
+2. **Define** tasks in `tasks/main.yml`.
+3. **Set** default variables in `defaults/main.yml`.
+4. **Implement** handlers for event-driven actions.
+5. **Document** the role in `README.md`.
 
 ### Format
 

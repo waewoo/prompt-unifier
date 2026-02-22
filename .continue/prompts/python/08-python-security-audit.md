@@ -37,17 +37,17 @@ explanation should be educational and the fix should be easy to implement.
 ### Instructions
 
 1. **Scan** code for common vulnerabilities.
-1. **Identify** insecure patterns (injection, secrets).
-1. **Analyze** dependency risks.
-1. **Recommend** mitigation strategies.
-1. **Verify** fixes.
+2. **Identify** insecure patterns (injection, secrets).
+3. **Analyze** dependency risks.
+4. **Recommend** mitigation strategies.
+5. **Verify** fixes.
 
 ### Format
 
 The output must be a Markdown document structured as follows:
 
 1. **Summary**: A brief, high-level assessment of the code's security posture.
-1. **Vulnerabilities Found**: A list of identified issues, each with:
+2. **Vulnerabilities Found**: A list of identified issues, each with:
    - **Severity**: 🔴 Critical, 🟡 High, 🔵 Medium, ⚪ Low.
    - **Vulnerability**: The type of vulnerability (e.g., "SQL Injection," "Hardcoded Secret,"
      "Insecure Deserialization").

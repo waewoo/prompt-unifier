@@ -37,10 +37,10 @@ with ArgoCD.
 ### Instructions
 
 1. **Define** the Application metadata (`name`, `namespace`).
-1. **Configure** the `source` (repo URL, path, target revision).
-1. **Set** the `destination` (server, namespace).
-1. **Apply** sync policies (automated, pruning).
-1. **Verify** the manifest.
+2. **Configure** the `source` (repo URL, path, target revision).
+3. **Set** the `destination` (server, namespace).
+4. **Apply** sync policies (automated, pruning).
+5. **Verify** the manifest.
 
 ### Format
 

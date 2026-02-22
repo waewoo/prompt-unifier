@@ -30,9 +30,9 @@ and any associated test files (e.g., Python `test_default.py`) for a given Ansib
 suite should:
 
 1. **Provision Test Instances**: Define a driver (e.g., Docker) to create test VMs/containers.
-1. **Converge the Role**: Apply the Ansible role to the test instances.
-1. **Verify Idempotence**: Run the role twice and assert that the second run reports no changes.
-1. **Verify Configuration**: Assert that the role has correctly configured the test instances (e.g.,
+2. **Converge the Role**: Apply the Ansible role to the test instances.
+3. **Verify Idempotence**: Run the role twice and assert that the second run reports no changes.
+4. **Verify Configuration**: Assert that the role has correctly configured the test instances (e.g.,
    check for installed packages, running services, file contents).
 
 ### Audience
@@ -43,10 +43,10 @@ roles. The generated tests should be clear, effective, and follow standard Molec
 ### Instructions
 
 1. **Identify** the role or playbook to test.
-1. **Configure** Molecule scenarios.
-1. **Define** the `converge.yml` playbook.
-1. **Implement** verification tests using Testinfra.
-1. **Run** the test suite.
+2. **Configure** Molecule scenarios.
+3. **Define** the `converge.yml` playbook.
+4. **Implement** verification tests using Testinfra.
+5. **Run** the test suite.
 
 ### Format
 

@@ -1,5 +1,5 @@
 ---
-name: Helm Chart Creator
+name: Kubernetes Helm Chart Creator
 description: Generate a basic Helm Chart structure with example templates and a values.yaml
   file.
 invokable: true

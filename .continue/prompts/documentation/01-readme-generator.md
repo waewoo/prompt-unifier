@@ -1,5 +1,5 @@
 ---
-name: README Generator
+name: Documentation README Generator
 description: Generate a comprehensive README.md file for a given project, module,
   or component.
 invokable: true
@@ -36,10 +36,10 @@ or contribute to the project/component.
 ### Instructions
 
 1. **Identify** key project information (Title, Description, Install).
-1. **Structure** the README with standard sections.
-1. **Write** clear installation steps.
-1. **Add** usage examples.
-1. **Include** contribution guidelines.
+2. **Structure** the README with standard sections.
+3. **Write** clear installation steps.
+4. **Add** usage examples.
+5. **Include** contribution guidelines.
 
 ### Format
 

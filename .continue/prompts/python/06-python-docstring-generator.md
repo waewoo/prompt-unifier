@@ -36,10 +36,10 @@ the necessary information to understand the component's interface without readin
 ### Instructions
 
 1. **Analyze** function/class signature.
-1. **Identify** parameters and return types.
-1. **Write** a summary line.
-1. **Detail** arguments and return values.
-1. **Format** according to style guide (Google/NumPy).
+2. **Identify** parameters and return types.
+3. **Write** a summary line.
+4. **Detail** arguments and return values.
+5. **Format** according to style guide (Google/NumPy).
 
 ### Format
 

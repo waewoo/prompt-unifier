@@ -49,50 +49,50 @@ The output must be a single YAML code block containing the complete Kubernetes m
 
 ### Instructions
 
-1. Identify the Kubernetes resource type (Deployment, Service, ConfigMap, etc.)
+01. Identify the Kubernetes resource type (Deployment, Service, ConfigMap, etc.)
 
-1. Create the manifest header:
+02. Create the manifest header:
 
-   ```yaml
-   apiVersion: <api_version>
-   kind: <Kind>
-   metadata:
-     name: <name>
-     namespace: <namespace>
-   ```
+    ```yaml
+    apiVersion: <api_version>
+    kind: <Kind>
+    metadata:
+      name: <name>
+      namespace: <namespace>
+    ```
 
-1. Define the `spec` section according to the resource type
+03. Define the `spec` section according to the resource type
 
-1. For workloads, define `containers`:
+04. For workloads, define `containers`:
 
-   ```yaml
-   containers:
-     - name: <container_name>
-       image: <image>:<tag>
-   ```
+    ```yaml
+    containers:
+      - name: <container_name>
+        image: <image>:<tag>
+    ```
 
-1. Add resource requests and limits:
+05. Add resource requests and limits:
 
-   ```yaml
-   resources:
-     requests:
-       cpu: <cpu_req>
-       memory: <mem_req>
-   ```
+    ```yaml
+    resources:
+      requests:
+        cpu: <cpu_req>
+        memory: <mem_req>
+    ```
 
-1. Configure probes (liveness, readiness)
+06. Configure probes (liveness, readiness)
 
-1. Add labels and annotations: `app: <app_name>`
+07. Add labels and annotations: `app: <app_name>`
 
-1. Define ports and protocols
+08. Define ports and protocols
 
-1. Use placeholders for variable values: `<value>`
+09. Use placeholders for variable values: `<value>`
 
-1. Generate the complete YAML manifest
+10. Generate the complete YAML manifest
 
-1. Verify against Kubernetes API schema
+11. Verify against Kubernetes API schema
 
-1. Suggest using `kubectl apply -f <file>` for deployments.
+12. Suggest using `kubectl apply -f <file>` for deployments.
 
 ### Foundations
 

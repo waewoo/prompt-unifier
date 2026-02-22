@@ -36,10 +36,10 @@ repository.
 ### Instructions
 
 1. **Define** stages (lint, test, build, deploy).
-1. **Configure** the image and cache.
-1. **Implement** the `lint` job with Ruff/MyPy.
-1. **Implement** the `test` job with Pytest.
-1. **Add** security scanning jobs.
+2. **Configure** the image and cache.
+3. **Implement** the `lint` job with Ruff/MyPy.
+4. **Implement** the `test` job with Pytest.
+5. **Add** security scanning jobs.
 
 ### Format
 

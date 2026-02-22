@@ -1,5 +1,5 @@
 ---
-name: Architecture Document Generator
+name: Documentation Architecture Generator
 description: Generate a high-level architecture document for a given system or application.
 invokable: true
 category: documentation
@@ -36,10 +36,10 @@ system's design without diving into implementation details.
 ### Instructions
 
 1. **Define** the system scope and goals.
-1. **Diagram** the high-level architecture.
-1. **Describe** core components and interactions.
-1. **Document** key decisions and trade-offs.
-1. **Review** against requirements.
+2. **Diagram** the high-level architecture.
+3. **Describe** core components and interactions.
+4. **Document** key decisions and trade-offs.
+5. **Review** against requirements.
 
 ### Format
 

@@ -1,5 +1,5 @@
 ---
-name: 'Kubernetes Configuration Management: Helm & Kustomize'
+name: Kubernetes Configuration Management Helm & Kustomize
 description: Best practices for using Helm and Kustomize to manage Kubernetes manifests,
   and guidelines for choosing between them.
 globs:

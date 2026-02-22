@@ -17,19 +17,19 @@ a clear and comprehensive Markdown docstring for a given Airflow DAG.
 
 ### Instructions
 
-1. Analyze the DAG file to understand its structure and tasks
-1. Extract the DAG ID, schedule, and default arguments
-1. Create a "DAG Overview" section describing the workflow
-1. List all tasks with their IDs and operators
-1. Explain task dependencies and execution order
-1. Document any external connections or variables used
-1. Add a "Usage" section explaining how to trigger or monitor the DAG
-1. Include a diagram placeholder: `[DAG Diagram]`
-1. Generate the documentation in Markdown format
-1. Use placeholders for specific values: `<dag_id>`, `<schedule>`
-1. Ensure the documentation is up-to-date with the code
-1. Add a "Troubleshooting" section for common failures
-1. Use code blocks for configuration snippets:
+01. Analyze the DAG file to understand its structure and tasks
+02. Extract the DAG ID, schedule, and default arguments
+03. Create a "DAG Overview" section describing the workflow
+04. List all tasks with their IDs and operators
+05. Explain task dependencies and execution order
+06. Document any external connections or variables used
+07. Add a "Usage" section explaining how to trigger or monitor the DAG
+08. Include a diagram placeholder: `[DAG Diagram]`
+09. Generate the documentation in Markdown format
+10. Use placeholders for specific values: `<dag_id>`, `<schedule>`
+11. Ensure the documentation is up-to-date with the code
+12. Add a "Troubleshooting" section for common failures
+13. Use code blocks for configuration snippets:
 
 ```python
 default_args = { ... }

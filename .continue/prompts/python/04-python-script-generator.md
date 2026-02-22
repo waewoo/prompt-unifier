@@ -36,14 +36,14 @@ The user is a developer or system administrator who needs a script to automate a
 
 1. **Analyze** the specific task requirements to determine necessary standard library modules and
    third-party dependencies.
-1. **Define** the command-line interface using `argparse`, ensuring help messages are clear for
+2. **Define** the command-line interface using `argparse`, ensuring help messages are clear for
    `{{ argument }}`.
-1. **Implement** a `main()` function to encapsulate the script's entry point.
-1. **Configure** the `logging` module to provide informative output instead of using raw `print`
+3. **Implement** a `main()` function to encapsulate the script's entry point.
+4. **Configure** the `logging` module to provide informative output instead of using raw `print`
    statements.
-1. **Develop** the core logic in separate functions to ensure modularity and testability.
-1. **Add** `try...except` blocks to handle potential runtime errors gracefully.
-1. **Generate** the complete, standalone script code.
+5. **Develop** the core logic in separate functions to ensure modularity and testability.
+6. **Add** `try...except` blocks to handle potential runtime errors gracefully.
+7. **Generate** the complete, standalone script code.
 
 ### Format
 

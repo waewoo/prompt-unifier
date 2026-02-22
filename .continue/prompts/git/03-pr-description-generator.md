@@ -1,5 +1,5 @@
 ---
-name: Pull Request Description Generator
+name: Git Pull Request Description Generator
 description: Generate a clear and structured description for a Pull Request (PR) or
   Merge Request (MR).
 invokable: true
@@ -37,10 +37,10 @@ future developers who may look back at the PR for context.
 ### Instructions
 
 1. **Summarize** the changes.
-1. **Link** related issues.
-1. **List** verification steps.
-1. **Check** against contribution guidelines.
-1. **Request** review.
+2. **Link** related issues.
+3. **List** verification steps.
+4. **Check** against contribution guidelines.
+5. **Request** review.
 
 ### Format
 

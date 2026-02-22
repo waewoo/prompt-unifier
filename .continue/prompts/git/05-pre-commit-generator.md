@@ -1,5 +1,5 @@
 ---
-name: .pre-commit-config.yaml Generator
+name: Git Precommit Config file Generator
 description: Generate a .pre-commit-config.yaml file to automate code quality checks
   with pre-commit hooks.
 invokable: true
@@ -36,10 +36,10 @@ The generated file is for a developer to place at the root of their project repo
 ### Instructions
 
 1. **Identify** required checks (linting, security).
-1. **Select** hook repositories.
-1. **Configure** hook IDs and arguments.
-1. **Set** file filtering if needed.
-1. **Generate** the `.pre-commit-config.yaml`.
+2. **Select** hook repositories.
+3. **Configure** hook IDs and arguments.
+4. **Set** file filtering if needed.
+5. **Generate** the `.pre-commit-config.yaml`.
 
 ### Format
 

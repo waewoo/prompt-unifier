@@ -66,9 +66,9 @@ ______________________________________________________________________
 "I need an Ansible playbook to:
 
 1. Install Nginx on `webservers` group.
-1. Ensure Nginx service is running and enabled at boot.
-1. Copy a custom Nginx configuration file (`nginx.conf`) from the local `files/` directory to
+2. Ensure Nginx service is running and enabled at boot.
+3. Copy a custom Nginx configuration file (`nginx.conf`) from the local `files/` directory to
    `/etc/nginx/nginx.conf` on the remote hosts.
-1. Restart Nginx service if the configuration file changes.
-1. Create a simple `index.html` file in `/var/www/html` with content 'Welcome to Ansible Nginx!'.
-1. The playbook should run with `sudo` privileges."
+4. Restart Nginx service if the configuration file changes.
+5. Create a simple `index.html` file in `/var/www/html` with content 'Welcome to Ansible Nginx!'.
+6. The playbook should run with `sudo` privileges."

@@ -1,5 +1,5 @@
 ---
-name: Runbook Generator
+name: Documentation Runbook Generator
 description: Generate a detailed runbook for a specific operational task or incident
   response scenario.
 invokable: true
@@ -37,10 +37,10 @@ the system. The runbook should be clear enough for someone unfamiliar with the s
 ### Instructions
 
 1. **Identify** the specific operational procedure.
-1. **List** prerequisites and access requirements.
-1. **Detail** step-by-step execution instructions.
-1. **Define** verification steps.
-1. **Include** troubleshooting for common issues.
+2. **List** prerequisites and access requirements.
+3. **Detail** step-by-step execution instructions.
+4. **Define** verification steps.
+5. **Include** troubleshooting for common issues.
 
 ### Format
 

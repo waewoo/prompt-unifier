@@ -164,10 +164,10 @@ def test_get_user_count_task(mocker):
 - **Purpose**: To verify that rerunning a task produces the same outcome.
 - **Implementation**: This often requires an integration test setup. The basic pattern is:
   1. Set up an initial state (e.g., a target database table is empty).
-  1. Run the task once.
-  1. Assert the target state is correct (e.g., the table has 10 rows).
-  1. Run the exact same task again.
-  1. Assert the target state is still correct (e.g., the table still has 10 rows, not 20).
+  2. Run the task once.
+  3. Assert the target state is correct (e.g., the table has 10 rows).
+  4. Run the exact same task again.
+  5. Assert the target state is still correct (e.g., the table still has 10 rows, not 20).
 
 ```python
 def test_load_to_db_is_idempotent(database_connection):

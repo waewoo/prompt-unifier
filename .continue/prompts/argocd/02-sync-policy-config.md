@@ -38,10 +38,10 @@ their applications with Kubernetes clusters.
 ### Instructions
 
 1. **Analyze** the desired synchronization behavior.
-1. **Enable** automated sync if required.
-1. **Configure** pruning and self-healing options.
-1. **Set** sync options (e.g., `CreateNamespace`).
-1. **Apply** the policy to the Application.
+2. **Enable** automated sync if required.
+3. **Configure** pruning and self-healing options.
+4. **Set** sync options (e.g., `CreateNamespace`).
+5. **Apply** the policy to the Application.
 
 ### Format
 

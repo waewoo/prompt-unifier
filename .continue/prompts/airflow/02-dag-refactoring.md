@@ -40,7 +40,7 @@ The output must contain two parts:
 
 1. **Summary of Changes**: A bulleted list explaining the specific refactorings you performed and
    the best practice each change aligns with.
-1. **Refactored DAG**: A single Python code block with the complete, rewritten DAG file.
+2. **Refactored DAG**: A single Python code block with the complete, rewritten DAG file.
 
 ### Foundations
 

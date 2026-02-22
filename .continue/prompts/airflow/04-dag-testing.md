@@ -28,7 +28,7 @@ Generate a single Python test file using `pytest`. The file should include:
 
 1. **DAG Integrity Tests**: Tests to validate that the DAG can be loaded, has required arguments
    (`owner`, `tags`), and is acyclic.
-1. **Task Logic Tests**: Unit tests for the business logic called by `PythonOperator`s. This
+2. **Task Logic Tests**: Unit tests for the business logic called by `PythonOperator`s. This
    requires mocking any interaction with external systems (like databases or APIs) that the business
    logic performs.
 

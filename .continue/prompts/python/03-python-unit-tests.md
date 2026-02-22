@@ -27,9 +27,9 @@ correctness.
 Generate a single Python test file using `pytest`. The test file should cover:
 
 1. **Happy Path**: Test the function/class with expected inputs.
-1. **Edge Cases**: Test boundary conditions, empty inputs, `None` values, etc.
-1. **Error Conditions**: Test that the code raises the expected exceptions for invalid inputs.
-1. **Mocking**: Mock any external dependencies (e.g., database connections, API calls, file I/O) to
+2. **Edge Cases**: Test boundary conditions, empty inputs, `None` values, etc.
+3. **Error Conditions**: Test that the code raises the expected exceptions for invalid inputs.
+4. **Mocking**: Mock any external dependencies (e.g., database connections, API calls, file I/O) to
    ensure the test is a true unit test.
 
 ### Audience

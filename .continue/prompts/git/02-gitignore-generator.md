@@ -1,5 +1,5 @@
 ---
-name: .gitignore File Generator
+name: Git .gitignore File Generator
 description: Generate a .gitignore file tailored to specific languages, frameworks,
   and operating systems.
 invokable: true
@@ -35,15 +35,15 @@ The generated file is for a developer to place at the root of their project repo
 ### Instructions
 
 1. **Analyze** the list of technologies provided by the user (languages, frameworks, IDEs, OS).
-1. **Identify** the standard ignore patterns for each technology using authoritative sources (e.g.,
+2. **Identify** the standard ignore patterns for each technology using authoritative sources (e.g.,
    GitHub's gitignore templates).
-1. **Generate** the `.gitignore` content, grouping patterns into clearly commented sections (e.g.,
+3. **Generate** the `.gitignore` content, grouping patterns into clearly commented sections (e.g.,
    `# {{ technology }}`).
-1. **Include** OS-specific files (like `.DS_Store` or `Thumbs.db`) if operating systems are
+4. **Include** OS-specific files (like `.DS_Store` or `Thumbs.db`) if operating systems are
    specified.
-1. **Ensure** that critical configuration files (like `.env`) are excluded to prevent security
+5. **Ensure** that critical configuration files (like `.env`) are excluded to prevent security
    leaks.
-1. **Review** the generated list to remove redundancy and ensure comprehensive coverage.
+6. **Review** the generated list to remove redundancy and ensure comprehensive coverage.
 
 ### Format
 

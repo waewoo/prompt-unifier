@@ -40,10 +40,10 @@ infrastructure components.
 ### Instructions
 
 1. **Identify** the cloud resource required.
-1. **Consult** provider documentation.
-1. **Define** the resource block.
-1. **Configure** mandatory arguments.
-1. **Set** tags and optional parameters.
+2. **Consult** provider documentation.
+3. **Define** the resource block.
+4. **Configure** mandatory arguments.
+5. **Set** tags and optional parameters.
 
 ### Format
 

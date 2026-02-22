@@ -42,20 +42,20 @@ commands and HCL modifications for a specific, potentially risky, operation.
 ### Instructions
 
 1. **Analyze** the current state.
-1. **Identify** resources to move/import.
-1. **Write** `terraform state mv` commands.
-1. **Plan** the migration.
-1. **Execute** and verify.
+2. **Identify** resources to move/import.
+3. **Write** `terraform state mv` commands.
+4. **Plan** the migration.
+5. **Execute** and verify.
 
 ### Format
 
 The output must contain:
 
 1. **Step-by-step instructions**: A numbered list of actions to take.
-1. **Terraform CLI commands**: Each command should be in a separate bash code block.
-1. **HCL code snippets**: Any necessary HCL changes (e.g., new `resource` blocks for import, updated
+2. **Terraform CLI commands**: Each command should be in a separate bash code block.
+3. **HCL code snippets**: Any necessary HCL changes (e.g., new `resource` blocks for import, updated
    module calls for moving resources) in HCL code blocks.
-1. **Warnings**: Explicit warnings about potential data loss or state corruption if steps are not
+4. **Warnings**: Explicit warnings about potential data loss or state corruption if steps are not
    followed carefully.
 
 ### Foundations

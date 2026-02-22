@@ -34,10 +34,10 @@ The generated branch name is for a developer to use directly with `git checkout 
 ### Instructions
 
 1. **Identify** the ticket type and ID.
-1. **Select** the prefix (`feature/`, `bugfix/`).
-1. **Generate** a slug from the description.
-1. **Combine** elements into the branch name.
-1. **Verify** naming convention compliance.
+2. **Select** the prefix (`feature/`, `bugfix/`).
+3. **Generate** a slug from the description.
+4. **Combine** elements into the branch name.
+5. **Verify** naming convention compliance.
 
 ### Format
 

@@ -38,15 +38,15 @@ managing diverse infrastructure.
 
 1. **Analyze** the user's infrastructure requirements, identifying hosts, groups, and specific
    variables.
-1. **Determine** the best inventory format (static `INI`/`YAML` or dynamic plugin) based on the
+2. **Determine** the best inventory format (static `INI`/`YAML` or dynamic plugin) based on the
    infrastructure type (cloud vs. on-prem).
-1. **Define** the group hierarchy, ensuring logical grouping (e.g., by environment, region, or
+3. **Define** the group hierarchy, ensuring logical grouping (e.g., by environment, region, or
    role).
-1. **Generate** the `hosts` file content, placing hosts into their respective groups.
-1. **Create** separate `group_vars/{{ group_name }}.yml` and `host_vars/{{ host_name }}.yml` files
+4. **Generate** the `hosts` file content, placing hosts into their respective groups.
+5. **Create** separate `group_vars/{{ group_name }}.yml` and `host_vars/{{ host_name }}.yml` files
    for variables to maintain modularity.
-1. **Secure** sensitive data by using `!vault |` placeholders for passwords or keys.
-1. **Verify** that the structure follows Ansible best practices and variable precedence rules.
+6. **Secure** sensitive data by using `!vault |` placeholders for passwords or keys.
+7. **Verify** that the structure follows Ansible best practices and variable precedence rules.
 
 ### Format
 

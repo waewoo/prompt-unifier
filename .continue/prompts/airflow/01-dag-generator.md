@@ -37,11 +37,11 @@ testable code.
 ### Instructions
 
 1. **Analyze** the workflow requirements (tasks, dependencies, schedule).
-1. **Design** the DAG structure using the `TaskFlow` API.
-1. **Define** the DAG parameters (`schedule`, `start_date`, `catchup`) for {{ dag_id }}.
-1. **Implement** tasks using appropriate operators.
-1. **Set** dependencies using bitshift operators.
-1. **Verify** the DAG parses correctly.
+2. **Design** the DAG structure using the `TaskFlow` API.
+3. **Define** the DAG parameters (`schedule`, `start_date`, `catchup`) for {{ dag_id }}.
+4. **Implement** tasks using appropriate operators.
+5. **Set** dependencies using bitshift operators.
+6. **Verify** the DAG parses correctly.
 
 ### Format
 
@@ -78,11 +78,11 @@ ______________________________________________________________________
 1. **Extract**: Export the `public.customers` table from our Postgres database (`postgres_main`) to
    a CSV file in our GCS bucket (`my-data-bucket`). The file should be named
    `customers_{{ ds_nodash }}.csv` and placed in the `raw/customers/` directory.
-1. **Transform**: Using a Python function, read the CSV, remove any rows where `email` is null, and
+2. **Transform**: Using a Python function, read the CSV, remove any rows where `email` is null, and
    add a new column `domain` that extracts the domain from the email address. Write the output to a
    new CSV named `customers_transformed_{{ ds_nodash }}.csv` in the `processed/customers/` directory
    of the same GCS bucket.
-1. **Load**: Load the transformed CSV from GCS into our BigQuery table
+3. **Load**: Load the transformed CSV from GCS into our BigQuery table
    `my_project.my_dataset.customers`. The table should be overwritten each day.
-1. **Quality Check**: After loading, run a SQL check in BigQuery to ensure the row count is greater
+4. **Quality Check**: After loading, run a SQL check in BigQuery to ensure the row count is greater
    than 0. The task should fail if the check returns 0."

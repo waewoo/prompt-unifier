@@ -1,5 +1,5 @@
 ---
-name: Conventional Commit Message Generator
+name: Git Conventional Commit Message Generator
 description: Generate a commit message that adheres to the Conventional Commits specification
   based on a description of changes.
 invokable: true
@@ -37,10 +37,10 @@ developers in the Git history.
 ### Instructions
 
 1. **Analyze** the changes made.
-1. **Determine** the correct type (`feat`, `fix`, etc.).
-1. **Identify** the scope (optional).
-1. **Write** a concise description.
-1. **Add** breaking change footers if necessary.
+2. **Determine** the correct type (`feat`, `fix`, etc.).
+3. **Identify** the scope (optional).
+4. **Write** a concise description.
+5. **Add** breaking change footers if necessary.
 
 ### Format
 
@@ -48,7 +48,14 @@ The output must be a single, raw text block containing only the commit message.
 
 ### Foundations
 
-- **Type**: The commit type must be one of the following:
+- **Type Selection Priority**: Always use the most specific type according to these priority rules:
+  - **`docs`**: **MANDATORY** for any changes to documentation files (README, CHANGELOG, etc.), even
+    if the change adds a "new" piece of documentation. **NEVER** use `feat` or `fix` for
+    documentation changes.
+  - **`style`**: For formatting changes only (white-space, commas).
+  - **`feat`**: ONLY for adding new application functionality.
+  - **`fix`**: ONLY for fixing application bugs.
+- **Full Type List**:
   - `feat`: A new feature.
   - `fix`: A bug fix.
   - `docs`: Documentation only changes.

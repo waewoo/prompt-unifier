@@ -1,5 +1,5 @@
 ---
-name: pyproject.toml Generator
+name: Python Pyproject Toml File Generator
 description: Generate a pyproject.toml file with configurations for ruff and mypy.
 invokable: true
 category: development
@@ -34,10 +34,10 @@ The generated file is for a Python developer to place at the root of their proje
 ### Instructions
 
 1. **Identify** project metadata.
-1. **Define** build system requirements.
-1. **List** dependencies and dev-dependencies.
-1. **Configure** tool settings (Ruff, MyPy).
-1. **Generate** `pyproject.toml`.
+2. **Define** build system requirements.
+3. **List** dependencies and dev-dependencies.
+4. **Configure** tool settings (Ruff, MyPy).
+5. **Generate** `pyproject.toml`.
 
 ### Format
 

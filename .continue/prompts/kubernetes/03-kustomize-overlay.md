@@ -1,5 +1,5 @@
 ---
-name: Kustomize Overlay Generator
+name: Kubernetes Kustomize Overlay Generator
 description: Generate a Kustomize overlay to customize a base set of Kubernetes manifests
   for a specific environment or purpose.
 invokable: true
@@ -37,10 +37,10 @@ Kubernetes configurations.
 ### Instructions
 
 1. **Identify** the base configuration.
-1. **Create** the overlay directory.
-1. **Define** `kustomization.yaml`.
-1. **Add** patches and resource modifications.
-1. **Generate** the final manifest.
+2. **Create** the overlay directory.
+3. **Define** `kustomization.yaml`.
+4. **Add** patches and resource modifications.
+5. **Generate** the final manifest.
 
 ### Format
 

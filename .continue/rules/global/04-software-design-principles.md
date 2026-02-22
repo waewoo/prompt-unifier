@@ -1,5 +1,5 @@
 ---
-name: Software Design Principles
+name: Global Software Design Principles
 description: Fundamental principles for designing robust, maintainable, and scalable
   software systems.
 globs:
@@ -95,7 +95,7 @@ understandable, flexible, and maintainable.
 
 - **Principle**:
   1. High-level modules should not depend on low-level modules. Both should depend on abstractions.
-  1. Abstractions should not depend on details. Details should depend on abstractions.
+  2. Abstractions should not depend on details. Details should depend on abstractions.
 - **Benefit**: Decouples modules, making them easier to test, change, and reuse.
 - **Application**: Use dependency injection. Depend on interfaces or abstract classes rather than
   concrete implementations.

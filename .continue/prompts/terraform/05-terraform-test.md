@@ -30,56 +30,56 @@ should:
 
 1. **Provision Infrastructure**: Use `terraform_pytest` fixtures to `terraform init`, `plan`, and
    `apply` the provided HCL code.
-1. **Validate Outputs**: Assert that the module's outputs match expected values.
-1. **Cloud Provider Assertions**: Use cloud provider SDKs (e.g., `boto3` for AWS) to make assertions
+2. **Validate Outputs**: Assert that the module's outputs match expected values.
+3. **Cloud Provider Assertions**: Use cloud provider SDKs (e.g., `boto3` for AWS) to make assertions
    directly against the provisioned cloud resources. This verifies that the resources exist and have
    the correct properties.
-1. **Cleanup**: Ensure the infrastructure is destroyed after tests.
+4. **Cleanup**: Ensure the infrastructure is destroyed after tests.
 
 ### Instructions
 
-1. Analyze the Terraform code to be tested
+01. Analyze the Terraform code to be tested
 
-1. Create a Go test file `test/terraform_test.go`
+02. Create a Go test file `test/terraform_test.go`
 
-1. Import `terratest` modules:
+03. Import `terratest` modules:
 
-   ```go
-   import (
-       "testing"
-       "github.com/gruntwork-io/terratest/modules/terraform"
-       "github.com/stretchr/testify/assert"
-   )
-   ```
+    ```go
+    import (
+        "testing"
+        "github.com/gruntwork-io/terratest/modules/terraform"
+        "github.com/stretchr/testify/assert"
+    )
+    ```
 
-1. Define the test function `TestTerraformModule(t *testing.T)`
+04. Define the test function `TestTerraformModule(t *testing.T)`
 
-1. Configure Terraform options:
+05. Configure Terraform options:
 
-   ```go
-   terraformOptions := &terraform.Options{
-       TerraformDir: "../examples/simple",
-   }
-   ```
+    ```go
+    terraformOptions := &terraform.Options{
+        TerraformDir: "../examples/simple",
+    }
+    ```
 
-1. Ensure cleanup with `defer terraform.Destroy(t, terraformOptions)`
+06. Ensure cleanup with `defer terraform.Destroy(t, terraformOptions)`
 
-1. Run `terraform init` and `apply`: `terraform.InitAndApply(t, terraformOptions)`
+07. Run `terraform init` and `apply`: `terraform.InitAndApply(t, terraformOptions)`
 
-1. Validate outputs:
+08. Validate outputs:
 
-   ```go
-   output := terraform.Output(t, terraformOptions, "bucket_id")
-   assert.Equal(t, "expected-value", output)
-   ```
+    ```go
+    output := terraform.Output(t, terraformOptions, "bucket_id")
+    assert.Equal(t, "expected-value", output)
+    ```
 
-1. Check for resource existence (e.g., AWS S3 bucket)
+09. Check for resource existence (e.g., AWS S3 bucket)
 
-1. Generate the complete Go test code
+10. Generate the complete Go test code
 
-1. Explain how to run the test: `go test -v`
+11. Explain how to run the test: `go test -v`
 
-1. Use placeholders for resource IDs: `<resource_id>`
+12. Use placeholders for resource IDs: `<resource_id>`
 
 ### Audience
 

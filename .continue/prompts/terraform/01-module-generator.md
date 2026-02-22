@@ -38,21 +38,21 @@ clean, and testable infrastructure code.
 ### Instructions
 
 1. **Define** module scope and purpose.
-1. **Create** `main.tf`, `variables.tf`, `outputs.tf`.
-1. **Implement** resource logic.
-1. **Document** inputs and outputs.
-1. **Validate** the module.
+2. **Create** `main.tf`, `variables.tf`, `outputs.tf`.
+3. **Implement** resource logic.
+4. **Document** inputs and outputs.
+5. **Validate** the module.
 
 ### Format
 
 The output must contain four separate HCL code blocks, each representing a file:
 
 1. **`main.tf`**: The core resource definitions and any nested module calls.
-1. **`variables.tf`**: All input variables with descriptions, types, and default values. Sensitive
+2. **`variables.tf`**: All input variables with descriptions, types, and default values. Sensitive
    variables must be marked `sensitive = true`.
-1. **`outputs.tf`**: All output values with descriptions. Sensitive outputs must be marked
+3. **`outputs.tf`**: All output values with descriptions. Sensitive outputs must be marked
    `sensitive = true`.
-1. **`versions.tf`**: Required Terraform and provider versions.
+4. **`versions.tf`**: Required Terraform and provider versions.
 
 ### Foundations
 

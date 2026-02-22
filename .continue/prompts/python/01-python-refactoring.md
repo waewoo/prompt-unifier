@@ -4,7 +4,7 @@ description: Refactor Python code to improve readability, performance, and adher
   to best practices.
 invokable: true
 category: development
-version: 1.0.0
+version: 1.1.1
 tags:
 - python
 - refactoring
@@ -26,67 +26,86 @@ be inefficient, hard to read, or outdated.
 ### Challenge
 
 Rewrite the provided code to improve its quality while preserving its original functionality. You
-must also provide a summary of the key changes you made and why.
+must also provide a clear, educational summary of the improvements made.
 
 ### Audience
 
-The user is a Python developer who wants to improve their existing code and learn best practices.
-The explanation should be clear and educational.
+The user is a Python developer of any skill level who wants to improve their existing code and learn
+modern Pythonic best practices through clear, educational examples.
 
 ### Instructions
 
-1. **Analyze** the code for code smells.
-1. **Identify** refactoring opportunities.
-1. **Apply** patterns (Extract Method, Rename).
-1. **Ensure** logic preservation.
-1. **Verify** with tests.
+1. **Analyze** the code for code smells (e.g., long methods, duplicated code, deep nesting).
+2. **Identify** specific refactoring opportunities.
+3. **Apply** modern Pythonic patterns and best practices.
+4. **Ensure** original logic and edge case handling are preserved.
+5. **Format** the output exactly as specified below.
+
+### Foundations & Terminology
+
+When refactoring, prioritize these principles and use this exact terminology in your summary:
+
+- **Readability**: Improve variable/function names to be descriptive.
+- **Guard Clauses**: Reduce nesting depth by using early returns.
+- **List Comprehensions**: Use comprehensions or generators instead of clunky loops where
+  appropriate.
+- **Built-in Functions**: Leverage Python's built-ins (e.g., `sum()`, `any()`, `enumerate()`).
+- **DRY (Don't Repeat Yourself)**: Eliminate duplicated logic or code blocks.
+- **Type Hinting**: Add comprehensive type hints for parameters and return values.
+- **SOLID Principles**: Ensure each component has a single responsibility.
 
 ### Format
 
-The output must contain two parts:
+Your response must follow this structure:
 
-1. **Summary of Changes**: A bulleted list explaining the specific refactorings you performed and
-   the best practice each change aligns with.
-1. **Refactored Code**: A single Python code block with the complete, rewritten code.
+1. **Summary of Changes**:
 
-### Foundations
+   - Use a bulleted list.
+   - For each change, mention the principle from the "Foundations" section it aligns with.
+   - **Important**: Focus on what was *improved*. Do not quote or repeat large snippets of the
+     original "bad" code in your summary to avoid confusion.
 
-- **Readability**: Improve variable names, simplify complex logic, and reduce nesting depth (e.g.,
-  using guard clauses).
-- **Performance**: Identify and optimize inefficient patterns (e.g., loops, data structures). Use
-  built-in functions and comprehensions where appropriate.
-- **Pythonic Code**: Use Python idioms and language features effectively (e.g., context managers,
-  f-strings, list comprehensions, generators).
-- **SOLID Principles**: Apply SOLID principles where applicable (e.g., Single Responsibility by
-  extracting methods).
-- **DRY (Don't Repeat Yourself)**: Eliminate duplicated code.
-- **Type Hinting**: Add or improve type hints for clarity and static analysis.
+2. **Refactored Code**:
+
+   - Provide the complete, rewritten code in a single Python code block.
+   - Include necessary imports (e.g., from `typing`).
 
 ______________________________________________________________________
 
 **User Request Example:**
 
-"Please refactor this function. It works, but it feels clunky and slow, especially with large
-lists."
+"Please refactor this function."
 
 ```python
-# Provided function to be refactored
-def process_user_list(users):
-    # This function filters for active users and formats their names
+def process(users):
+    out = []
+    for u in users:
+        if u['active'] == True:
+            name = u['first'] + ' ' + u['last']
+            out.append(name.upper())
+    return out
+```
 
-    active_users_list = []
-    for user in users:
-        if user['is_active'] == True:
-            if 'first_name' in user and 'last_name' in user:
-                full_name = user['first_name'] + ' ' + user['last_name']
-                active_users_list.append(full_name.upper())
+**Assistant Response Example:**
 
-    # Also, find if there's an admin
-    has_admin = False
-    for user in users:
-        if user.get('role') == 'admin':
-            has_admin = True
-            break
+1. **Summary of Changes**:
 
-    return active_users_list, has_admin
+   - **Readability**: Renamed `process` to `get_active_user_full_names` and `u` to `user` for
+     clarity.
+   - **List Comprehensions**: Replaced the `for` loop and manual list appending with a more concise
+     list comprehension.
+   - **Type Hinting**: Added type hints (`List[Dict]` and `List[str]`) to improve maintainability.
+
+2. **Refactored Code**:
+
+```python
+from typing import List, Dict
+
+def get_active_user_full_names(users: List[Dict[str, any]]) -> List[str]:
+    """Filters active users and returns their full names in uppercase."""
+    return [
+        f"{user['first']} {user['last']}".upper()
+        for user in users
+        if user.get('active')
+    ]
 ```
