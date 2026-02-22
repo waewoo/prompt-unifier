@@ -215,7 +215,7 @@ class TestGitService:
                 mock_mkdtemp.return_value = str(temp_path)
 
                 # Call method that creates temporary directory
-                repo_path, repo = service.clone_to_temp(repo_url)
+                repo_path, _ = service.clone_to_temp(repo_url)
 
                 # Verify mkdtemp was called
                 assert mock_mkdtemp.called
@@ -464,17 +464,12 @@ class TestGitServiceAdditionalCoverage:
         with patch("pathlib.Path.exists") as mock_exists:
             with patch("pathlib.Path.is_dir", return_value=True):
                 with patch("shutil.copytree") as mock_copytree:
-                    # Simuler que prompts existe et rules existe aussi
-                    def exists_side_effect():
-                        # True pour prompts, True pour rules
-                        return True
-
                     mock_exists.return_value = True
 
                     service.extract_prompts_dir(tmp_path / "repo", tmp_path / "target")
 
-                    # Vérifier que copytree a été appelé 2 fois (prompts et rules)
-                    assert mock_copytree.call_count == 2
+                    # Vérifier que copytree a été appelé 3 fois (prompts, rules et skills)
+                    assert mock_copytree.call_count == 3
 
     def test_check_remote_updates_with_fetch_error(self, tmp_path: Path):
         """Test check_remote_updates avec une erreur de fetch."""

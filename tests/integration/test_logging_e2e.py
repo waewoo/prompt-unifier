@@ -183,9 +183,9 @@ class TestLogFileFormat:
         if log_content.strip():
             # Look for timestamp pattern in log content
             timestamp_pattern = r"\d{4}-\d{2}-\d{2}"  # Basic date pattern
-            bool(re.search(timestamp_pattern, log_content))
-            # This is a soft check - if services log, they should have timestamps
-            # Empty log is acceptable if services don't log at this operation
+            # Soft check: if services log, they should include timestamps;
+            # empty log is acceptable if services don't log at this operation
+            _ = re.search(timestamp_pattern, log_content)
 
     def test_log_file_is_plain_text_no_ansi(
         self, runner, temp_storage_dir, temp_log_file, reset_logging

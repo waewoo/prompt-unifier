@@ -20,7 +20,7 @@ class TestTestCommandArgs:
 
         assert result.exit_code == 0
         mock_test_cmd.assert_called_once()
-        args, kwargs = mock_test_cmd.call_args
+        args, _ = mock_test_cmd.call_args
         assert len(args[0]) == 3
         assert Path("path1") in args[0]
         assert Path("path2") in args[0]

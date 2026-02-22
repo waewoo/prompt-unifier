@@ -8,6 +8,8 @@ This module contains tests for:
 
 from pathlib import Path
 
+import pytest
+
 from prompt_unifier.models.scaff import SCARFFComponent, SCARFFScore
 from prompt_unifier.models.validation import ValidationResult
 
@@ -77,7 +79,7 @@ class TestSCARFFScore:
             SCARFFComponent(component_name="Focused", score=12, max_score=20, status="passed"),
         ]
         score = SCARFFScore(components=components, total_score=75, max_score=100)
-        assert score.percentage == 75.0
+        assert score.percentage == pytest.approx(75.0)
 
     def test_score_grade_excellent(self) -> None:
         """Test grade property returns 'excellent' for score >= 80."""

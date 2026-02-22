@@ -153,7 +153,6 @@ handlers:
             assert (custom_rules_dir / "test-rule.md").exists()
 
             # Verify NOT in default location (cwd/.continue)
-            project_a / ".continue"
             # Only custom_base_path should have the deployment
             assert (
                 not (project_a / ".continue" / "prompts" / "test-prompt.md").exists()

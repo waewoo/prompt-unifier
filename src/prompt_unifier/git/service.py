@@ -12,15 +12,13 @@ import time
 from collections.abc import Callable
 from datetime import UTC, datetime
 from pathlib import Path
-from typing import TYPE_CHECKING, NoReturn, TypeVar
+from typing import TYPE_CHECKING, NoReturn
 
 import git
 
 if TYPE_CHECKING:
     from prompt_unifier.models.git_config import RepositoryConfig
     from prompt_unifier.utils.repo_metadata import RepoMetadata
-
-T = TypeVar("T")
 
 # Get logger for this module
 logger = logging.getLogger(__name__)
@@ -210,7 +208,7 @@ def _collect_repo_files(temp_path: Path) -> list[str]:
         List of relative file paths.
     """
     all_files: list[str] = []
-    for directory in ["prompts", "rules"]:
+    for directory in ["prompts", "rules", "skills"]:
         source_dir = temp_path / directory
         if source_dir.exists():
             for file_path in source_dir.rglob("*"):
@@ -269,7 +267,7 @@ def _track_file_conflicts(
         file_sources[rel_path] = url
 
 
-def retry_with_backoff(
+def retry_with_backoff[T](
     func: Callable[..., T],
     max_attempts: int = 3,
     initial_delay: float = 1.0,
@@ -441,6 +439,12 @@ class GitService:
         full_sha: str = repo.head.commit.hexsha
         return full_sha[:7]
 
+    def _copy_optional_dir(self, repo_path: Path, target_path: Path, dir_name: str) -> None:
+        """Copy a directory from repo to target if it exists."""
+        source = repo_path / dir_name
+        if source.exists() and source.is_dir():
+            shutil.copytree(source, target_path / dir_name, dirs_exist_ok=True)
+
     def extract_prompts_dir(
         self,
         repo_path: Path,
@@ -479,13 +483,9 @@ class GitService:
                     f"Repository does not contain a prompts/ directory. "
                     f"Expected at: {source_prompts}"
                 )
-            target_prompts = target_path / "prompts"
-            shutil.copytree(source_prompts, target_prompts, dirs_exist_ok=True)
-
-            source_rules = repo_path / "rules"
-            if source_rules.exists() and source_rules.is_dir():
-                target_rules = target_path / "rules"
-                shutil.copytree(source_rules, target_rules, dirs_exist_ok=True)
+            shutil.copytree(source_prompts, target_path / "prompts", dirs_exist_ok=True)
+            self._copy_optional_dir(repo_path, target_path, "rules")
+            self._copy_optional_dir(repo_path, target_path, "skills")
 
     def check_remote_updates(self, repo_url: str, last_commit: str) -> tuple[bool, int]:
         """Check if remote repository has updates since last commit.
@@ -559,6 +559,40 @@ class GitService:
             if repo_path.exists():
                 shutil.rmtree(repo_path, ignore_errors=True)
 
+    def _clone_single_repo(
+        self,
+        repo_config: "RepositoryConfig",
+        idx: int,
+        total: int,
+    ) -> tuple[Path, git.Repo]:
+        """Clone one repository and verify it contains a prompts/ directory."""
+        url = repo_config.url
+        logger.info(f"[{idx}/{total}] Validating and cloning: {url}")
+        try:
+            temp_path, repo = self.clone_to_temp(
+                url, branch=repo_config.branch, auth_config=repo_config.auth_config
+            )
+            prompts_dir = temp_path / "prompts"
+            if not prompts_dir.exists() or not prompts_dir.is_dir():
+                raise ValueError(
+                    f"Repository {idx}/{total} validation failed: {url}\n\n"
+                    f"Repository does not contain a prompts/ directory.\n"
+                    f"Expected at: {prompts_dir}\n\n"
+                    "All repositories must have a prompts/ directory."
+                )
+            return temp_path, repo
+        except (ValueError, ConnectionError, git.exc.GitCommandError) as e:
+            if isinstance(e, ValueError) and "does not contain a prompts/" in str(e):
+                raise
+            raise ValueError(
+                f"Repository {idx}/{total} validation failed: {url}\n\n"
+                f"Error: {e}\n\n"
+                "Please verify:\n"
+                "- Repository URL is correct\n"
+                "- You have access to the repository\n"
+                "- Repository contains a prompts/ directory"
+            ) from e
+
     def _clone_and_validate_all(
         self, repos: list["RepositoryConfig"]
     ) -> list[tuple[Path, git.Repo]]:
@@ -583,45 +617,10 @@ class GitService:
         cloned_repos: list[tuple[Path, git.Repo]] = []
         try:
             for idx, repo_config in enumerate(repos, 1):
-                url = repo_config.url
-                branch = repo_config.branch
-                logger.info(f"[{idx}/{len(repos)}] Validating and cloning: {url}")
-
-                # Clone repository (single authentication step)
-                try:
-                    temp_path, repo = self.clone_to_temp(
-                        url, branch=branch, auth_config=repo_config.auth_config
-                    )
-                    cloned_repos.append((temp_path, repo))
-
-                    # Check for prompts/ directory
-                    prompts_dir = temp_path / "prompts"
-                    if not prompts_dir.exists() or not prompts_dir.is_dir():
-                        raise ValueError(
-                            f"Repository {idx}/{len(repos)} validation failed: {url}\n\n"
-                            f"Repository does not contain a prompts/ directory.\n"
-                            f"Expected at: {prompts_dir}\n\n"
-                            "All repositories must have a prompts/ directory."
-                        )
-
-                except (ValueError, ConnectionError, git.exc.GitCommandError) as e:
-                    # Fail fast on first error
-                    if isinstance(e, ValueError) and "does not contain a prompts/" in str(e):
-                        raise
-
-                    raise ValueError(
-                        f"Repository {idx}/{len(repos)} validation failed: {url}\n\n"
-                        f"Error: {e}\n\n"
-                        "Please verify:\n"
-                        "- Repository URL is correct\n"
-                        "- You have access to the repository\n"
-                        "- Repository contains a prompts/ directory"
-                    ) from e
-
+                temp_path, repo = self._clone_single_repo(repo_config, idx, len(repos))
+                cloned_repos.append((temp_path, repo))
             return cloned_repos
-
         except Exception:
-            # Clean up all cloned repositories if any validation fails
             for path, _ in cloned_repos:
                 if path.exists():
                     shutil.rmtree(path, ignore_errors=True)

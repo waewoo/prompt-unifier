@@ -400,7 +400,8 @@ version: 1.0.0
 Content here."""
         result = validator.validate_content(content)
         formatted = next(c for c in result.components if c.component_name == "Formatted")
-        assert formatted.score >= 9  # Frontmatter (6) + title (2) + tags (1) = 9
+        # Min score: frontmatter contributes 6, title 2, tags 1
+        assert formatted.score >= 9
 
     def test_formatted_diverse_list_types(self, validator: SCARFFValidator) -> None:
         """Test bonus for having both bullet and numbered lists."""

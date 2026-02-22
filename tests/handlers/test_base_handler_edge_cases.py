@@ -20,10 +20,10 @@ class MockToolHandler(BaseToolHandler):
         self.rules_dir = self.base_path / self.tool_dir_constant / "rules"
 
     def deploy(self, content, content_type, body="", source_filename=None, relative_path=None):
-        pass
+        pass  # intentional stub
 
     def verify_deployment_with_details(self, content_name, content_type, file_name):
-        pass
+        pass  # intentional stub
 
 
 @pytest.fixture

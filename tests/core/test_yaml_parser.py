@@ -557,9 +557,9 @@ scientific: 1.23e-4
         data, issues = parser.parse_yaml(numeric_yaml)
         assert data is not None
         assert len(issues) == 0
-        assert data["version"] == 1.0
+        assert data["version"] == pytest.approx(1.0)
         assert data["count"] == 42
-        assert data["pi"] == 3.14159
+        assert data["pi"] == pytest.approx(3.14159)
         assert data["negative"] == -10
         assert data["scientific"] == 1.23e-4
 
