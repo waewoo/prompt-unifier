@@ -85,3 +85,7 @@ public/
 
 # pr-agent configuration (keep .pr_agent.toml in version control)
 # configuration.toml and pr_agent.toml are ignored as they're not used
+
+# Node.js
+node_modules/
+package-lock.json
