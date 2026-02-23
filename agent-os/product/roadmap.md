@@ -62,6 +62,11 @@
 
 25. [x] Automated Code Review — Integrate pr-agent for AI-powered code reviews. Support local usage via Make commands and automated reviews in GitLab CI/CD pipelines. Features include configurable LLM backend (Gemini default), token-based security via .env, and simple TOML configuration. `H`
 
+26. [ ] Skill Content Validation — Add content quality validation for skill files, mirroring SCAFF
+    for prompts. Warn when execution conditions (compatibility field) are missing, content is too
+    short, not actionable, or lacks markdown structure. Reuse existing ValidationIssue / WarningCode
+    infrastructure. `S`
+
 > Notes
 > - Order items by technical dependencies and product architecture
 > - Each item should represent an end-to-end (frontend + backend) functional and testable feature

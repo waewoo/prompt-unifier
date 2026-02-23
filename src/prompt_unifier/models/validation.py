@@ -116,6 +116,18 @@ class WarningCode(str, Enum):
     FUNC_UNKNOWN_ASSERTION_TYPE = "FUNC_UNKNOWN_ASSERTION_TYPE"
     """Functional test: Unknown assertion type encountered"""
 
+    SKILL_NO_COMPATIBILITY = "SKILL_NO_COMPATIBILITY"
+    """Skill does not specify execution conditions (compatibility field missing)"""
+
+    SKILL_CONTENT_TOO_SHORT = "SKILL_CONTENT_TOO_SHORT"
+    """Skill content body is too brief (below minimum word count)"""
+
+    SKILL_NOT_ACTIONABLE = "SKILL_NOT_ACTIONABLE"
+    """Skill lacks actionable instructions (no action verbs or numbered steps)"""
+
+    SKILL_POORLY_STRUCTURED = "SKILL_POORLY_STRUCTURED"
+    """Skill content lacks markdown structure (no headers or lists)"""
+
 
 class ValidationIssue(BaseModel):
     """Represents a single validation error or warning.

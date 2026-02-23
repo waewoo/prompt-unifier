@@ -9,6 +9,7 @@ from pathlib import Path
 
 from prompt_unifier.core.content_parser import ContentFileParser
 from prompt_unifier.core.scaff_validator import SCARFFValidator
+from prompt_unifier.core.skill_validator import SkillContentValidator
 from prompt_unifier.core.validator import PromptValidator
 from prompt_unifier.models.validation import (
     ValidationResult,
@@ -45,6 +46,7 @@ class BatchValidator:
         self.prompt_validator = PromptValidator()
         self.scaff_validator = SCARFFValidator()
         self.skill_parser = ContentFileParser()
+        self.skill_content_validator = SkillContentValidator()
 
     def validate_directory(self, directory: Path, scaff_enabled: bool = True) -> ValidationSummary:
         """Validate all .md files in a directory and return summary.
@@ -143,7 +145,8 @@ class BatchValidator:
         """Validate all .md files in a skills directory using SkillFrontmatter schema.
 
         Skills are validated against the SkillFrontmatter schema (name, description,
-        optional mode/license/...). SCAFF methodology validation is not applied.
+        optional mode/license/...), then content quality checks are applied via
+        SkillContentValidator (warnings only, no errors).
 
         Args:
             directory: Path to the directory containing skill .md files.
@@ -155,7 +158,23 @@ class BatchValidator:
         md_files = self.file_scanner.scan_directory(directory)
         logger.info(f"Found {len(md_files)} skill file(s) to validate")
 
-        results = [self.skill_parser.validate_file(fp) for fp in md_files]
+        results: list[ValidationResult] = []
+        for fp in md_files:
+            result = self.skill_parser.validate_file(fp)
+
+            if result.status == "passed":
+                try:
+                    parsed = self.skill_parser.parse_skill_file(fp)
+                    skill_issues = self.skill_content_validator.generate_issues(
+                        parsed, parsed.content
+                    )
+                    result.warnings.extend(skill_issues)
+                    logger.debug(f"Skill content validation for {fp}: warnings={len(skill_issues)}")
+                except Exception as e:
+                    logger.warning(f"Skill content validation failed for {fp}: {e}")
+
+            results.append(result)
+
         return self._build_summary(results)
 
     def _build_summary(self, results: list[ValidationResult]) -> ValidationSummary:

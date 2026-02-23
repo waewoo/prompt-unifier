@@ -77,7 +77,7 @@ class TestWarningCode:
     """Test WarningCode enum values."""
 
     def test_all_warning_codes_present(self) -> None:
-        """Test that all 9 warning codes are defined (3 existing + 5 SCAFF + 1 functional test)."""
+        """Test that all 13 warning codes are defined (3 + 5 SCAFF + 1 functional + 4 skill)."""
         expected_codes = {
             WarningCode.MISSING_OPTIONAL_FIELD,
             WarningCode.EMPTY_TAGS_LIST,
@@ -88,9 +88,13 @@ class TestWarningCode:
             WarningCode.SCAFF_POORLY_FORMATTED,
             WarningCode.SCAFF_UNFOCUSED,
             WarningCode.FUNC_UNKNOWN_ASSERTION_TYPE,
+            WarningCode.SKILL_NO_COMPATIBILITY,
+            WarningCode.SKILL_CONTENT_TOO_SHORT,
+            WarningCode.SKILL_NOT_ACTIONABLE,
+            WarningCode.SKILL_POORLY_STRUCTURED,
         }
         assert set(WarningCode) == expected_codes
-        assert len(WarningCode) == 9
+        assert len(WarningCode) == 13
 
     def test_warning_code_values(self) -> None:
         """Test warning code string values."""

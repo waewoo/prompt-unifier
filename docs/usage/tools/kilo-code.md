@@ -87,9 +87,8 @@ mode: code
 You are a Kubernetes expert. Help the user diagnose...
 ```
 
-!!! info "Continue does not support skills" Skills are a Kilo Code-exclusive feature. When deploying
-to Continue, skill files are automatically **skipped** (shown as `SKIPPED` in the verification
-report).
+!!! info "Continue does not support skills". When deploying to Continue, skill files are
+automatically **skipped** (shown as `SKIPPED` in the verification report).
 
 ## Flattened Structure
 
