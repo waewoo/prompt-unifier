@@ -4,6 +4,20 @@ All notable changes to this project will be documented in this file.
 
 This project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## v2.6.0 (2026-02-23)
+
+### Feat
+
+- **validation**: add skill content validation
+- **deploy**: deploy rules, workflows and skills to KiloCode
+- **deploy**: update Continue deployed prompts and rules
+- **skills**: add skills support for KiloCode handler
+- **review**: integrate pr-agent for automated AI code reviews
+
+### Fix
+
+- **quality**: fix SonarCloud quality gate issues
+
 ## v2.5.0 (2025-12-30)
 
 ### Feat
